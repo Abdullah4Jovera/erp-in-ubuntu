@@ -16,7 +16,7 @@ const Sources = () => {
     useEffect(() => {
         const fetchSources = async () => {
             try {
-                const response = await axios.get(`/api/sources/get/get-sources`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/sources/get/get-sources`);
                 setSources(response.data);
             } catch (err) {
                 setError('Error fetching sources');
@@ -26,7 +26,7 @@ const Sources = () => {
 
         const fetchLeadTypes = async () => {
             try {
-                const response = await axios.get(`/api/leadtypes/get-all-leadtypes`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/leadtypes/get-all-leadtypes`);
                 setLeadTypes(response.data);
             } catch (err) {
                 setError('Error fetching lead types');
@@ -52,7 +52,7 @@ const Sources = () => {
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post(`/api/sources/create-source`, {
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/sources/create-source`, {
                 ...newSource,
                 lead_type_id: newSource.lead_type_id._id
             });
@@ -78,7 +78,7 @@ const Sources = () => {
     const handleUpdateSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.put(`/api/sources/update-source/${selectedSource._id}`, {
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/sources/update-source/${selectedSource._id}`, {
                 ...selectedSource,
                 lead_type_id: selectedSource.lead_type_id._id // Send only the _id of the updated lead type
             });
@@ -95,7 +95,7 @@ const Sources = () => {
 
     const handleSoftDelete = async (sourceId) => {
         try {
-            const response = await axios.put(`/api/sources/soft-delete-source/${sourceId}`);
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/sources/soft-delete-source/${sourceId}`);
             setSources((prev) =>
                 prev.map((source) => (source._id === response.data.updatedSource._id ? { ...source, delstatus: true } : source))
             ); // Update source status to deleted

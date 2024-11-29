@@ -32,7 +32,7 @@ const LeadApiConfig = () => {
     const [modalShow, setModalShow] = useState(false); // State to manage modal visibility
     const fetchConfigs = async () => {
         try {
-            const response = await axios.get(`/api/lead-config/get-all-lead-fetch-config`, {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/lead-config/get-all-lead-fetch-config`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Include the token in the Authorization header
                 },
@@ -51,16 +51,16 @@ const LeadApiConfig = () => {
     useEffect(() => {
         const fetchAdditionalData = async () => {
             try {
-                const pipelinesResponse = await axios.get(`/api/pipelines/get-pipelines`);
+                const pipelinesResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/pipelines/get-pipelines`);
                 setPipelines(pipelinesResponse.data);
 
-                const leadTypesResponse = await axios.get(`/api/leadtypes/get-all-leadtypes`);
+                const leadTypesResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/leadtypes/get-all-leadtypes`);
                 setLeadTypes(leadTypesResponse.data);
 
-                const productsResponse = await axios.get(`/api/products/get-all-products`);
+                const productsResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/products/get-all-products`);
                 setProducts(productsResponse.data);
 
-                const branchesResponse = await axios.get(`/api/branch/get-branches`);
+                const branchesResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branch/get-branches`);
                 setBranches(branchesResponse.data);
             } catch (error) {
                 console.error('Error fetching additional data:', error);
@@ -75,7 +75,7 @@ const LeadApiConfig = () => {
         const fetchProductStages = async () => {
             if (selectedProductId) {
                 try {
-                    const response = await axios.get(`/api/productstages/${selectedProductId}`, {
+                    const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/productstages/${selectedProductId}`, {
                         headers: {
                             Authorization: `Bearer ${token}`, // Include the token in the Authorization header
                         },
@@ -97,7 +97,7 @@ const LeadApiConfig = () => {
         const fetchSources = async () => {
             if (selectedLeadType) {
                 try {
-                    const response = await axios.get(`/api/sources/${selectedLeadType}`);
+                    const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/sources/${selectedLeadType}`);
                     setSources(response.data);
                 } catch (error) {
                     console.error('Error fetching sources:', error);
@@ -136,7 +136,7 @@ const LeadApiConfig = () => {
 
             if (editingId) {
                 await axios.put(
-                    `/api/lead-config/update-lead-fetch-config/${editingId}`,
+                    `${process.env.REACT_APP_BASE_URL}/api/lead-config/update-lead-fetch-config/${editingId}`,
                     submissionData,
                     {
                         headers: {
@@ -147,7 +147,7 @@ const LeadApiConfig = () => {
             } else {
 
                 await axios.post(
-                    `/api/lead-config/creat-lead-fetch-config`,
+                    `${process.env.REACT_APP_BASE_URL}/api/lead-config/creat-lead-fetch-config`,
                     submissionData,
                     {
                         headers: {
@@ -199,7 +199,7 @@ const LeadApiConfig = () => {
     const handleDelete = async (id) => {
         try {
 
-            await axios.delete(`/api/lead-config/delete-lead-fetch-config/${id}`, {
+            await axios.delete(`${process.env.REACT_APP_BASE_URL}/api/lead-config/delete-lead-fetch-config/${id}`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Include the token in the Authorization header
                 },

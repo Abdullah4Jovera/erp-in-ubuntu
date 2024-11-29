@@ -5,7 +5,7 @@ import Form from 'react-bootstrap/Form';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 
-const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fetchSingleLead }) => {
+const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fetchSingleLead, rtl }) => {
     const [pipeline, setPipeline] = useState('');
     const [branch, setBranch] = useState('');
     const [selectedProduct, setSelectedProduct] = useState('');
@@ -27,7 +27,7 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
     useEffect(() => {
         const fetchPipelines = async () => {
             try {
-                const response = await axios.get(`/api/pipelines/get-pipelines`, {
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/pipelines/get-pipelines`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -45,7 +45,7 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
         if (moveLeadModal) {
             const fetchLeadData = async () => {
                 try {
-                    const response = await axios.get(`/api/leads/single-lead/${leadId}`, {
+                    const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/leads/single-lead/${leadId}`, {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         },
@@ -82,7 +82,7 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
         const fetchProductStages = async () => {
             if (pipeline) {
                 try {
-                    const response = await axios.get(`/api/productstages/${selectedProduct}`, {
+                    const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/productstages/${selectedProduct}`, {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         },
@@ -112,9 +112,9 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
         const selectedBranch = e.target.value;
         setBranch(selectedBranch);
 
-        if (selectedBranch === '6719fdded3de53c9fb53fb79') {
+        if (selectedBranch === '673b34924b966621c041caac') {
             // If Ajman Branch is selected, show only the Ajman pipeline
-            const ajmanPipeline = pipelines.find(pipeline => pipeline._id === '6719fda75035bf8bd708d024');
+            const ajmanPipeline = pipelines.find(pipeline => pipeline._id === '673b190186706b218f6f3262');
             setFilteredPipelines(ajmanPipeline ? [ajmanPipeline] : []);
             setPipeline(ajmanPipeline ? ajmanPipeline._id : ''); // Set pipeline if available
         } else {
@@ -138,11 +138,12 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
     const moveLeadsHandler = async () => {
         try {
             await axios.put(
-                `/api/leads/move-lead/${leadId}`,
+                `${process.env.REACT_APP_BASE_URL}/api/leads/move-lead/${leadId}`,
                 {
                     pipeline,
                     branch,
                     product_stage: selectedProductStage,
+                    product: selectedProduct
                 },
                 {
                     headers: {
@@ -176,15 +177,28 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
                 aria-labelledby="contained-modal-title-vcenter"
                 centered
             >
-                <Modal.Body>
-                    <h4>Move Leads</h4>
+                <Modal.Body style={{
+                    padding: '30px',
+                    textAlign: rtl === 'true' ? 'right' : 'left', // Align text dynamically
+                    direction: rtl === 'true' ? 'rtl' : 'ltr' // Set text direction dynamically
+                }}>
+                    <h4
+                        className="mutual_heading_class"
+                        style={{ textAlign: rtl === 'true' ? 'center' : 'center' }} // Align text dynamically
+                    >
+                        {rtl === 'true' ? 'نقل العملاء' : 'Move Leads'}
+                    </h4>
                     <Form>
-                        <Form.Label>Branch</Form.Label>
+                        <Form.Label className="mutual_heading_class">
+                            {rtl === 'true' ? 'فرع' : 'Branch'}
+                        </Form.Label>
                         <Form.Select
                             aria-label="Select Branch"
                             name="branch"
                             value={branch}
                             onChange={handleBranchChange}
+                            className='input_field_input_field'
+                            disabled
                         >
                             <option value="">Select Branch</option>
                             {branchesSlice.map(branch => (
@@ -194,14 +208,17 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
                             ))}
                         </Form.Select>
 
-                        {branch === '6719fdded3de53c9fb53fb79' && (
+                        {branch === '673b34924b966621c041caac' && (
                             <>
-                                <Form.Label>Pipeline</Form.Label>
+                                <Form.Label className="mutual_heading_class">
+                                    {rtl === 'true' ? 'خط الأنابيب' : 'Pipeline'}
+                                </Form.Label>
                                 <Form.Select
                                     aria-label="Select Pipeline"
                                     name="pipeline"
                                     value={pipeline}
                                     onChange={handlePipelineChange}
+                                    className='input_field_input_field'
                                 >
                                     <option value="">Select Pipeline</option>
                                     {filteredPipelines.map(pipeline => (
@@ -213,14 +230,17 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
                             </>
                         )}
 
-                        {branch !== '6719fdded3de53c9fb53fb79' && (
+                        {branch !== '673b34924b966621c041caac' && (
                             <>
-                                <Form.Label>Pipeline</Form.Label>
+                                <Form.Label className="mutual_heading_class">
+                                    {rtl === 'true' ? 'خط الأنابيب' : 'Pipeline'}
+                                </Form.Label>
                                 <Form.Select
                                     aria-label="Select Pipeline"
                                     name="pipeline"
                                     value={pipeline}
                                     onChange={handlePipelineChange}
+                                    className='input_field_input_field'
                                 >
                                     <option value="">Select Pipeline</option>
                                     {filteredPipelines.map(pipeline => (
@@ -232,12 +252,15 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
                             </>
                         )}
 
-                        <Form.Label>Product Stage</Form.Label>
+                        <Form.Label className="mutual_heading_class">
+                            {rtl === 'true' ? 'مرحلة المنتج' : 'Product Stage'}
+                        </Form.Label>
                         <Form.Select
                             aria-label="Select Product Stage"
                             name="productStage"
                             value={selectedProductStage}
                             onChange={handleProductStageChange}
+                            className='input_field_input_field'
                         >
                             <option value="" disabled={!productStages.length}>Select Product Stage</option>
                             {productStages.map(stage => (
@@ -248,19 +271,19 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
                         </Form.Select>
                     </Form>
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr', }} >
                     <Button className='all_close_btn_container' onClick={() => {
                         resetToInitialValues();
                         setMoveLeadModal(false);
                     }}>
-                        Close
+                        {rtl === 'true' ? 'إغلاق' : 'Close'}
                     </Button>
                     <Button
-                        className='all_single_leads_button'
+                        className='all_common_btn_single_lead'
                         disabled={!pipeline || !branch || !selectedProductStage}
                         onClick={moveLeadsHandler}
                     >
-                        Move Leads
+                        {rtl === 'true' ? 'نقل العملاء المحتملين' : 'Move Leads'}
                     </Button>
                 </Modal.Footer>
             </Modal>

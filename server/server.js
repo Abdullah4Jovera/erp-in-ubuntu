@@ -38,7 +38,7 @@ const labelRouter = require('./routes/labelRouter');
 const requestRouter = require('./routes/requestRouter');
 const leadConfigRouter= require('./routes/leadConfigRouter')
 const contractStagesRouter= require('./routes/contractStageRouter')
-
+const databaseRouter= require('./routes/databaseRouter')
 
 
 
@@ -47,11 +47,9 @@ const port = process.env.PORT || 4000; // Use environment variable for port
 const server = http.createServer(app);
 const fetchAndStoreLeads = require('./leadFetcher');
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/erp3', {
-   
-})
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.error('Error connecting to MongoDB:', err));
+mongoose.connect('mongodb://localhost:27017/crm', { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Error connecting to MongoDB:', err));
 
 // Middleware
 app.use(cors());
@@ -113,8 +111,7 @@ app.use('/uploads', express.static(path.join(__dirname, './uploads')));
     app.use('/api/request', requestRouter);
     app.use('/api/lead-config', leadConfigRouter);
     app.use('/api/contract-stages', contractStagesRouter);
-
-
+    app.use('/api/database', databaseRouter);
 
     app.use('/api/phonebook', phonebookRouter);
 

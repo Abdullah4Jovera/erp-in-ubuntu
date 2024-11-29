@@ -60,9 +60,9 @@ const SuperAdminPhoneBook = () => {
                 if (!token) throw new Error('Token not found');
 
                 const [pipelinesResponse, usersResponse, phoneBookResponse] = await Promise.all([
-                    axios.get(`/api/pipelines/get-pipelines`),
-                    axios.get(`/api/users/get-users`),
-                    axios.get(`/api/phonebook/get-all-phonebook`, {
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/api/pipelines/get-pipelines`),
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/api/users/get-users`),
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/api/phonebook/get-all-phonebook`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     })
                 ]);
@@ -156,7 +156,7 @@ const SuperAdminPhoneBook = () => {
 
     const handleCSVUpload = async (formData) => {
         try {
-            const response = await axios.post(`/api/phonebook/upload-csv-for-superadmin`, formData, {
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/phonebook/upload-csv-for-superadmin`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             alert(response.data.message);

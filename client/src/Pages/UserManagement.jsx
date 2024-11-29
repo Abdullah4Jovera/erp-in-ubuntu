@@ -19,7 +19,7 @@ const UpdateRolePermissions = () => {
         // if (state.userinfo.token) 
         {
             // Fetch available permissions
-            axios.get(`/api/permissions`, {
+            axios.get(`${process.env.REACT_APP_BASE_URL}/api/permissions`, {
                 headers: {
                     //   Authorization: `Bearer ${state.userinfo.token}`
                 }
@@ -32,7 +32,7 @@ const UpdateRolePermissions = () => {
                 });
 
             // Fetch existing roles
-            axios.get(`/api/roles`, {
+            axios.get(`${process.env.REACT_APP_BASE_URL}/api/roles`, {
                 headers: {
                     //   Authorization: `Bearer ${state.userinfo.token}`
                 }
@@ -69,7 +69,7 @@ const UpdateRolePermissions = () => {
     };
 
     const handleSubmit = () => {
-        axios.post(`/api/update-role-permissions`, {
+        axios.post(`${process.env.REACT_APP_BASE_URL}/api/update-role-permissions`, {
             role: selectedRole.role,
             newPermissions: permissions
         }, {
@@ -94,7 +94,7 @@ const UpdateRolePermissions = () => {
             return;
         }
 
-        axios.post(`/api/permissions/create-role`, {
+        axios.post(`${process.env.REACT_APP_BASE_URL}/api/permissions/create-role`, {
             roleName: newRoleName,
             permissionsArray: newRolePermissions
         }, {
@@ -120,7 +120,7 @@ const UpdateRolePermissions = () => {
             return;
         }
 
-        axios.delete(`/api/permissions/delete-role`, {
+        axios.delete(`${process.env.REACT_APP_BASE_URL}/api/permissions/delete-role`, {
             data: { roleName }, // Passing role name in the body
             headers: {
                 // Authorization: `Bearer ${state.userinfo.token}`

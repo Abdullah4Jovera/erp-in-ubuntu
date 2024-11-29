@@ -1,10 +1,5 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-
-// Assuming Deal and User models are in the same directory; adjust the path as needed
-const Deal = require('./dealModel');
-const User = require('./userModel');
-
 const serviceCommissionSchema = new Schema({
     contract_id: {
         type: Schema.Types.ObjectId,
@@ -26,45 +21,147 @@ const serviceCommissionSchema = new Schema({
     without_vat_commission: {
         type: Number,
     },
-    hodsale: {
+    hod: {
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
-    hodsalecommission: {
+    hod_commission_percentage: {
         type: Number,
     },
-    salemanager: {
+    hod_commission_amount: {
+        type: Number,
+    },
+
+    hom: {
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
-    salemanagercommission: {
+    hom_commission_percentage: {
         type: Number,
     },
+    hom_commission_amount: {
+        type: Number,
+    },
+
+
+
+    sale_manager: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    sale_manager_commission_percentage: {
+        type: Number,
+    },
+    sale_manager_commission_amount: {
+        type: Number,
+    },
+        //// New Fields 
+    ajman_manager :{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    ajman_manager_commission_percentage: {
+        type: Number,
+    },
+    ajman_manager_commission_amount: {
+        type: Number,
+    },
+    ajman_coordinator :{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    ajman_coordinator_commission_percentage: {
+        type: Number,
+    },
+    ajman_coordinator_commission_amount: {
+        type: Number,
+    },
+    ajman_team_leader :{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    ajman_team_leader_commission_percentage: {
+        type: Number,
+    },
+    ajman_team_leader_commission_amount: {
+        type: Number,
+    },
+
+    dubai_manager :{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    dubai_manager_commission_percentage: {
+        type: Number,
+    },
+    dubai_manager_commission_amount: {
+        type: Number,
+    },
+    dubai_coordinator :{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    dubai_coordinator_commission_percentage: {
+        type: Number,
+    },
+    dubai_coordinator_commission_amount: {
+        type: Number,
+    },
+    dubaiteam_leader :{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    dubaiteam_leader_commission_percentage: {
+        type: Number,
+    },
+    dubaiteam_leader_commission_amount: {
+        type: Number,
+    },
+
+    /////
     coordinator: {
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
-    coordinator_commission: {
+    coordinator_commission_percentage: {
+        type: Number,
+    },
+    coordinator_commission_amount: {
         type: Number,
     },
     team_leader: {
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
-    team_leader_commission: {
+    team_leader_commission_percentage: {
         type: Number,
     },
-    salesagent: {
+    team_leader_commission_amount: {
+        type: Number,
+    },
+    sales_agent: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
+    },
+    sales_agent_commission_percentage: {
+        type: Number,
+        default: "0"
+    },
+    sales_agent_commission_amount: {
+        type: Number,
+        default: "0"
     },
     team_leader_one: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
     },
-    team_leader_one_commission: {
+    team_leader_one_commission_percentage: {
+        type: Number,
+        default: "0"
+    },
+    team_leader_one_commission_amount: {
         type: Number,
         default: "0"
     },
@@ -73,7 +170,11 @@ const serviceCommissionSchema = new Schema({
         ref: 'User',
         default: null
     }, 
-    sale_agent_one_commission: {
+    sale_agent_one_commission_percentage: {
+        type: Number,
+        default: "0"
+    },
+    sale_agent_one_commission_amount: {
         type: Number,
         default: "0"
     },
@@ -82,29 +183,54 @@ const serviceCommissionSchema = new Schema({
         ref: 'User',
         default: null
     },
-    sale_agent_two_commission: {
+    sale_agent_two_commission_percentage: {
         type: Number,
         default: "0"
     },
-    salesagent_commission: {
+    sale_agent_two_commission_amount: {
         type: Number,
         default: "0"
     },
-    salemanagerref: {
+    ////////
+
+    hod_ref: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
     },
-    salemanagerrefcommission: {
+    hod_ref_commission_percentage: {
         type: Number,
         default: "0"
     },
-    agentref: {
+    hod_ref_commission_amount: {
+        type: Number,
+        default: "0"
+    },
+
+
+    sale_manager_ref: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
     },
-    agent_commission: {
+    sale_manager_ref_commission_percentage: {
+        type: Number,
+        default: "0"
+    },
+    sale_manager_ref_commission_amount: {
+        type: Number,
+        default: "0"
+    },
+    hom_ref: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    hom_ref_commission_percentage: {
+        type: Number,
+        default: "0"
+    },
+    hom_ref_commission_amount: {
         type: Number,
         default: "0"
     },
@@ -113,7 +239,11 @@ const serviceCommissionSchema = new Schema({
         ref: 'User',
         default: null
     },
-    ts_hod_commision: {
+    ts_hod_commision_percentage: {
+        type: Number,
+        default: "0"
+    },
+    ts_hod_commision_amount: {
         type: Number,
         default: "0"
     },
@@ -122,88 +252,104 @@ const serviceCommissionSchema = new Schema({
         ref: 'User',
         default: null
     },
-    ts_team_leader_commission: {
+    ts_team_leader_commission_percentage: {
         type: Number,
         default: "0"
     },
-    tsagent: {
+    ts_team_leader_commission_amount: {
+        type: Number,
+        default: "0"
+    },
+    ts_agent: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
     },
-    tsagent_commission: {
+    tsagent_commission_percentage: {
         type: Number, 
         default: "0"
     },
-    it_team_commission: {
-        type: Number,
-        default: 0,
-    },
-    marketing_team_commission: {
-        type: Number,
-        default: 0,
-    },
-    marketingmanager: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    },
-    marketingmanagercommission: {
-        type: Number,
+    tsagent_commission_amount: {
+        type: Number, 
         default: "0"
     },
+   
     ///////New fields
-    marketingone: {
+    marketing_one: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
     },
-    marketingonecommission: {
+    marketing_one_commission_percentage: {
         type: Number,
         default: "0"
     },
-    marketingtwo: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    },
-    marketingtwocommission: {
+    marketing_one_commission_amount: {
         type: Number,
         default: "0"
     },
-    marketingthree: {
+    marketing_two: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
     },
-    marketingthreecommission: {
+    marketing_two_commission_percentage: {
         type: Number,
         default: "0"
     },
-    marketingfour: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    },
-    marketingfourcommission: {
+    marketing_two_commission_amount: {
         type: Number,
         default: "0"
     },
-    developerone: {
+    marketing_three: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
     },
-    developeronecommission: {
+    marketing_three_commission_percentage: {
         type: Number,
         default: "0"
     },
-    developertwo: {
+    marketing_three_commission_amount: {
+        type: Number,
+        default: "0"
+    },
+    marketing_four: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
     },
-    developertwocommission: {
+    marketing_four_commission: {
+        type: Number,
+        default: "0"
+    },
+    marketing_four_commission_amount: {
+        type: Number,
+        default: "0"
+    },
+    developer_one: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    developer_one_commission_percentage: {
+        type: Number,
+        default: "0"
+    },
+    developer_one_commission_amount: {
+        type: Number,
+        default: "0"
+    },
+    developer_two: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    developer_two_commission_percentage: {
+        type: Number,
+        default: "0"
+    },
+    developer_two_commission_amount: {
         type: Number,
         default: "0"
     },
@@ -212,60 +358,70 @@ const serviceCommissionSchema = new Schema({
         ref: 'User',
         default: null
     },
-    developerthreecommission: {
+    developer_three_commission_percentage: {
         type: Number,
         default: "0"
     },
-    developerfour: {
+    developer_three_commission_amount: {
+        type: Number,
+        default: "0"
+    },
+    developer_four: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         default: null
     },
-    developerfourcommission: {
+    developer_four_commission_percentage: {
+        type: Number,
+        default: "0"
+    },
+    developer_four_commission_amount: {
         type: Number,
         default: "0"
     },
 
-
-
-    marketing_team_leader: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    },
-    marketing_team_leader_commission: {
-        type: Number,
-        default: "0"
-    },
-    other_name: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    },
-    other_name_commission: {
-        type: Number,
-        default: "0"
-    },
     broker_name: {
         type: String,
         default: null
     },
-    broker_name_commission: {
+    broker_name_commission_percentage: {
         type: Number,
         default: "0"
     },
-    alondra: {
-        type: Number,
-    },
-    a_commission: {
+    broker_name_commission_amount: {
         type: Number,
         default: "0"
     },
+    
+
+
+    lead_created_by: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    lead_created_by_commission_percentage: {
+        type: Number,
+        default: "0"
+    },
+    lead_created_by_commission_amount: {
+        type: Number,
+        default: "0"
+    },
+
+
+    created_by: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+
+
     created_at: {
         type: Date,
         default: Date.now
     },
-    updated_at: {
+    updated_at: { 
         type: Date,
         default: Date.now
     },

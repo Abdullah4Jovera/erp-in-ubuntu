@@ -8,11 +8,13 @@ import { LuView } from "react-icons/lu";
 
 const LeadConverted = () => {
     const token = useSelector(state => state.loginSlice.user?.token);
+    const userID = useSelector(state => state.loginSlice.user?._id);
     const [blockedNumbers, setBlockedNumbers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredNumbers, setFilteredNumbers] = useState([]);
+    const [rtl, setRtl] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 15; // Show 13 items on the first page
+    const itemsPerPage = 14; // Show 13 items on the first page
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -20,21 +22,30 @@ const LeadConverted = () => {
             navigate('/');
         } else {
             // Fetch blocked numbers from the API
-            axios.get(`/api/phonebook/get-leads-numbers`, {
+            axios.get(`${process.env.REACT_APP_BASE_URL}/api/phonebook/get-leads-numbers`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             })
                 .then(response => {
-                    setBlockedNumbers(response.data);
-                    setFilteredNumbers(response.data); // Initialize filtered numbers
+                    // Filter the data to include only entries where userID matches in lead_id.selected_users
+                    const filteredData = response.data.filter(entry =>
+                        entry.lead_id?.selected_users?.some(user => user._id === userID)
+                    );
+                    setBlockedNumbers(filteredData);
+                    setFilteredNumbers(filteredData); // Initialize filtered numbers
                 })
                 .catch(error => {
                     console.error('Error fetching blocked numbers:', error);
                 });
         }
-    }, [token, navigate]);
+    }, [token, userID, navigate]);
+
+    useEffect(() => {
+        const savedRtl = localStorage.getItem('rtl');
+        setRtl(savedRtl); // Update state with the 'rtl' value from localStorage
+    }, [rtl]);
 
     useEffect(() => {
         // Filter numbers based on search query for both number and user name
@@ -67,92 +78,118 @@ const LeadConverted = () => {
 
     return (
         <div>
-            <Container fluid>
+            <Container fluid style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
                 <Row>
                     <Col xs={12} md={12} lg={2}>
                         <Sidebar />
                     </Col>
                     <Col xs={12} md={12} lg={10}>
-                        <Card className='leads_main_cards'>
-                            <h2 className="text-center mt-3">
-                                Total Converted Leads: {filteredNumbers.length}
+                        <Card className="leads_main_cards mt-4">
+                            <h2
+                                className="text-center mt-3 mutual_heading_class"
+                                style={{
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                {rtl === 'true' ? `إجمالي العملاء المحولين: ${filteredNumbers.length}` : `Total Converted Leads: ${filteredNumbers.length}`}
                             </h2>
                             <div className="phonebook-container">
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                                    <Form.Group controlId="searchBar" className='w-50'>
+                                <div style={{ display: 'flex', justifyContent: rtl === 'true' ? 'flex-start' : 'flex-end', alignItems: 'flex-end' }}>
+                                    <Form.Group controlId="searchBar">
                                         <Form.Control
                                             type="text"
-                                            placeholder="Search by Number or User Name"
+                                            placeholder={rtl === 'true' ? "البحث برقم أو اسم المستخدم" : "Search by Number/Name"}
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="input_field_input_field"
                                         />
                                     </Form.Group>
                                 </div>
 
                                 {currentItems.length > 0 ? (
                                     <>
-                                        <Table hover bordered responsive className='mt-3 table_main_container' size='md'>
+                                        <Table hover bordered responsive className="mt-3 table_main_container" size="md">
                                             <thead style={{ backgroundColor: '#f8f9fd' }}>
                                                 <tr
                                                     className="teble_tr_class"
                                                     style={{
-                                                        backgroundColor: '#e9ecef',
+                                                        backgroundColor: '#000',
                                                         color: '#343a40',
-                                                        borderBottom: '2px solid #dee2e6',
+                                                        borderBottom: '1px solid #d7aa47',
                                                         transition: 'background-color 0.3s ease',
                                                     }}
                                                 >
-                                                    <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">User</th>
-                                                    <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">Number</th>
-                                                    <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">Status</th>
-                                                    <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">Call Status</th>
-                                                    <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">Pipeline</th>
-                                                    <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">View Lead</th>
+                                                    <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">{rtl === 'true' ? 'المستخدم' : 'User'}</th>
+                                                    <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">{rtl === 'true' ? 'رقم' : 'Number'}</th>
+                                                    <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">{rtl === 'true' ? 'الحالة' : 'Status'}</th>
+                                                    <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">{rtl === 'true' ? 'حالة المكالمة' : 'Call Status'}</th>
+                                                    <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">{rtl === 'true' ? 'خط الأنابيب' : 'Pipeline'}</th>
+                                                    <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">{rtl === 'true' ? 'عرض العميل' : 'View Lead'}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {currentItems.map((entry, index) => (
                                                     <tr key={index}>
-                                                        <td className='table_td_class'>
-                                                            {entry.user && entry.user.name ? entry.user.name : 'N/A'}
+                                                        <td style={{ textAlign: 'center' }} className="table_td_class">
+                                                            <div className="name-container">
+                                                                {entry.user?.name
+                                                                    ? entry.user.name.split(' ').slice(0, 15).join(' ') +
+                                                                    (entry.user.name.split(' ').length > 15 ? '...' : '')
+                                                                    : 'N/A'}
+                                                                {entry.user?.name && <span className="tooltip">{entry.user.name}</span>}
+                                                            </div>
                                                         </td>
-                                                        <td className='table_td_class'>{entry.number}</td>
-                                                        <td className='table_td_class'>{entry.status}</td>
-                                                        <td className='table_td_class'>{entry.calstatus}</td>
-                                                        <td className='table_td_class'>{entry.pipeline?.name}</td>
-                                                        <td className='table_td_class'>
-                                                            <Link to={`/single-leads/${entry.lead_id}`} style={{ textDecoration: 'none', }} ><LuView style={{ color: '#ffa000', fontSize: '20px', cursor: 'pointer' }} /></Link>
+                                                        <td className="table_td_class" style={{ direction: rtl === 'true' ? 'ltr' : 'ltr' }}>{entry.number}</td>
+                                                        <td className="table_td_class">{entry.status}</td>
+                                                        <td className="table_td_class">{entry.calstatus}</td>
+                                                        <td className="table_td_class">{entry.pipeline?.name}</td>
+                                                        <td className="table_td_class">
+                                                            <Link to={`/single-leads/${entry.lead_id._id}`} style={{ textDecoration: 'none' }}>
+                                                                <LuView style={{ color: '#ffa000', fontSize: '20px', cursor: 'pointer' }} />
+                                                            </Link>
                                                         </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
                                         </Table>
 
-                                        <div className="d-flex justify-content-between align-items-center mt-3">
+                                        <div
+                                            className="d-flex justify-content-center align-items-center mt-3"
+                                            style={{
+                                                direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                            }}
+                                        >
                                             <Button
-                                                variant="primary"
+                                                className="all_common_btn_single_lead"
                                                 onClick={handlePreviousPage}
                                                 disabled={currentPage === 1}
                                             >
-                                                Previous
+                                                {rtl === 'true' ? 'السابق' : 'Previous'}
                                             </Button>
-                                            <span>
-                                                Page {currentPage} of {Math.ceil(filteredNumbers.length / itemsPerPage)}
+                                            <span
+                                                className="mutual_heading_class"
+                                                style={{
+                                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                                }}
+                                            >
+                                                {rtl === 'true' ? `الصفحة ${currentPage} من ${Math.ceil(filteredNumbers.length / itemsPerPage)}` : `Page ${currentPage} of ${Math.ceil(filteredNumbers.length / itemsPerPage)}`}
                                             </span>
                                             <Button
-                                                variant="primary"
+                                                className="all_common_btn_single_lead"
                                                 onClick={handleNextPage}
                                                 disabled={currentPage === Math.ceil(filteredNumbers.length / itemsPerPage)}
                                             >
-                                                Next
+                                                {rtl === 'true' ? 'التالي' : 'Next'}
                                             </Button>
                                         </div>
                                     </>
                                 ) : (
-                                    <p>No Leads Numbers Available.</p>
+                                    <p className="mutual_heading_class">{rtl === 'true' ? 'لا توجد أرقام عملاء متاحة.' : 'No Leads Numbers Available.'}</p>
                                 )}
                             </div>
                         </Card>
+
                     </Col>
                 </Row>
             </Container>

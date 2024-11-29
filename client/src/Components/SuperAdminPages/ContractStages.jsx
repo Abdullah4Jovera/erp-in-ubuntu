@@ -16,7 +16,7 @@ const ContractStages = () => {
     }, []);
     const fetchStages = async () => {
         try {
-            const response = await axios.get(`/api/contract-stages/get-all-contract-stages`, {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/contract-stages/get-all-contract-stages`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setStages(response.data);
@@ -27,7 +27,7 @@ const ContractStages = () => {
     const createStage = async () => {
         try {
             const response = await axios.post(
-                `/api/contract-stages/create-contract-stage`,
+                `${process.env.REACT_APP_BASE_URL}/api/contract-stages/create-contract-stage`,
                 { name, order },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -41,7 +41,7 @@ const ContractStages = () => {
     const updateStage = async () => {
         try {
             const response = await axios.put(
-                `/api/contract-stages/update-contract-stages/${editStage._id}`,
+                `${process.env.REACT_APP_BASE_URL}/api/contract-stages/update-contract-stages/${editStage._id}`,
                 { name, order },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -55,7 +55,7 @@ const ContractStages = () => {
     };
     const deleteStage = async (id) => {
         try {
-            await axios.delete(`/api/contract-stages/delete/${id}`, {
+            await axios.delete(`${process.env.REACT_APP_BASE_URL}/api/contract-stages/delete/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setStages(stages.filter(stage => stage._id !== id));

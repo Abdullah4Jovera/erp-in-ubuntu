@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Modal, Button, Spinner, Form } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import WhatsAppChat from '../whatsappChatBox/WhatsAppChatBox';
+import WhatsupBox from './WhatsupBox';
 
 const WhatsAppComponent = ({ clientId, leadId, setWhatsAppModal, whtsappModal }) => {
     const [message, setMessage] = useState('');
@@ -16,7 +17,7 @@ const WhatsAppComponent = ({ clientId, leadId, setWhatsAppModal, whtsappModal })
         // Fetch chat history
         const fetchChatHistory = async () => {
             try {
-                const { data } = await axios.get(`/api/whatsup/chat-history/${leadId}`, {
+                const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/whatsup/chat-history/${leadId}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -30,7 +31,7 @@ const WhatsAppComponent = ({ clientId, leadId, setWhatsAppModal, whtsappModal })
         fetchChatHistory();
 
         // Initialize socket connection
-        const socket = io(``, {
+        const socket = io(`${process.env.REACT_APP_BASE_URL}`, {
             transports: ['websocket'],
             upgrade: false,
         });
@@ -54,7 +55,7 @@ const WhatsAppComponent = ({ clientId, leadId, setWhatsAppModal, whtsappModal })
 
         try {
             await axios.post(
-                `/api/whatsup/send-message`,
+                `${process.env.REACT_APP_BASE_URL}/api/whatsup/send-message`,
                 {
                     messageBody: message,
                     clientId: clientId,
@@ -109,16 +110,14 @@ const WhatsAppComponent = ({ clientId, leadId, setWhatsAppModal, whtsappModal })
     };
 
     return (
-        <Modal show={whtsappModal} onHide={() => setWhatsAppModal(false)} size="sm" centered >
-            <Modal.Header closeButton>
-
-            </Modal.Header>
-
-            <WhatsAppChat leadId={leadId} />
+        <Modal show={whtsappModal} onHide={() => setWhatsAppModal(false)} size="md" centered >
+            <Modal.Header closeButton style={{ border: 'none' }} ></Modal.Header>
+            <div style={{ height: '40vh', maxHeight: '800px' }} >
+                <WhatsupBox leadId={leadId}  />
+            </div>
             {error && <p className="text-danger">{error}</p>}
 
-                <Modal.Footer>
-                </Modal.Footer>
+            <Modal.Footer style={{ border: 'none' }}></Modal.Footer>
 
             <style jsx>{`
                 .chat-history {

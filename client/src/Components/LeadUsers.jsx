@@ -22,7 +22,7 @@ import rejected_image from '../Assets/rejected_image.png'
 import blovkimage from '../Assets/blovkimage.png'
 import ReactCardFlip from 'react-card-flip';
 
-const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
+const LeadUsers = ({ singleLead, fetchSingleLead, labels, rtl }) => {
     const { selected_users = [], pipeline_id } = singleLead;
     const [isFlipped, setIsFlipped] = useState(false);
     const { id } = useParams();
@@ -54,7 +54,7 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(`/api/users/get-users`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/users/get-users`);
                 setAllUsers(response.data);
             } catch (error) {
                 console.log(error, 'err');
@@ -86,7 +86,7 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
         try {
             // Loop through selected users and add them
             for (const user of selectedUsers) {
-                await axios.put(`/api/leads/add-user-to-lead/${id}`, {
+                await axios.put(`${process.env.REACT_APP_BASE_URL}/api/leads/add-user-to-lead/${id}`, {
                     userId: user.value
                 }, {
                     headers: {
@@ -105,7 +105,7 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
     // Delete User
     const DeleteUser = async () => {
         try {
-            await axios.put(`/api/leads/remove-user-from-lead/${id}`, {
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/api/leads/remove-user-from-lead/${id}`, {
                 userId: userIdToDelete
             }, {
                 headers: {
@@ -119,11 +119,13 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
         }
     };
 
-    // Prepare options for the select dropdown
-    const userOptions = filteredUsers.map(user => ({
-        value: user._id,
-        label: user.name
-    }));
+    const excludedRoles = ["MD", "CEO", "HOD", "Super Admin", "Developer", "Marketing", "No Role"];
+    const userOptions = allUsers
+        .filter(user => !excludedRoles.includes(user.role)) // Exclude specific roles
+        .map(user => ({
+            value: user._id,
+            label: `${user.name} (${user.role})` // Add role after the name
+        }));
 
     // Function to split description into chunks of 15 words
     const splitDescriptionIntoChunks = (description) => {
@@ -138,23 +140,41 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
 
     const descriptionChunks = splitDescriptionIntoChunks(singleLead.description);
 
+    const limitWords = (text, maxWords = 3) => {
+        const words = text.split(' ');
+        if (words.length <= maxWords) return text;
+        return words.slice(0, maxWords).join(' ') + '...';
+    };
     return (
         <>
             <Container>
                 <Row>
-
                     <Col xs={12} md={4}>
-                        <Card body className='lead_discussion_main_card_user mutual_background_class' >
-                            {/* <h5 style={{ color: '#B9406B', textAlign: 'center' }} > Client Details </h5> */}
-                            <h5 style={{ textAlign: 'center' }} className='mutual_class_color' > {singleLead.client?.name && singleLead.client?.name} </h5>
-                            <div className='first_card' >
-                                <div className='single_lead_upper_container' >
-                                    <div className='single_lead_icons' >
+                        <Card body className='lead_discussion_main_card_user mutual_background_class'
+                            style={{ height: '100%', maxHeight: '240px', minHeight: '200px' }}
+                        >
+                            {/* Client Name */}
+                            <h5
+                                style={{ textAlign: 'center' }}
+                                className='mutual_class_color'
+                                title={singleLead.client?.name} // Full name on hover
+                            >
+                                {singleLead.client?.name ? limitWords(singleLead.client?.name) : ''}
+                            </h5>
+
+                            <div className='first_card'>
+                                {/* Phone Section */}
+                                <div className='single_lead_upper_container'>
+                                    <div className='single_lead_icons'>
                                         <MdOutlinePhone style={{ fontSize: '18px' }} />
                                     </div>
                                     <div>
-                                        <p className='text-muted text-sm mb-0 mutual_heading_class' >Phone</p>
-                                        <p className='mb-0 mutual_class_color' style={{}}>{singleLead.client?.phone && singleLead.client?.phone}</p>
+                                        <p className='text-muted text-sm mb-0 mutual_heading_class'>
+                                            {rtl === 'true' ? 'الهاتف' : 'Phone'}
+                                        </p>
+                                        <p className='mb-0 mutual_class_color' style={{ direction: rtl === 'true' ? 'ltr' : 'ltr' }}>
+                                            {singleLead.client?.phone && singleLead.client?.phone}
+                                        </p>
                                         {singleLead.is_blocklist_number && (
                                             <div>
                                                 <Image
@@ -168,43 +188,54 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                     </div>
                                 </div>
 
-                                <div className='single_lead_upper_container' >
-                                    <div className='single_lead_icons_one' >
+                                {/* Email Section */}
+                                <div className='single_lead_upper_container'>
+                                    <div className='single_lead_icons_one'>
                                         <MdOutlineEmail style={{ fontSize: '18px' }} />
                                     </div>
                                     <div>
-                                        <p className='text-muted text-sm mb-0 mutual_heading_class' >Email</p>
-                                        <div style={{ width: '100%', maxWidth: '180px' }} >
-                                            {/* <h5 className='mb-0' style={{ color: '#ffa21d', fontSize: '14px' }} > {singleLead.client?.email && singleLead.client?.email} </h5> */}
-                                            <p className='mb-0 mutual_class_color' style={{}}>{singleLead.client?.email && singleLead.client?.email}</p>
+                                        <p className='text-muted text-sm mb-0 mutual_heading_class'>
+                                            {rtl === 'true' ? 'البريد الإلكتروني' : 'Email'}
+                                        </p>
+                                        <div style={{ width: '100%', maxWidth: '255px' }}>
+                                            <p className='mb-0 mutual_class_color'>
+                                                {singleLead.client?.email && singleLead.client?.email}
+                                            </p>
                                         </div>
-
                                     </div>
                                 </div>
 
-                                <div className='single_lead_upper_container' >
-                                    <div className='single_lead_icons_two' >
+                                {/* Emirates ID Section */}
+                                <div className='single_lead_upper_container'>
+                                    <div className='single_lead_icons_two'>
                                         <SiEmirates style={{ fontSize: '18px' }} />
                                     </div>
                                     <div>
-                                        <p className='text-muted text-sm mb-0 mutual_heading_class' >Emirates ID</p>
-                                        {/* <h5 className='mb-0' style={{ color: '#3ec9d6', fontSize: '14px' }}> {singleLead.client?.e_id && singleLead.client?.e_id} </h5> */}
-                                        <p className='mb-0 mutual_class_color' style={{}}>{singleLead.client?.e_id && singleLead.client?.e_id}</p>
+                                        <p className='text-muted text-sm mb-0 mutual_heading_class'>
+                                            {rtl === 'true' ? 'رقم الهوية الإماراتية' : 'Emirates ID'}
+                                        </p>
+                                        <p className='mb-0 mutual_class_color' style={{ direction: rtl === 'true' ? 'ltr' : 'ltr' }}>
+                                            {singleLead.client?.e_id && singleLead.client?.e_id}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
                         </Card>
 
+
                         {singleLead.is_reject ? (
                             <ReactCardFlip isFlipped={isFlipped} flipDirection="horizontal">
                                 {/* Front Card - Users List */}
                                 <Card
-                                    className='mt-2 lead_discussion_main_card_user'
-                                    style={{ padding: '20px', height: '100%', maxHeight: '300px', overflowY: 'scroll' }}
-                                    onClick={handleCardClick}
+                                    className='mt-2 lead_discussion_main_card_user mutual_background_class'
+                                    style={{ padding: '10px', height: '100%', maxHeight: '240px', minHeight: '250px', overflowY: 'hidden' }}
+                                // onClick={handleCardClick}
                                 >
                                     <div className='discussion_files'>
-                                        <h5 className='mutual_class_color' >Users</h5>
+                                        <h5 className='mutual_class_color'>
+                                            {rtl === 'true' ? 'المستخدمين' : 'Users'}
+                                        </h5>
+                                        <Button className='all_common_btn_single_lead' onClick={() => setIsFlipped(!isFlipped)}>Reject Reason</Button>
                                         {!singleLead.is_reject && canAddUserLead ? (
                                             <div className='lead_users_delete_btn mb-3'>
                                                 <IoMdAdd style={{ fontSize: '20px', color: 'white', cursor: 'pointer' }} onClick={() => setUserModal(true)} />
@@ -212,14 +243,6 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                         ) : null}
                                     </div>
                                     <Table bordered responsive striped hover className="lead_user_class">
-                                        {/* <thead>
-                                            <tr>
-                                                <th style={{ width: '70%' }}>Name</th>
-                                                {singleLead.is_reject || !canRemoveUserLead ? null : (
-                                                    <th className="text-center" style={{ width: '30%' }}>Action</th>
-                                                )}
-                                            </tr>
-                                        </thead> */}
                                         <tbody>
                                             {selected_users.length > 0 ? (
                                                 selected_users
@@ -229,7 +252,7 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                                     )
                                                     .map((user) => {
                                                         const imageSrc = user?.image
-                                                            ? `/images/${user?.image}`
+                                                            ? `${process.env.REACT_APP_BASE_URL}/images/${user?.image}`
                                                             : default_image;
 
                                                         const renderTooltip = (props) => (
@@ -240,7 +263,7 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
 
                                                         return (
                                                             <tr key={user._id} style={{ height: '40px' }}>
-                                                                <td style={{ verticalAlign: 'middle' }}>
+                                                                <td style={{ verticalAlign: 'middle', backgroundColor: '#2d3134' }}>
                                                                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                                         <OverlayTrigger
                                                                             placement="top"
@@ -254,7 +277,16 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                                                                 style={{ objectFit: 'cover', cursor: 'pointer' }}
                                                                             />
                                                                         </OverlayTrigger>
-                                                                        <span style={{ fontWeight: '600', fontSize: '12px' }}>{user.name}</span>
+                                                                        <span
+                                                                            style={{ fontWeight: '600', fontSize: '12px' }}
+                                                                            className="mutual_class_color name-container"
+                                                                        >
+                                                                            {user.name
+                                                                                ? user.name.split(' ').slice(0, 2).join(' ') +
+                                                                                (user.name.split(' ').length > 2 ? '...' : '')
+                                                                                : 'N/A'}
+                                                                            {user.name && <span className="tooltip">{user.name}</span>}
+                                                                        </span>
                                                                     </div>
                                                                 </td>
                                                                 {!singleLead.is_reject && canRemoveUserLead && (
@@ -275,8 +307,8 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                                     })
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="2" className="text-center">
-                                                        No users available
+                                                    <td colSpan="2" className="text-center" style={{ backgroundColor: '#000', color: 'white' }} >
+                                                        {rtl === 'true' ? 'لا يوجد مستخدمون' : 'No users available'}
                                                     </td>
                                                 </tr>
                                             )}
@@ -287,32 +319,47 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                 {/* Back Card - Reason for Rejection */}
                                 <Card
                                     body
-                                    className='mb-2 mt-2 rejected_lead_reason'
+                                    className='mb-2 mt-2 rejected_lead_reason mutual_background_class'
                                     style={{ position: 'relative', backgroundColor: '#efefef' }}
                                     onClick={handleCardClick}
                                 >
                                     <div>
-                                        <h4 style={{ color: '#B9406B', textAlign: 'center' }} className='mb-0'>Reason of Rejection Lead</h4>
-                                        <p className='mt-2' >{singleLead && singleLead.reject_reason}</p>
+                                        <h4
+                                            className='mb-0 mutual_class_color'
+                                            style={{
+                                                textAlign: rtl === 'true' ? 'center' : 'center',
+                                            }}
+                                        >
+                                            {rtl === 'true' ? 'سبب رفض العميل' : 'Reason of Rejection Lead'}
+                                        </h4>
+                                        <p className='mt-2 mutual_heading_class' >{singleLead && singleLead.reject_reason}</p>
                                     </div>
-                                    <Image
-                                        src={rejected_image}
-                                        className='rejected_image'
-                                        alt='Rejected Image'
-                                        style={{ width: '90px', height: '90px', borderRadius: '50%' }}
-                                    />
+                                    <Button
+                                        className='all_common_btn_single_lead'
+                                        onClick={handleCardClick}
+                                        style={{
+                                            position: 'absolute', bottom: 0,
+                                            [rtl === 'true' ? 'right' : 'left']: '10px',
+                                            direction: rtl === 'true' ? 'ltr' : 'ltr', // Set text direction based on RTL
+                                        }}
+                                    >
+                                        {rtl === 'true' ? 'انقر لرؤية المستخدمين' : 'Click to See Users'}
+                                    </Button>
                                 </Card>
                             </ReactCardFlip>
                         ) : (
                             /* Display only the front card if singleLead.is_reject is false */
                             <Card
                                 className='mt-2 lead_discussion_main_card_user mutual_background_class'
-                                style={{ padding: '20px', height: '100%', maxHeight: '250px' }}
-                                onClick={() => setIsFlipped(!isFlipped)}
+                                style={{ padding: '10px', height: '100%', maxHeight: '270px', minHeight: '200px' }}
+                            // onClick={() => setIsFlipped(!isFlipped)}
 
                             >
                                 <div className='discussion_files'>
-                                    <h5 className='mutual_class_color'>Users</h5>
+                                    <h5 className='mutual_class_color' >
+                                        {rtl === 'true' ? 'المستخدمين' : 'Users'}
+                                    </h5>
+                                    {/* <button   onClick={() => setIsFlipped(!isFlipped)}>Flip</button> */}
                                     {singleLead.is_reject || !canAddUserLead ? null : (
                                         <div className='lead_users_delete_btn mb-3'>
                                             <IoMdAdd style={{ fontSize: '20px', color: 'white', cursor: 'pointer' }} onClick={() => setUserModal(true)} />
@@ -320,14 +367,6 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                     )}
                                 </div>
                                 <Table bordered responsive striped hover className="lead_user_class">
-                                    {/* <thead>
-                                        <tr>
-                                            <th style={{ width: '70%' }}>Name</th>
-                                            {singleLead.is_reject || !canRemoveUserLead ? null : (
-                                                <th className="text-center" style={{ width: '30%' }}>Action</th>
-                                            )}
-                                        </tr>
-                                    </thead> */}
                                     <tbody>
                                         {selected_users.length > 0 ? (
                                             selected_users
@@ -337,7 +376,7 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                                 )
                                                 .map((user) => {
                                                     const imageSrc = user?.image
-                                                        ? `/images/${user?.image}`
+                                                        ? `${process.env.REACT_APP_BASE_URL}/images/${user?.image}`
                                                         : default_image;
 
                                                     const renderTooltip = (props) => (
@@ -348,7 +387,7 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
 
                                                     return (
                                                         <tr key={user._id} style={{ height: '40px' }}>
-                                                            <td style={{ verticalAlign: 'middle' }}>
+                                                            <td style={{ verticalAlign: 'middle', backgroundColor: '#2d3134' }}>
                                                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                                     <OverlayTrigger
                                                                         placement="top"
@@ -362,11 +401,20 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                                                             style={{ objectFit: 'cover', cursor: 'pointer' }}
                                                                         />
                                                                     </OverlayTrigger>
-                                                                    <span style={{ fontWeight: '600', fontSize: '12px' }}>{user.name}</span>
+                                                                    <span
+                                                                        style={{ fontWeight: '600', fontSize: '14px' }}
+                                                                        className="mutual_class_color name-container"
+                                                                    >
+                                                                        {user.name
+                                                                            ? user.name.split(' ').slice(0, 2).join(' ') +
+                                                                            (user.name.split(' ').length > 2 ? '...' : '')
+                                                                            : 'N/A'}
+                                                                        {user.name && <span className="tooltip">{user.name}</span>}
+                                                                    </span>
                                                                 </div>
                                                             </td>
                                                             {!singleLead.is_reject && canRemoveUserLead && (
-                                                                <td style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                                                                <td style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', backgroundColor: '#2d3134' }}>
                                                                     <div className="lead_users_delete_btn">
                                                                         <RiDeleteBinLine
                                                                             style={{ color: 'white', fontSize: '14px', cursor: 'pointer' }}
@@ -383,17 +431,18 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                                 })
                                         ) : (
                                             <tr>
-                                                <td colSpan="2" className="text-center">
-                                                    No users available
+                                                <td colSpan="2" className="text-center" style={{ backgroundColor: '#000', color: 'white' }}>
+                                                    No Users Available
                                                 </td>
                                             </tr>
                                         )}
                                     </tbody>
                                 </Table>
+                                {/* <button  onClick={handleCardClick}>Flip</button> */}
                             </Card>
                         )}
 
-                        <FileUploader singleLead={singleLead} id={id} fetchSingleLead={fetchSingleLead} />
+                        <FileUploader singleLead={singleLead} id={id} fetchSingleLead={fetchSingleLead} rtl={rtl} />
 
                     </Col>
 
@@ -456,19 +505,54 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                 singleLead?.company_Name ? (
                                     <>
                                         <h4 className='mb-0 mutual_class_color' style={{ textAlign: 'center' }}>
-                                            {singleLead?.company_Name || 'No Company Name'}
+                                            {rtl === 'true' ? (singleLead?.company_Name || 'لا يوجد اسم شركة') : (singleLead?.company_Name || 'No Company Name')}
                                         </h4>
-                                        <p className='text-muted text-sm mb-0 text-center mutual_heading_class'>Company Name</p>
 
+                                        <p className='text-muted text-sm mb-0 text-center mutual_heading_class'>
+                                            {rtl === 'true' ? 'اسم الشركة' : 'Company Name'}
+                                        </p>
                                     </>
                                 )
                                     :
-                                    <p className='text-sm mb-0 text-center mutual_class_color mutual_heading_class'>No Company Name</p>
+                                    <>
+                                        <p className='text-sm mb-0 text-center mutual_class_color mutual_heading_class'>
+                                            {rtl === 'true' ? 'لا يوجد اسم شركة' : 'No Company Name'}
+                                        </p>
+                                        {
+                                            singleLead.is_reject && (
+                                                <>
+                                                    <div
+                                                        style={{
+                                                            display: 'flex',
+                                                            justifyContent: rtl === 'true' ? 'flex-start' : 'flex-end', // Align left for RTL and right for LTR
+                                                            alignItems: 'center',
+                                                        }}
+                                                    >
+                                                        <Image
+                                                            src={rejected_image}
+                                                            alt='Rejected Image'
+                                                            style={{
+                                                                width: '120px',
+                                                                height: '120px',
+                                                                borderRadius: '50%',
+                                                                position: 'absolute',
+                                                                [rtl === 'true' ? 'left' : 'right']: '-66px', // Conditionally set left or right based on rtl
+                                                                zIndex: 1,
+                                                                top: '-35px',
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </>
+                                            )
+                                        }
+                                    </>
                             }
                             <div>
-                                <h5 className="mutual_class_color">Lead Details</h5>
+                                <h5 className="mutual_class_color">
+                                    {rtl === 'true' ? 'تفاصيل العميل' : 'Lead Details'}
+                                </h5>
                             </div>
-                            <div style={{ maxHeight: '200px', overflowY: 'auto', padding: '0.5rem', borderRadius: '5px' }}>
+                            <div style={{ height: '100%', maxHeight: '226px', overflowY: 'auto', padding: '5px 5px 5px 15px', borderRadius: '10px', backgroundColor: '#2d3134' }}>
                                 {singleLead?.description ? (
                                     singleLead.description.split('\n').map((line, index) => (
                                         <p
@@ -479,71 +563,94 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                         </p>
                                     ))
                                 ) : (
-                                    <p className="text-muted text-sm mb-0">No description available</p>
+                                    <p className="text-sm mb-0 no-activity-log">
+                                        {rtl === 'true' ? 'لا توجد وصف متاح' : 'No description available'}
+                                    </p>
                                 )}
                             </div>
                         </Card>
 
-                        <Card body className='mt-2 lead_discussion_main_card_user mutual_background_class' >
-                            <h5 style={{ textAlign: 'center' }} className='mutual_class_color'> {singleLead.products?.name && singleLead.products?.name} </h5>
-                            <div className='first_card_product' >
-
-                                <div className='single_lead_upper_container' >
-                                    <div className='single_lead_icons' >
+                        <Card body className='mt-2 lead_discussion_main_card_singlrlead mutual_background_class'>
+                            <h5 style={{ textAlign: 'center' }} className='mutual_class_color'>
+                                {singleLead.products?.name && singleLead.products?.name}
+                            </h5>
+                            <div className='first_card_product'>
+                                <div className='single_lead_upper_container'>
+                                    {/* <div className='single_lead_icons'>
                                         <HiMiniBuildingOffice2 style={{ fontSize: '18px' }} />
-                                    </div>
+                                    </div> */}
                                     <div>
-                                        <p className='text-muted text-sm mb-0 mutual_heading_class' style={{ fontSize: '14px', fontWeight: '600' }} >Branch</p>
-                                        <p className='mb-0 mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>{singleLead.branch?.name && singleLead.branch?.name}</p>
+                                        <p className='text-muted text-sm mutual_heading_class mb-0' style={{ fontSize: '14px', fontWeight: '600' }}>
+                                            {rtl === 'true' ? 'الفرع' : 'Branch'}
+                                        </p>
+                                        <p className='mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>
+                                            {singleLead.branch?.name ? singleLead.branch?.name : (rtl === 'true' ? 'لا يوجد فرع' : 'No branch')}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className='single_lead_upper_container' >
-                                    <div className='single_lead_icons' >
+                                <div className='single_lead_upper_container'>
+                                    {/* <div className='single_lead_icons'>
                                         <FaCodeBranch style={{ fontSize: '18px' }} />
-                                    </div>
+                                    </div> */}
                                     <div>
-                                        <p className='text-muted text-sm mb-0 mutual_heading_class' style={{ fontSize: '14px', fontWeight: '600' }}>Pipeline</p>
-                                        <p className='mb-0 mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>{singleLead.pipeline_id?.name && singleLead.pipeline_id?.name}</p>
+                                        <p className='text-muted text-sm mutual_heading_class mb-0' style={{ fontSize: '14px', fontWeight: '600' }}>
+                                            {rtl === 'true' ? 'خط الأنابيب' : 'Pipeline'}
+                                        </p>
+                                        <p className='mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>
+                                            {singleLead.pipeline_id?.name ? singleLead.pipeline_id?.name : (rtl === 'true' ? 'لا يوجد خط أنابيب' : 'No pipeline')}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className='single_lead_upper_container' >
-                                    <div className='single_lead_icons_two' >
+                                <div className='single_lead_upper_container'>
+                                    {/* <div className='single_lead_icons_two'>
                                         <SiGoogleadsense style={{ fontSize: '18px' }} />
-                                    </div>
+                                    </div> */}
                                     <div>
-                                        <p className='text-muted text-sm mb-0 mutual_heading_class' style={{ fontSize: '14px', fontWeight: '600' }}>Lead Stage</p>
-                                        <p className='mb-0 mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>{singleLead.product_stage?.name && singleLead.product_stage?.name}</p>
+                                        <p className='text-muted text-sm mutual_heading_class mb-0' style={{ fontSize: '14px', fontWeight: '600' }}>
+                                            {rtl === 'true' ? 'مرحلة العميل المحتمل' : 'Lead Stage'}
+                                        </p>
+                                        <p className='mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>
+                                            {singleLead.product_stage?.name ? singleLead.product_stage?.name : (rtl === 'true' ? 'لا توجد مرحلة' : 'No stage')}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className='single_lead_upper_container' >
-                                    <div className='single_lead_icons_two' >
+                                <div className='single_lead_upper_container'>
+                                    {/* <div className='single_lead_icons_two'>
                                         <TbSocial style={{ fontSize: '18px' }} />
-                                    </div>
+                                    </div> */}
                                     <div>
-                                        <p className='text-muted text-sm mb-0 mutual_heading_class' style={{ fontSize: '14px', fontWeight: '600' }}>Lead From</p>
-                                        <p className='mb-0 mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>{singleLead.lead_type?.name && singleLead.lead_type?.name}</p>
+                                        <p className='text-muted text-sm mutual_heading_class mb-0' style={{ fontSize: '14px', fontWeight: '600' }}>
+                                            {rtl === 'true' ? 'العميل من' : 'Lead From'}
+                                        </p>
+                                        <p className='mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>
+                                            {singleLead.lead_type?.name ? singleLead.lead_type?.name : (rtl === 'true' ? 'لا يوجد نوع' : 'No lead type')}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className='single_lead_upper_container' >
-                                    <div className='single_lead_icons_one' >
+                                <div className='single_lead_upper_container'>
+                                    {/* <div className='single_lead_icons_one'>
                                         <TbWorldWww style={{ fontSize: '18px' }} />
-                                    </div>
+                                    </div> */}
                                     <div>
-                                        <p className='text-muted text-sm mb-0 mutual_heading_class' style={{ fontSize: '14px', fontWeight: '600' }}>Source</p>
-                                        <p className='mb-0 mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>{singleLead.source?.name && singleLead.source?.name}</p>
+                                        <p className='text-muted text-sm mutual_heading_class mb-0' style={{ fontSize: '14px', fontWeight: '600' }}>
+                                            {rtl === 'true' ? 'المصدر' : 'Source'}
+                                        </p>
+                                        <p className='mutual_class_color' style={{ fontSize: '14px', fontWeight: '500' }}>
+                                            {singleLead.source?.name ? singleLead.source?.name : (rtl === 'true' ? 'لا يوجد مصدر' : 'No source')}
+                                        </p>
                                     </div>
                                 </div>
-
 
                             </div>
                         </Card>
 
+
                         {/* <FileUploader singleLead={singleLead} id={id} fetchSingleLead={fetchSingleLead} /> */}
-                        <ActivityLead singleLead={singleLead} />
+                        <ActivityLead singleLead={singleLead} rtl={rtl} />
                     </Col>
 
                 </Row>
@@ -557,15 +664,21 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                 show={userModal}
                 onHide={() => setUserModal(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
-                        Add User
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
+                <h4 className="text-center  mt-3 mutual_heading_class"
+                    style={{ textAlign: rtl === 'true' ? 'right' : 'center' }}>
+                    {rtl === 'true' ? 'إضافة مستخدم' : 'Add User'}
+                </h4>
+                <Modal.Body style={{
+                    // padding: '40px',
+                    textAlign: rtl === 'true' ? 'right' : 'left', // Align text dynamically
+                    direction: rtl === 'true' ? 'rtl' : 'ltr' // Set text direction dynamically
+                }}
+                >
                     <Form>
                         <Form.Group className="mb-3">
-                            <Form.Label>Select Users</Form.Label>
+                            <Form.Label className='mutual_heading_class'   >
+                                {rtl === 'true' ? 'اختر المستخدمين' : 'Select Users'}
+                            </Form.Label>
                             <Select
                                 options={userOptions}
                                 value={selectedUsers}
@@ -574,18 +687,23 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                                     setError('');
                                 }}
                                 isMulti // Enable multi-select
-                                placeholder="Select users..."
+                                placeholder={rtl === 'true' ? 'اختر المستخدمين...' : 'Select users...'}
+                                className='input_field_input_field'
+                                classNamePrefix="react-select"
                             />
                             {error && <div className="text-danger">{error}</div>}
                         </Form.Group>
                     </Form>
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button onClick={() => setUserModal(false)} className='all_close_btn_container'>Close</Button>
-                    <Button className='all_single_leads_button' onClick={AddUser}>
-                        Submit
+                <Modal.Footer style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}  >
+                    <Button onClick={() => setUserModal(false)} className='all_close_btn_container'>
+                        {rtl === 'true' ? 'إغلاق' : 'Close'}
+                    </Button>
+                    <Button className='all_common_btn_single_lead' onClick={AddUser}>
+                        {rtl === 'true' ? 'إرسال' : 'Submit'}
                     </Button>
                 </Modal.Footer>
+
             </Modal>
 
             {/* Delete User Modal */}
@@ -596,19 +714,29 @@ const LeadUsers = ({ singleLead, fetchSingleLead, labels }) => {
                 show={deleteModal}
                 onHide={() => setDeleteModal(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
-                        Delete User
+                <Modal.Header closeButton style={{ border: 'none' }}>
+                    <Modal.Title
+                        id="contained-modal-title-vcenter"
+                        className="mutual_heading_class"
+                    >
+                        {rtl === 'true' ? 'حذف المستخدم' : 'Delete User'}
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="text-center">
                     <TiDeleteOutline className="text-danger" style={{ fontSize: '4rem' }} />
-                    <p>Are you sure you want to delete this user?</p>
+                    <p className="mutual_heading_class">
+                        {rtl === 'true' ? 'هل أنت متأكد أنك تريد حذف هذا المستخدم؟' : 'Are you sure you want to delete this user?'}
+                    </p>
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button onClick={() => setDeleteModal(false)} className='all_close_btn_container'>Close</Button>
-                    <Button className='all_single_leads_button' onClick={DeleteUser}>Delete</Button>
+                <Modal.Footer style={{ border: 'none' }}>
+                    <Button onClick={() => setDeleteModal(false)} className="all_close_btn_container">
+                        {rtl === 'true' ? 'إغلاق' : 'Close'}
+                    </Button>
+                    <Button className="all_common_btn_single_lead" onClick={DeleteUser}>
+                        {rtl === 'true' ? 'حذف' : 'Delete'}
+                    </Button>
                 </Modal.Footer>
+
             </Modal>
         </>
     );

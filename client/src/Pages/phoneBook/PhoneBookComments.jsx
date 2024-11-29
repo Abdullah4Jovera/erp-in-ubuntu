@@ -25,7 +25,7 @@ const PhoneBookComments = ({ leadId, setPhoneBookModal, phoneBookModal, singleLe
                                 {/* Comment Header (User Info) */}
                                 <div className="comment-header" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                     <Image
-                                        src={`/images/${comment?.user?.image}`}
+                                        src={`${process.env.REACT_APP_BASE_URL}/images/${comment?.user?.image}`}
                                         alt={comment.user.name}
                                         style={{ width: 40, height: 40, borderRadius: '50%' }}
                                     />

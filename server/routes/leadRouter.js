@@ -25,13 +25,14 @@ const Notification = require('../models/notificationModel');
 const { getIO } = require('../socket');
 const twilio = require('twilio');
 const Phonebook = require('../models/phonebookModel.js')
-
-const accountSid = 'AC48e99fa5d2a4ecdd660e8f5391e375ed'; 
-const authToken = '8d6ad3c2eb9063995cea53598eec5d93'; 
+const accountSid = 'AC48e99fa5d2a4ecdd660e8f5391e375ed';
+const authToken = '8d6ad3c2eb9063995cea53598eec5d93';
 const client = twilio(accountSid, authToken);
-const fromWhatsAppNumber = 'whatsapp:+14155238886'; 
-const axios = require('axios'); 
+const fromWhatsAppNumber = 'whatsapp:+14155238886';
+const axios = require('axios');
 const hasPermission = require('../hasPermission.js');
+const contractStageModel = require('../models/contractStageModel.js');
+const ContractActivityLog = require('../models/ContractActivityLogModel.js');
 
 // GET leads for CEO with specific criteria (lead type: Marketing, product: Mortgage Loan, and no pipeline)
 router.get('/ceo-lead', isAuth, async (req, res) => {
@@ -52,10 +53,10 @@ router.get('/ceo-lead', isAuth, async (req, res) => {
         const leads = await Lead.find({
             lead_type: marketingLeadType._id,
             products: mortgageLoanProduct._id,
-            pipeline_id: null,  
+            pipeline_id: null,
 
         })
-            .populate('pipeline_id', 'name')  
+            .populate('pipeline_id', 'name')
             .populate('stage', 'name')
             .populate('lead_type', 'name')
             .populate({
@@ -92,26 +93,26 @@ router.get('/ceo-lead', isAuth, async (req, res) => {
                     select: 'name'
                 }
             })
-           
+
             .populate({
                 path: 'products',
                 populate: {
-                    path: 'pipeline_id',  
+                    path: 'pipeline_id',
                     select: 'name'
                 }
             })
-            
+
 
         res.status(200).json(leads);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
-
 router.get('/get-leads/:productId/branch/:branchId', isAuth, hasPermission(['view_lead']), async (req, res) => {
     try {
-        const { productId, branchId } = req.params;  // Get productId and branchId from URL params
-        const userId = req.user._id;  // Authenticated user's ID from isAuth middleware
+        const { productId, branchId } = req.params; // Get productId and branchId from URL params
+        const userId = req.user._id; // Authenticated user's ID from isAuth middleware
+        const userPipeline = req.user.pipeline; // User's pipeline array from JWT token
 
         // Validate if the product exists
         const product = await Product.findById(productId);
@@ -125,171 +126,34 @@ router.get('/get-leads/:productId/branch/:branchId', isAuth, hasPermission(['vie
             return res.status(404).json({ message: 'Branch not found' });
         }
 
-        // Fetch leads that match the productId, branchId, and include the authenticated user
-        const leads = await Lead.find({
+        // Build query filters dynamically
+        const leadFilters = {
             products: productId,
             branch: branchId,
-            selected_users: userId,  
+            selected_users: userId,
             is_converted: false,
             is_reject: false,
-        })
-            .populate('pipeline_id', 'name')
-            .populate('stage', 'name')
-            .populate('lead_type', 'name')
-            .populate({
-                path: 'discussions',
-                select: 'comment created_at',  // Include created_at from LeadDiscussion schema
-                populate: {
-                    path: 'created_by',
-                    select: 'name image',  // Include name and image of the user who created the discussion
-                },
-            })            
-            .populate({
-                path: 'source',
-                populate: {
-                    path: 'lead_type_id',
-                    select: 'name created_by'
-                }
-            })
-            .populate('created_by', 'name email')
-            .populate('client', 'name email phone')
-
-            .populate({
-                path: 'selected_users',
-                match: { role: { $nin: ['HOD', 'CEO', 'MD','Super Admin', 'Developer', 'Marketing'] } },  
-                select: 'name role image', 
-            })
-
-            .populate({
-                path: 'activity_logs',
-                populate: {
-                    path: 'user_id',
-                    select: 'name email'
-                }
-            })
-            .populate({
-                path: 'stage',
-                populate: {
-                    path: 'pipeline_id',
-                    select: 'name created_by'
-                }
-            })
-            .populate({
-                path: 'product_stage',
-                populate: {
-                    path: 'product_id',  
-                    select: 'name'
-                }
-            })
-            .populate({
-                path: 'labels', 
-                select: 'name color', 
-            })
-            .populate('products', 'name')  
-            .populate({
-                path: 'messages', 
-                match: { read: false }, 
-                select: 'read message_body', 
-            });
-
-       
-        res.status(200).json(leads);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-});
- 
-router.get('/search-leads', isAuth, async (req, res) => {
-    try {
-        const {
-            page = 1,
-            limit = 2000,
-            userId, // Get userId from query params
-            pipeline,
-            created_at_start,
-            created_at_end,
-            lead_type,
-            source,
-            client,
-            products,
-            branch, // New filter for branch
-        } = req.query;
-        const user = req.user._id
-        // Build the query object
-        const query = {
-            is_converted: false,
-            is_reject: false,
-            selected_users: user, // Ensure the lead's selected_users contains the authenticated user
-
         };
 
-        // Ensure userId is an ObjectId and filter leads by selected_users
-        if (userId) {
-            query.selected_users = new mongoose.Types.ObjectId(String(userId));
+        // If userPipeline is not empty, filter leads by pipeline IDs
+        if (userPipeline && userPipeline.length > 0) {
+            leadFilters.pipeline_id = { $in: userPipeline };
         }
 
-        // Pipeline filtering
-        if (pipeline) {
-            query.pipeline_id = new mongoose.Types.ObjectId(String(pipeline));
-        }
-
-        // Lead type filtering
-        if (lead_type) {
-            query.lead_type = new mongoose.Types.ObjectId(String(lead_type));
-        }
-
-        // Source filtering
-        if (source) {
-            query.source = new mongoose.Types.ObjectId(String(source));
-        }
-
-        // Client filtering
-        if (client) {
-            query.client = new mongoose.Types.ObjectId(String(client));
-        }
-
-        // Branch filtering
-        if (branch) {
-            query.branch = new mongoose.Types.ObjectId(String(branch)); // Ensure branch is an ObjectId
-        }
-
-        // Date range filtering for created_at
-        if (created_at_start || created_at_end) {
-            const createdAtFilter = {};
-            if (created_at_start) {
-                createdAtFilter.$gte = new Date(created_at_start);
-            }
-            if (created_at_end) {
-                createdAtFilter.$lte = new Date(created_at_end);
-            }
-            query.created_at = createdAtFilter;
-        }
-
-        // Products filtering
-        if (products) {
-            query.products = {
-                $in: products.split(',').map(id => new mongoose.Types.ObjectId(String(id))),
-            };
-        }
-
-        // Fetch total number of leads matching the query
-        const totalLeads = await Lead.countDocuments(query);
-
-        // Fetch paginated leads with all necessary population
-        const leads = await Lead.find(query)
-            .populate('branch', 'name') // Populating branch
+        // Fetch leads with the dynamic filters
+        const leads = await Lead.find(leadFilters)
             .populate('pipeline_id', 'name')
             .populate('stage', 'name')
             .populate('lead_type', 'name')
             .populate({
                 path: 'discussions',
-                select: 'comment created_at',  // Include created_at from LeadDiscussion schema
+                select: 'comment created_at',
                 populate: {
                     path: 'created_by',
-                    select: 'name image',  // Include name and image of the user who created the discussion
+                    select: 'name',
                 },
             })
-                        .populate({
+            .populate({
                 path: 'source',
                 populate: {
                     path: 'lead_type_id',
@@ -298,7 +162,164 @@ router.get('/search-leads', isAuth, async (req, res) => {
             })
             .populate('created_by', 'name email')
             .populate('client', 'name email phone')
-            .populate('selected_users', 'name role image')
+            .populate({
+                path: 'selected_users',
+                match: { role: { $nin: ['HOD', 'CEO', 'MD', 'Super Admin', 'Developer', 'Marketing'] } },
+                select: 'name role image',
+            })
+            .populate({
+                path: 'activity_logs',
+                populate: {
+                    path: 'user_id',
+                    select: 'name email',
+                },
+            })
+            .populate({
+                path: 'stage',
+                populate: {
+                    path: 'pipeline_id',
+                    select: 'name created_by',
+                },
+            })
+            .populate({
+                path: 'transfer_from.pipeline',
+                select: 'name',
+            })
+            .populate({
+                path: 'transfer_from.branch',
+                select: 'name',
+            })
+            .populate({
+                path: 'transfer_from.product_stage',
+                select: 'name',
+            })
+            .populate({
+                path: 'transfer_from.products',
+                select: 'name',
+            })
+            .populate({
+                path: 'product_stage',
+                populate: {
+                    path: 'product_id',
+                    select: 'name',
+                },
+            })
+            .populate({
+                path: 'labels',
+                select: 'name color',
+            })
+            .populate('products', 'name')
+            .populate({
+                path: 'messages',
+                match: { read: false },
+                select: 'read message_body',
+            });
+
+        res.status(200).json(leads);
+    } catch (error) {
+        console.error('Error fetching leads:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+router.get('/search-leads', isAuth, async (req, res) => {
+    try {
+        const {
+            userId, // Filter by userId
+            pipeline, // Filter by pipeline
+            created_at_start,
+            created_at_end,
+            lead_type, // Filter by lead type
+            source, // Filter by source
+            client, // Filter by client
+            products, // Filter by products
+            branch, // Filter by branch
+        } = req.query;
+
+        const user = req.user; // Authenticated user from isAuth middleware
+        const authenticatedUserId = user._id;
+
+        // Initialize the query object
+        const query = {
+            is_converted: false,
+            is_reject: false,
+            selected_users: authenticatedUserId, // Ensure lead's selected_users includes the authenticated user
+        };
+
+        // Filter by userId if provided
+        if (userId) {
+            query.selected_users = new mongoose.Types.ObjectId(String(userId));
+        }
+
+        // Filter by pipeline if provided or restrict by the user's pipeline array
+        if (pipeline) {
+            query.pipeline_id = new mongoose.Types.ObjectId(String(pipeline));
+        } 
+
+        // Filter by lead type
+        if (lead_type) {
+            query.lead_type = new mongoose.Types.ObjectId(String(lead_type));
+        }
+
+        // Filter by source
+        if (source) {
+            query.source = new mongoose.Types.ObjectId(String(source));
+        }
+
+        // Filter by client
+        if (client) {
+            query.client = new mongoose.Types.ObjectId(String(client));
+        }
+
+        // Filter by branch
+        if (branch) {
+            query.branch = new mongoose.Types.ObjectId(String(branch));
+        }
+
+        // Date range filtering for created_at
+        if (created_at_start || created_at_end) {
+            const createdAtFilter = {};
+            if (created_at_start) createdAtFilter.$gte = new Date(created_at_start);
+            if (created_at_end) createdAtFilter.$lte = new Date(created_at_end);
+            query.created_at = createdAtFilter;
+        }
+
+        // Filter by products
+        if (products) {
+            query.products = {
+                $in: products.split(',').map(id => new mongoose.Types.ObjectId(String(id))),
+            };
+        }
+
+        // Fetch total leads matching the query
+        const totalLeads = await Lead.countDocuments(query);
+
+
+
+        // Fetch leads with population
+        const leads = await Lead.find(query)
+
+            .populate('branch', 'name') // Populate branch
+            .populate('pipeline_id', 'name') // Populate pipeline
+            .populate('stage', 'name') // Populate stage
+            .populate('lead_type', 'name') // Populate lead type
+            .populate({
+                path: 'discussions',
+                select: 'comment created_at',
+                populate: {
+                    path: 'created_by',
+                    select: 'name image',
+                },
+            })
+            .populate({
+                path: 'source',
+                populate: {
+                    path: 'lead_type_id',
+                    select: 'name ',
+                },
+            })
+            .populate('created_by', 'name email') // Populate created_by
+            .populate('client', 'name email phone') // Populate client
+            .populate('selected_users', 'name role image') // Populate selected_users
             .populate({
                 path: 'activity_logs',
                 populate: {
@@ -318,6 +339,22 @@ router.get('/search-leads', isAuth, async (req, res) => {
                 },
             })
             .populate({
+                path: 'transfer_from.pipeline',
+                select: 'name',
+            })
+            .populate({
+                path: 'transfer_from.branch',
+                select: 'name',
+            })
+            .populate({
+                path: 'transfer_from.product_stage',
+                select: 'name',
+            })
+            .populate({
+                path: 'transfer_from.products',
+                select: 'name',
+            })
+            .populate({
                 path: 'product_stage',
                 populate: {
                     path: 'product_id',
@@ -333,12 +370,9 @@ router.get('/search-leads', isAuth, async (req, res) => {
                 path: 'messages',
                 match: { read: false },
                 select: 'read message_body',
-            })
-            .skip((page - 1) * limit)
-            .limit(parseInt(limit))
-            .exec();
+            });
 
-        // Update file paths for each lead (assuming file_path needs formatting)
+        // Format file paths in leads
         leads.forEach(lead => {
             if (lead.files) {
                 lead.files.forEach(file => {
@@ -347,21 +381,16 @@ router.get('/search-leads', isAuth, async (req, res) => {
             }
         });
 
-        // Calculate total pages
-        const totalPages = Math.ceil(totalLeads / limit);
-
+        // Respond with leads and total count
         res.status(200).json({
             leads,
-            totalLeads,   // Send the total count of matching leads
-            totalPages,   // Send the total number of pages
-            currentPage: page,
+            total: totalLeads,
         });
     } catch (error) {
         console.error('Error searching leads:', error);
-        res.status(500).json({ message: 'Error searching leads' });
+        res.status(500).json({ message: 'Error searching leads', error: error.message });
     }
 });
-
 // Route to send WhatsApp message (optional, if you want to keep it separate)
 router.post('/send-sms', async (req, res) => {
     const { to, message } = req.body; // Get the recipient's phone number and the message from the request body
@@ -387,7 +416,6 @@ router.post('/send-sms', async (req, res) => {
         res.status(500).json({ message: 'Failed to send WhatsApp message', error: error.message });
     }
 });
-
 router.post('/create-lead', isAuth, hasPermission(['create_lead']), async (req, res) => {
     try {
         let {
@@ -432,8 +460,8 @@ router.post('/create-lead', isAuth, hasPermission(['create_lead']), async (req, 
 
         const phonebookEntry = await Phonebook.findOne({ number: clientPhone }).populate('comments');
         if (phonebookEntry) {
-            lead_type = '6719fda75035bf8bd708d03a';
-            source = '6719fda75035bf8bd708d03d';
+            lead_type = '673b190186706b218f6f327f';
+            source = '673b190186706b218f6f3282';
 
             if (phonebookEntry.status === "BLOCKED") {
                 req.body.is_blocklist_number = true;
@@ -478,15 +506,17 @@ router.post('/create-lead', isAuth, hasPermission(['create_lead']), async (req, 
         let allSelectedUserIds = [...initialUserIds, req.user._id.toString()];
 
         const ceoUsers = await User.find({ role: 'CEO' }).select('_id name');
-        const superadminUsers = await User.find({ role: 'superadmin' }).select('_id name');
+        const superadminUsers = await User.find({ role: 'Super Admin' }).select('_id name');
         const mdUsers = await User.find({ role: 'MD' }).select('_id name');
         const managerUsers = await User.find({
             $or: [
                 { role: 'Manager', branch: branchId, pipeline: pipelineId },
-                { role: 'Manager', branch: null, pipeline: pipelineId }
+                // { role: 'Manager', branch: null, pipeline: pipelineId }
             ]
         }).select('_id name');
-        const hodUsers = await User.find({ role: 'HOD', pipeline: pipelineId }).select('_id name');
+        const hodUsers = await User.find({ role: 'HOD', products: productId }).select('_id name');
+        const homUsers = await User.find({ role: 'HOM', products: productId }).select('_id name');
+
 
         allSelectedUserIds = [
             ...allSelectedUserIds,
@@ -494,6 +524,7 @@ router.post('/create-lead', isAuth, hasPermission(['create_lead']), async (req, 
             ...superadminUsers.map(user => user._id.toString()),
             ...mdUsers.map(user => user._id.toString()),
             ...hodUsers.map(user => user._id.toString()),
+            ...homUsers.map(user => user._id.toString()),
             ...managerUsers.map(user => user._id.toString())
         ];
 
@@ -520,7 +551,8 @@ router.post('/create-lead', isAuth, hasPermission(['create_lead']), async (req, 
             company_Name,
             created_by: req.user._id,
             is_blocklist_number: req.body.is_blocklist_number || false,
-            phonebookcomments: phonebookEntry ? phonebookEntry.comments.map(comment => comment._id) : []
+            phonebookcomments: phonebookEntry ? phonebookEntry.comments.map(comment => comment._id) : [],
+            thirdpartyname: thirdpartyname || null
         });
 
         const savedLead = await newLead.save();
@@ -545,7 +577,7 @@ router.post('/create-lead', isAuth, hasPermission(['create_lead']), async (req, 
 
         const activityLog = new ActivityLog({
             lead_id: savedLead._id,
-            log_type: 'Lead Created',
+            log_type: 'Create Lead',
             remark: `Lead created by ${req.user.name || req.user.email} for client ${client.name || client.phone}`,
             user_id: req.user._id,
             created_at: new Date()
@@ -560,11 +592,6 @@ router.post('/create-lead', isAuth, hasPermission(['create_lead']), async (req, 
         return res.status(500).json({ message: 'Error creating lead', error: error.message });
     }
 });
-
-
-
-
-
 router.post('/create-lead-for-phone-book', isAuth, hasPermission(['create_lead']), async (req, res) => {
     try {
         let {
@@ -727,9 +754,6 @@ router.post('/create-lead-for-phone-book', isAuth, hasPermission(['create_lead']
         return res.status(500).json({ message: 'Error creating lead', error: error.message });
     }
 });
-
-
-
 // Helper function to validate and convert strings to ObjectIds
 const convertToObjectId = id => {
     if (id && mongoose.isValidObjectId(id)) {
@@ -738,45 +762,97 @@ const convertToObjectId = id => {
         return null;
     }
 };
-
 // New route to get leads based on products and filter by unassigned Sales users 
-router.get('/unassigned-leads/:productId', isAuth ,hasPermission(['unassigned_lead']), async (req, res) => {
+router.get('/unassigned-leads/:productId', isAuth, hasPermission(['unassigned_lead']), async (req, res) => {
     try {
         const { productId } = req.params; // Extract productId from route params
-
+        const UserId = req.user._id;
         // Validate productId
         const productObjectId = convertToObjectId(productId);
         if (!productObjectId) {
             return res.status(400).json({ message: 'Invalid product ID' });
         }
 
-        // Fetch all leads with the specific product and filter unassigned Sales
-        const unassignedLeads = await Lead.find({ products: productObjectId })
-            .populate('pipeline_id','name')  // Populate pipeline name
-            .populate('product_stage', 'name')  // Populate product stage
-            .populate('lead_type','name')  // Populate lead type
-            .populate('source', 'name')  // Populate source
-            .populate('products','name')  // Populate products
-            .populate('branch')  // Populate branch
-            .populate('client', 'name')  // Populate client
-            .populate('created_by', 'name email')  // Populate the creator's name and email
+        // Fetch all leads with the specific product and filter unassigned Sales and Team Leaders
+        const unassignedLeads = await Lead.find({ products: productObjectId, is_reject: false, selected_users: UserId })
+            .populate('pipeline_id', 'name') // Populate pipeline name
+            .populate('product_stage', 'name') // Populate product stage
+            .populate('lead_type', 'name') // Populate lead type
+            .populate('source', 'name') // Populate source
+            .populate('products', 'name') // Populate products
+            .populate('branch') // Populate branch
+            .populate('client', 'name phone') // Populate client
+            .populate('created_by', 'name email') // Populate the creator's name and email
             .populate({
                 path: 'selected_users',
                 select: 'name role',
                 model: 'User',
             });
 
-        // Filter leads where none of the selected users have the role "Sales"
-        const leadsWithoutSales = unassignedLeads.filter(lead => {
-            const salesUsers = lead.selected_users.filter(user => user.role === 'Sales');
-            return salesUsers.length === 0;  // Only return leads with no "Sales" users
+        // Filter leads where both "Sales" and "Team Leader" roles are not present in selected_users
+        const leadsWithoutSalesOrTeamLeaders = unassignedLeads.filter(lead => {
+            const hasSales = lead.selected_users.some(user => user.role === 'Sales');
+            const hasTeamLeader = lead.selected_users.some(user => user.role === 'Team Leader');
+            
+            // Return lead only if neither Sales nor Team Leader is present
+            return !hasSales && !hasTeamLeader;
         });
 
-        if (leadsWithoutSales.length === 0) {
+        if (leadsWithoutSalesOrTeamLeaders.length === 0) {
             return res.status(404).json({ message: 'No unassigned leads found for the selected product' });
         }
 
-        res.status(200).json({ message: 'Unassigned leads fetched successfully', leads: leadsWithoutSales });
+        res.status(200).json({
+            message: 'Unassigned leads fetched successfully',
+            leads: leadsWithoutSalesOrTeamLeaders
+        });
+    } catch (error) {
+        console.error('Error fetching unassigned leads:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+router.get('/unassigned-leads-for-team-leadser/:productId', isAuth, hasPermission(['unassigned_lead']), async (req, res) => {
+    try {
+        const { productId } = req.params; // Extract productId from route params
+        const UserId = req.user._id;
+        // Validate productId
+        const productObjectId = convertToObjectId(productId);
+        if (!productObjectId) {
+            return res.status(400).json({ message: 'Invalid product ID' });
+        }
+
+        // Fetch all leads with the specific product and filter unassigned Sales and Team Leaders
+        const unassignedLeads = await Lead.find({ products: productObjectId, is_reject: false, selected_users: UserId, })
+            .populate('pipeline_id', 'name') // Populate pipeline name
+            .populate('product_stage', 'name') // Populate product stage
+            .populate('lead_type', 'name') // Populate lead type
+            .populate('source', 'name') // Populate source
+            .populate('products', 'name') // Populate products
+            .populate('branch') // Populate branch
+            .populate('client', 'name phone') // Populate client
+            .populate('created_by', 'name email') // Populate the creator's name and email
+            .populate({
+                path: 'selected_users',
+                select: 'name role',
+                model: 'User',
+            });
+
+        // Filter leads where none of the selected users have the roles "Sales" or "Team Leader"
+        const leadsWithoutSalesOrTeamLeaders = unassignedLeads.filter(lead => {
+            const relevantUsers = lead.selected_users.filter(
+                user => user.role === 'Sales'
+            );
+            return relevantUsers.length === 0; // Only return leads with no "Sales" or "Team Leader" users
+        });
+
+        if (leadsWithoutSalesOrTeamLeaders.length === 0) {
+            return res.status(404).json({ message: 'No unassigned leads found for the selected product' });
+        }
+
+        res.status(200).json({
+            message: 'Unassigned leads fetched successfully',
+            leads: leadsWithoutSalesOrTeamLeaders
+        });
     } catch (error) {
         console.error('Error fetching unassigned leads:', error);
         res.status(500).json({ message: 'Server error' });
@@ -814,11 +890,11 @@ router.get('/unassigned-leads/:productId', isAuth ,hasPermission(['unassigned_le
 //         res.status(500).json({ message: 'Server error' });
 //     }
 // });
-router.put('/edit-labels/:leadId', isAuth, hasPermission(['lead_labels']),async (req, res) => {
+router.put('/edit-labels/:leadId', isAuth, hasPermission(['lead_labels']), async (req, res) => {
     try {
         const { leadId } = req.params;
         const { labels } = req.body; // Expecting an array of label IDs or an empty array
- 
+
         // Validate leadId and convert to ObjectId
         const leadObjectId = convertToObjectId(leadId);
         if (!leadObjectId) {
@@ -848,48 +924,21 @@ router.put('/edit-labels/:leadId', isAuth, hasPermission(['lead_labels']),async 
         res.status(500).json({ message: 'Server error' });
     }
 });
- 
-// Route to mark a lead as rejected (set is_reject to true)
-router.put('/reject-lead/:leadId', isAuth, hasPermission(['reject_lead']), async (req, res) => {
-    try {
-        const { leadId } = req.params; 
-        const { reject_reason } = req.body;
-
-        // Validate leadId and convert to ObjectId
-        const leadObjectId = convertToObjectId(leadId);
-        if (!leadObjectId) {
-            return res.status(400).json({ message: 'Invalid lead ID' });
-        }
-
-        // Ensure reject_reason is provided
-        if (!reject_reason || typeof reject_reason !== 'string') {
-            return res.status(400).json({ message: 'Reject reason is required' });
-        }
-
-        // Find the lead and update is_reject to true and add reject_reason
-        const updatedLead = await Lead.findByIdAndUpdate(
-            leadObjectId,
-            { is_reject: true, reject_reason },
-            { new: true }
-        );
-
-        if (!updatedLead) {
-            return res.status(404).json({ message: 'Lead not found' });
-        }
-
-        res.status(200).json({ message: 'Lead marked as rejected', lead: updatedLead });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
 // Route to get all leads that are not rejected (is_reject: false)
-router.get('/rejected-leads', isAuth, async (req, res) => { 
+router.get('/rejected-leads', isAuth, async (req, res) => {
     try {
-        const userId = req.user._id;  
+        const userId = req.user._id;
+        const userPipeline = req.user.pipeline || []; // Ensure pipeline is an array even if undefined
 
-        const leads = await Lead.find({ is_reject: true, selected_users: userId })
+        // Build the query condition
+        const query = { is_reject: true, selected_users: userId };
+
+        // If userPipeline is not empty, add it to the query condition
+        if (userPipeline.length > 0) {
+            query.pipeline_id = { $in: userPipeline }; // Match pipelines in the user's pipeline array
+        }
+
+        const leads = await Lead.find(query)
             .populate({
                 path: 'pipeline_id',
                 select: 'name'
@@ -900,27 +949,28 @@ router.get('/rejected-leads', isAuth, async (req, res) => {
             })
             .populate({
                 path: 'products',
-                select: 'name' 
+                select: 'name'
             })
             .populate({
                 path: 'client',
                 select: 'name phone'
-            }) 
+            })
             .populate({
-                path: 'branch', 
+                path: 'branch',
                 select: 'name'
             })
-            .select('_id pipeline_id product product_stage client branch reject_reason company_Name'); // Ensure company_Name is selected
+            .select('_id pipeline_id products product_stage client branch reject_reason company_Name'); // Ensure company_Name is selected
 
         if (leads.length === 0) {
             return res.status(404).json({ message: 'No rejected leads found' });
         }
 
         // Map through leads to create an array of detailed lead objects
-        const leadDetails = leads.map(lead => ({ 
+        const leadDetails = leads.map(lead => ({
             id: lead._id,
             pipelineName: lead.pipeline_id?.name || null,
             productStage: lead.product_stage?.name || null,
+            productId: lead.products._id || null,
             productName: lead.products?.name || null,
             clientName: lead.client?.name || null,
             branchName: lead.branch?.name || null,
@@ -931,11 +981,10 @@ router.get('/rejected-leads', isAuth, async (req, res) => {
 
         res.status(200).json({ leadDetails });
     } catch (error) {
-        console.error(error);
+        console.error('Error fetching rejected leads:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
-
 // router.post('/check-client-phone', isAuth, async (req, res) => {
 //     try {
 //         const { clientPhone } = req.body;
@@ -1111,8 +1160,6 @@ router.post('/check-client-phone', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
- 
-
 router.post('/check-client-phone-search', isAuth, async (req, res) => {
     try {
         const { clientPhone } = req.body;
@@ -1208,60 +1255,207 @@ router.post('/check-client-phone-search', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-
-router.put('/add-user-to-lead/:leadId', isAuth, hasPermission(['add_user_lead']),async (req, res) => {
+router.put('/reject-lead/:leadId', isAuth, hasPermission(['reject_lead']), async (req, res) => {
     try {
-        const { userId } = req.body;
-        const leadId = req.params.leadId;
+        const { leadId } = req.params;
+        const { reject_reason } = req.body;
 
-        const lead = await Lead.findById(leadId);
+        // Validate leadId and convert to ObjectId
+        const leadObjectId = convertToObjectId(leadId);
+        if (!leadObjectId) {
+            return res.status(400).json({ message: 'Invalid lead ID' });
+        }
+
+        // Ensure reject_reason is provided
+        if (!reject_reason || typeof reject_reason !== 'string') {
+            return res.status(400).json({ message: 'Reject reason is required' });
+        }
+
+        // Find the lead and update is_reject to true and add reject_reason
+        const lead = await Lead.findById(leadObjectId).populate('client selected_users');
         if (!lead) {
             return res.status(404).json({ message: 'Lead not found' });
         }
 
-        // Check if the user already exists in selected_users
-        if (lead.selected_users.includes(userId)) {
-            return res.status(400).json({ message: 'User already added to selected users' });
-        }
+        // Update the lead status
+        lead.is_reject = true;
+        lead.reject_reason = reject_reason;
+        const updatedLead = await lead.save();
 
-        // Fetch the user information to get the name
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Add user to selected_users
-        lead.selected_users.push(userId);
-        await lead.save();
-
-        // Log activity for adding a user
+        // Log activity for rejecting a lead
         const activityLog = new ActivityLog({
             user_id: req.user._id,
-            log_type: 'Add User',
-            remark: `User ${user.name} added to selected users`, // Store user name in remark
+            log_type: 'Reject Lead',
+            remark: `Lead rejected with reason: ${reject_reason}`,
             created_at: Date.now(),
-            updated_at: Date.now()
+            updated_at: Date.now(),
         });
         await activityLog.save();
 
         // Push activity log to lead
-        lead.activity_logs.push(activityLog._id);
-        await lead.save();
+        updatedLead.activity_logs.push(activityLog._id);
+        await updatedLead.save();
 
-        res.status(200).json({ message: 'User added to selected users', lead });
+        // Notification and Socket.IO logic
+        const io = getIO(); // Initialize socket IO
+        const notifications = [];
+
+        // Get the list of selected users (users who need to be notified)
+        const usersToNotify = lead.selected_users.filter(user =>
+            !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role)
+        );
+
+        // Fetch the sender's details (name and image)
+        const sender = await User.findById(req.user._id);
+
+        // Send notification to each selected user
+        for (const notifiedUser of usersToNotify) {
+            // Create and save the notification using the polymorphic reference
+            const newNotification = new Notification({
+                receiver: notifiedUser._id,
+                sender: req.user._id, // Save the sender's user ID
+                message: `Lead for ${lead.client.name} has been rejected: ${reject_reason}`,
+                reference_id: updatedLead._id,
+                notification_type: 'Lead', // Polymorphic reference to Lead
+                created_at: Date.now(),
+            });
+
+            const savedNotification = await newNotification.save();
+            notifications.push(savedNotification);
+
+            // Emit notification to the correct user room via WebSockets
+            io.to(`user_${notifiedUser._id}`).emit('notification', {
+
+                message: newNotification.message,
+                referenceId: savedNotification.reference_id,
+                notificationType: savedNotification.notification_type,
+                notificationId: savedNotification._id,
+                sender: {
+                    name: sender.name, // Sender's name
+                    image: sender.image, // Sender's image
+                },
+                createdAt: savedNotification.created_at,
+            });
+        }
+
+        res.status(200).json({
+            message: 'Lead marked as rejected, activity log saved, and notifications sent',
+            lead: updatedLead,
+            activity_log: activityLog,
+            notifications,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 });
+router.put('/restore-reject-lead/:leadId', isAuth, async (req, res) => {
+    try {
+        const { leadId } = req.params;
+        const { product_stage } = req.body;
 
+        // Validate leadId and convert to ObjectId
+        const leadObjectId = convertToObjectId(leadId);
+        if (!leadObjectId) {
+            return res.status(400).json({ message: 'Invalid lead ID' });
+        }
+
+        // Ensure product_stage is provided
+        if (!product_stage) {
+            return res.status(400).json({ message: 'Product stage is required' });
+        }
+
+        // Find the lead and ensure it exists
+        const lead = await Lead.findById(leadObjectId).populate('client selected_users');
+        if (!lead) {
+            return res.status(404).json({ message: 'Lead not found' });
+        }
+
+        // // Check if the lead is already not rejected
+        // if (!lead.is_reject) {
+        //     return res.status(400).json({ message: 'Lead is not marked as rejected' });
+        // }
+
+        // Update the lead to restore it
+        lead.is_reject = false;
+        lead.reject_reason = ''; // Reset reject reason to an empty string
+        lead.product_stage = product_stage; // Update product_stage
+        const updatedLead = await lead.save();
+
+        // Log activity for restoring the lead
+        const activityLog = new ActivityLog({
+            user_id: req.user._id,
+            log_type: 'Restore Lead',
+            remark: `Lead restored from rejected status with updated product stage: ${product_stage}`,
+            created_at: Date.now(),
+            updated_at: Date.now(),
+        });
+        await activityLog.save();
+
+        // Push activity log to lead
+        updatedLead.activity_logs.push(activityLog._id);
+        await updatedLead.save();
+
+        // Notification and Socket.IO logic
+        const io = getIO(); // Initialize socket IO
+        const notifications = [];
+
+        // Get the list of selected users (users who need to be notified)
+        const usersToNotify = lead.selected_users.filter(user =>
+            !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role)
+        );
+
+        // Fetch the sender's details (name and image)
+        const sender = await User.findById(req.user._id);
+
+        // Send notification to each selected user
+        for (const notifiedUser of usersToNotify) {
+            // Create and save the notification using the polymorphic reference
+            const newNotification = new Notification({
+                receiver: notifiedUser._id,
+                sender: req.user._id, // Save the sender's user ID
+                message: `Lead for ${lead.client.name} has been restored from rejection with updated product stage.`,
+                reference_id: updatedLead._id,
+                notification_type: 'Lead', // Polymorphic reference to Lead
+                created_at: Date.now(),
+            });
+
+            const savedNotification = await newNotification.save();
+            notifications.push(savedNotification);
+
+            // Emit notification to the correct user room via WebSockets
+            io.to(`user_${notifiedUser._id}`).emit('notification', {
+                message: newNotification.message,
+                referenceId: savedNotification.reference_id,
+                notificationType: savedNotification.notification_type,
+                notificationId: savedNotification._id,
+                sender: {
+                    name: sender.name, // Sender's name
+                    image: sender.image, // Sender's image
+                },
+                createdAt: savedNotification.created_at,
+            });
+        }
+
+        res.status(200).json({
+            message: 'Lead restored from rejected status, product stage updated, activity log saved, and notifications sent',
+            lead: updatedLead,
+            activity_log: activityLog,
+            notifications,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 // Remove user from selected users in a lead
-router.put('/remove-user-from-lead/:leadId', isAuth,hasPermission(['remove_user_lead']), async (req, res) => {
+router.put('/remove-user-from-lead/:leadId', isAuth, hasPermission(['remove_user_lead']), async (req, res) => {
     try {
         const { userId } = req.body;
         const leadId = req.params.leadId;
 
-        const lead = await Lead.findById(leadId);
+        const lead = await Lead.findById(leadId)
+            .populate('client selected_users');
         if (!lead) {
             return res.status(404).json({ message: 'Lead not found' });
         }
@@ -1270,7 +1464,7 @@ router.put('/remove-user-from-lead/:leadId', isAuth,hasPermission(['remove_user_
         lead.selected_users = lead.selected_users.filter(user => user);
 
         // Check if the user exists in selected_users
-        if (!lead.selected_users.some(user => user.toString() === userId)) {
+        if (!lead.selected_users.some(user => user._id.toString() === userId)) {
             return res.status(400).json({ message: 'User not found in selected users' });
         }
 
@@ -1281,8 +1475,8 @@ router.put('/remove-user-from-lead/:leadId', isAuth,hasPermission(['remove_user_
         }
 
         // Remove user from selected_users
-        lead.selected_users = lead.selected_users.filter(user => user.toString() !== userId);
-        await lead.save();
+        lead.selected_users = lead.selected_users.filter(user => user._id.toString() !== userId);
+        const updatedLead = await lead.save();
 
         // Log activity for removing a user
         const activityLog = new ActivityLog({
@@ -1295,155 +1489,108 @@ router.put('/remove-user-from-lead/:leadId', isAuth,hasPermission(['remove_user_
         await activityLog.save();
 
         // Push activity log to lead
-        lead.activity_logs.push(activityLog._id);
-        await lead.save();
+        updatedLead.activity_logs.push(activityLog._id);
+        await updatedLead.save();
 
-        res.status(200).json({ message: 'User removed from selected users', lead });
+        // Notification and Socket.IO logic
+        const io = getIO(); // Initialize socket IO
+        const notifications = [];
+
+        // Get the list of selected users (users who need to be notified)
+        const usersToNotify = lead.selected_users.filter(user =>
+            !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role)
+        );
+
+        // Fetch the sender's details (name and image)
+        const sender = await User.findById(req.user._id);
+
+        // Send notification to each selected user
+        for (const notifiedUser of usersToNotify) {
+
+            // Create and save the notification using the polymorphic reference
+            const newNotification = new Notification({
+                receiver: notifiedUser._id,
+                sender: req.user._id, // Save the sender's user ID
+                message: `User ${user.name} was removed from the lead ${lead.client.name}`,
+                reference_id: updatedLead._id,
+                notification_type: 'Lead', // Polymorphic reference to Lead
+                created_at: Date.now(),
+            });
+
+            const savedNotification = await newNotification.save();
+            notifications.push(savedNotification);
+
+            // Emit notification to the correct user room via WebSockets
+            io.to(`user_${notifiedUser._id}`).emit('notification', {
+                message: newNotification.message,
+                referenceId: savedNotification.reference_id,
+                notificationType: savedNotification.notification_type,
+                notificationId: savedNotification._id,
+                sender: {
+                    name: sender.name, // Sender's name
+                    image: sender.image, // Sender's image
+                },
+                createdAt: savedNotification.created_at,
+            });
+        }
+
+        res.status(200).json({
+            message: 'User removed from selected users successfully, notifications sent',
+            lead: updatedLead,
+            activity_log: activityLog,
+            notifications,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-router.post('/convert-lead-to-contract/:leadId', isAuth,hasPermission(['convert_lead']), async (req, res) => {
+router.post('/convert-lead-to-contract/:leadId', isAuth, hasPermission(['convert_lead']), async (req, res) => {
     try {
         const { leadId } = req.params;
+        const commissionFields = req.body;
 
-        const {
-            finance_amount,
-            bank_commission,
-            customer_commission,
-            with_vat_commission,
-            without_vat_commission,
-            hodsale,
-            hodsalecommission,
-            salemanager,
-            salemanagercommission,
-            coordinator,
-            coordinator_commission,
-            team_leader,
-            team_leader_commission,
-            salesagent,
-            salesagent_commission,
-            team_leader_one,
-            team_leader_one_commission,
-            sale_agent_one,
-            sale_agent_one_commission,
-            salemanagerref,
-            salemanagerrefcommission,
-            agentref,
-            agent_commission,
-            ts_hod,
-            ts_hod_commision,
-            ts_team_leader,
-            ts_team_leader_commission,
-            tsagent, 
-            tsagent_commission,
-            marketingmanager,
-            marketingmanagercommission,
-            marketingagent,
-            marketingagentcommission,
-            other_name,
-            other_name_commission,
-            broker_name,
-            broker_name_commission,
-            alondra,
-            a_commission,
-            marketingone,
-            marketingonecommission,
-            marketingtwo,
-            marketingtwocommission,
-            marketingthree,
-            marketingthreecommission,
-            marketingfour,
-            marketingfourcommission,
-            developerone,
-            developeronecommission,
-            developertwo,
-            developertwocommission,
-            developerthree,
-            developerthreecommission,
-            developerfour,
-            developerfourcommission
-        } = req.body;
+        // Fetch the default contract stage with order 0
+        const contractStage = await contractStageModel.findOne({ order: 0, delStatus: false });
+        if (!contractStage) {
+            return res.status(404).json({ message: 'Default contract stage not found' });
+        }
 
         // Find the lead
         const lead = await Lead.findById(leadId)
-            .populate('client')  // Populate client data
+            .populate('client') // Populate client data
             .populate('products'); // Populate product data
 
         if (!lead) {
             return res.status(404).json({ message: 'Lead not found' });
         }
 
-        // Create a new ServiceCommission based on the request body
+        // Helper function to map dynamic commission data
+        const mapDynamicCommissionData = (fields) => {
+            const commissionData = {};
+            Object.keys(fields).forEach((key) => {
+                if (key.includes('commission_percentage') || key.includes('commission_amount') || key.includes('finance_amount')) {
+                    commissionData[key] = fields[key];
+                } else if (fields[key] && key.endsWith('_id')) {
+                    commissionData[key.replace('_id', '')] = convertToObjectId(fields[key]);
+                }
+            });
+            return commissionData;
+        };
+
+        // Map the service commission data dynamically
+        const commissionData = mapDynamicCommissionData(commissionFields);
+
+        // Create a new ServiceCommission
         const newServiceCommission = new serviceCommissionModel({
-            contract_id: null,  // We'll set this after creating the contract
-            finance_amount,
-            bank_commission,
-            customer_commission,
-            with_vat_commission,
-            without_vat_commission,
-            hodsale: convertToObjectId(hodsale),
-            hodsalecommission,
-            salemanager: convertToObjectId(salemanager),
-            salemanagercommission,
-            coordinator: convertToObjectId(coordinator),
-            coordinator_commission,
-            team_leader: convertToObjectId(team_leader),
-            team_leader_commission,
-            salesagent: convertToObjectId(salesagent),
-            salesagent_commission,
-            team_leader_one: convertToObjectId(team_leader_one),
-            team_leader_one_commission,
-            sale_agent_one: convertToObjectId(sale_agent_one),
-            sale_agent_one_commission,
-            salemanagerref: convertToObjectId(salemanagerref),
-            salemanagerrefcommission,
-            agentref: convertToObjectId(agentref),
-            agent_commission,
-            ts_hod: convertToObjectId(ts_hod),
-            ts_hod_commision,
-            ts_team_leader: convertToObjectId(ts_team_leader),
-            ts_team_leader_commission,
-            tsagent: convertToObjectId(tsagent),
-            tsagent_commission,
-            marketingmanager: convertToObjectId(marketingmanager),
-            marketingmanagercommission,
-            marketingagent: convertToObjectId(marketingagent),
-            marketingagentcommission,
-            other_name: convertToObjectId(other_name),
-            other_name_commission,
-            broker_name,
-            broker_name_commission,
-            alondra,
-            a_commission,
-            ///////
-            marketingone:convertToObjectId(marketingone),
-            marketingonecommission,
-            marketingtwo:convertToObjectId(marketingtwo),
-            marketingtwocommission,
-            marketingthree:convertToObjectId(marketingthree),
-            marketingthreecommission,
-            marketingfour:convertToObjectId(marketingfour),
-            marketingfourcommission,
-            developerone:convertToObjectId(developerone),
-            developeronecommission,
-            developertwo:convertToObjectId(developertwo),
-            developertwocommission,
-            developerthree:convertToObjectId(developerthree),
-            developerthreecommission,
-            developerfour:convertToObjectId(developerfour),
-            developerfourcommission
+            contract_id: null, // Set this after creating the contract
+            ...commissionData,
+            created_by: req.user._id
         });
 
         // Save the ServiceCommission to the database
         await newServiceCommission.save();
-
-        // Handle products based on type
-        const productIds = Array.isArray(lead.products)
-            ? lead.products.map(product => product._id)
-            : [lead.products];  // Convert to array if it's a single ObjectId
 
         // Create the new contract
         const newContract = new Contract({
@@ -1451,9 +1598,10 @@ router.post('/convert-lead-to-contract/:leadId', isAuth,hasPermission(['convert_
             lead_type: lead.lead_type,
             pipeline_id: lead.pipeline_id,
             source_id: lead.source,
-            products: productIds,  // Ensure only product ObjectIds
-            contract_stage: '67220719d0fd0be64dc09a74',
+            products: lead.products, // Ensure only product ObjectIds
+            contract_stage: contractStage._id,
             status: 'Active',
+            branch: lead.branch,
             is_transfer: false,
             labels: lead.labels,
             created_by: req.user._id,
@@ -1466,32 +1614,82 @@ router.post('/convert-lead-to-contract/:leadId', isAuth,hasPermission(['convert_
         // Save the new contract to the database
         await newContract.save();
 
-        // Update the ServiceCommission with the new contract ID
+        // Log contract activity
+        const contractActivityLog = new ContractActivityLog({
+            user_id: req.user._id,
+            contract_id: newContract._id,
+            log_type: 'Contract Created',
+            remark: `Contract created for client ${lead.client.name}`,
+        });
+
+        await contractActivityLog.save();
+
+        // Update the contract's activity logs
+        newContract.contract_activity_logs.push(contractActivityLog._id);
+        await newContract.save();
+
+        // Update ServiceCommission with the new contract ID
         newServiceCommission.contract_id = newContract._id;
         await newServiceCommission.save();
 
-        // After successfully creating the contract, mark the lead as converted
+        // Mark the lead as converted
         await Lead.findByIdAndUpdate(leadId, { is_converted: true });
 
-        // Create an activity log entry
+        // Create activity log for the lead
         const activityLog = new ActivityLog({
             user_id: req.user._id,
             log_type: 'Lead Conversion',
-            remark: `Lead converted to contract. Contract ID: ${newContract._id}. Service Commission ID: ${newServiceCommission._id}.`,
-            created_at: Date.now(),
-            updated_at: Date.now()
+            remark: `Lead converted to contract. Contract created for client ${lead.client.name}`,
         });
+
         await activityLog.save();
 
-        // Push the activity log ID to the lead
-        const updatedLead = await Lead.findById(leadId);
-        updatedLead.activity_logs.push(activityLog._id);
-        await updatedLead.save();
+        lead.activity_logs = lead.activity_logs || [];
+        lead.activity_logs.push(activityLog._id);
+        await lead.save();
 
-        res.status(201).json({ message: 'Contract created and lead converted successfully', contract: newContract });
+        // Notify users via Socket.IO
+        const io = getIO();
+        const notifications = [];
+        const usersToNotify = lead.selected_users.filter(user =>
+            !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role)
+        );
+        const sender = await User.findById(req.user._id);
+
+        for (const user of usersToNotify) {
+            const newNotification = new Notification({
+                receiver: user._id,
+                sender: req.user._id,
+                message: `Contract for client ${lead.client.name} created`,
+                reference_id: lead._id,
+                notification_type: 'Lead',
+            });
+
+            const savedNotification = await newNotification.save();
+            notifications.push(savedNotification);
+
+            io.to(`user_${user._id}`).emit('notification', {
+                message: savedNotification.message,
+                referenceId: savedNotification.reference_id,
+                notificationType: savedNotification.notification_type,
+                notificationId: savedNotification._id,
+                sender: {
+                    name: sender.name,
+                    image: sender.image,
+                },
+                createdAt: savedNotification.created_at,
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Lead successfully converted to contract and notifications sent.',
+            contract: newContract,
+            notifications,
+        });
+
     } catch (error) {
         console.error('Error converting lead to contract:', error);
-        res.status(500).json({ message: 'Failed to convert lead to contract' });
+        return res.status(500).json({ message: 'Server error' });
     }
 });
 // Set storage engine
@@ -1512,7 +1710,6 @@ const storage = multer.diskStorage({
         cb(null, `${randomHexName}${ext}`); // Save with random hex filename and original extension
     }
 });
-
 // Allow multiple file uploads 
 const upload = multer({ storage }).array('files', 10); // Max 10 files at a time (you can adjust this)
 // Route to handle multiple file uploads and link to the lead
@@ -1536,6 +1733,7 @@ router.post('/upload-files/:leadId', isAuth, hasPermission(['file_upload']), (re
             // Array to store new file documents
             const fileDocs = [];
             const activityLogs = [];
+            const contractActivityLogs = [];
 
             for (const file of req.files) {
                 // Create a new file document with original name and path as the random filename
@@ -1543,7 +1741,7 @@ router.post('/upload-files/:leadId', isAuth, hasPermission(['file_upload']), (re
                     file_name: file.originalname, // Save the original filename here
                     file_path: `/lead_files/${file.filename}`, // Save the hex filename in the path
                     created_at: new Date(),
-                    updated_at: new Date()
+                    updated_at: new Date(),
                 });
 
                 // Save the file document
@@ -1553,29 +1751,59 @@ router.post('/upload-files/:leadId', isAuth, hasPermission(['file_upload']), (re
                 // Push the file reference to the lead's files array
                 lead.files.push(newFile._id);
 
-                // Create an activity log for each file upload
-                const activityLog = new ActivityLog({
-                    log_type: 'File Uploaded',
-                    remark: `File ${file.originalname} was uploaded by ${req.user.name || req.user.email}`,
-                    user_id: req.user._id,
-                    created_at: new Date()
-                });
+                if (lead.is_converted) {
+                    // If lead is converted, find the related contract
+                    const contract = await Contract.findOne({ lead_id: leadId });
+                    if (!contract) {
+                        return res.status(404).json({ message: 'Associated contract not found' });
+                    }
 
-                // Save the activity log
-                await activityLog.save();
-                activityLogs.push(activityLog);
+                    // Create a contract activity log for each file upload
+                    const contractActivityLog = new ContractActivityLog({
+                        user_id: req.user._id,
+                        contract_id: contract._id,
+                        log_type: 'File Uploaded',
+                        remark: `File ${file.originalname} was uploaded by ${req.user.name || req.user.email}`,
+                        created_at: new Date(),
+                    });
 
-                // Push the activity log ID into the lead's activity_logs array
-                lead.activity_logs.push(activityLog._id);
+                    // Save the contract activity log
+                    await contractActivityLog.save();
+                    contractActivityLogs.push(contractActivityLog);
+
+                    // Push the contract activity log ID into the contract's contract_activity_logs array
+                    contract.contract_activity_logs.push(contractActivityLog._id);
+
+                    // Save the updated contract
+                    await contract.save();
+                } else {
+                    // Create a standard activity log for the lead
+                    const activityLog = new ActivityLog({
+                        log_type: 'File Uploaded',
+                        remark: `File ${file.originalname} was uploaded by ${req.user.name || req.user.email}`,
+                        user_id: req.user._id,
+                        created_at: new Date(),
+                    });
+
+                    // Save the activity log
+                    await activityLog.save();
+                    activityLogs.push(activityLog);
+
+                    // Push the activity log ID into the lead's activity_logs array
+                    lead.activity_logs.push(activityLog._id);
+                }
             }
 
             // Save the lead document with updated files and activity logs
             await lead.save();
 
             res.status(201).json({
-                message: 'Files uploaded, associated with lead, and activity logged successfully',
+                message: lead.is_converted
+                    ? 'Files uploaded, associated with lead, and contract activity logged successfully'
+                    : 'Files uploaded, associated with lead, and activity logged successfully',
                 files: fileDocs,
-                activity_logs: activityLogs
+                activity_logs: activityLogs,
+                contract_activity_logs: contractActivityLogs,
             });
         } catch (error) {
             console.error('Error uploading files:', error);
@@ -1583,9 +1811,7 @@ router.post('/upload-files/:leadId', isAuth, hasPermission(['file_upload']), (re
         }
     });
 });
-
 // Delete file endpoint
-
 router.delete('/delete-file/:leadId/:fileId', isAuth, async (req, res) => {
     try {
         const { leadId, fileId } = req.params;
@@ -1602,7 +1828,7 @@ router.delete('/delete-file/:leadId/:fileId', isAuth, async (req, res) => {
 
         // Remove file from lead's files array
         lead.files = lead.files.filter(id => id.toString() !== fileId);
-        
+
         // Log the file deletion in activity logs
         const activityLog = new ActivityLog({
             log_type: 'File Deleted',
@@ -1611,7 +1837,7 @@ router.delete('/delete-file/:leadId/:fileId', isAuth, async (req, res) => {
             created_at: new Date()
         });
         await activityLog.save();
-        
+
         lead.activity_logs.push(activityLog._id);
 
         // Delete the file document from the database
@@ -1619,7 +1845,7 @@ router.delete('/delete-file/:leadId/:fileId', isAuth, async (req, res) => {
 
         // Construct the file path for deletion
         const filePath = path.join(__dirname, `../${file.file_path}`);
-        
+
         // Check if the file exists before attempting to delete
         if (fs.existsSync(filePath)) {
             fs.unlink(filePath, (err) => {
@@ -1639,7 +1865,6 @@ router.delete('/delete-file/:leadId/:fileId', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Error deleting file' });
     }
 });
-
 /// Add Discussion in the lead Model  
 router.post('/add-discussion/:leadId', isAuth, async (req, res) => {
     try {
@@ -1660,7 +1885,7 @@ router.post('/add-discussion/:leadId', isAuth, async (req, res) => {
         // Create a new discussion
         const newDiscussion = new leadDiscussionModel({
             created_by: req.user._id,
-            comment
+            comment,
         });
 
         // Save the new discussion
@@ -1670,40 +1895,67 @@ router.post('/add-discussion/:leadId', isAuth, async (req, res) => {
         lead.discussions.push(newDiscussion._id);
         await lead.save();
 
-        // Create an activity log
-        const activityLog = new ActivityLog({
+        if (lead.is_converted) {
+            // If the lead is converted, find the related contract
+            const contract = await Contract.findOne({ lead_id: leadId });
+            if (!contract) {
+                return res.status(404).json({ message: 'Associated contract not found' });
+            }
 
-            log_type: 'Discussion Added',
-            remark: `Discussion added by ${req.user.name || req.user.email}: "${comment}"`,
-            user_id: req.user._id,
-            created_at: new Date()
-        });
+            // Create a contract activity log
+            const contractActivityLog = new ContractActivityLog({
+                user_id: req.user._id,
+                contract_id: contract._id,
+                log_type: 'Discussion Added',
+                remark: `Discussion added by ${req.user.name || req.user.email}: "${comment}"`,
+                created_at: new Date(),
+            });
 
-        // Save the activity log
-        await activityLog.save();
+            // Save the contract activity log
+            await contractActivityLog.save();
 
-        // Push the activity log ID into the lead's activity_logs array
-        lead.activity_logs.push(activityLog._id);
-        await lead.save();
+            // Push the activity log into the contract's contract_activity_logs array
+            contract.contract_activity_logs.push(contractActivityLog._id);
+            await contract.save();
 
-        res.status(201).json({
-            message: 'Discussion added successfully',
-            discussion: newDiscussion,
-            activity_log: activityLog
-        });
+            return res.status(201).json({
+                message: 'Discussion added and contract activity log created successfully',
+                discussion: newDiscussion,
+                contract_activity_log: contractActivityLog,
+            });
+        } else {
+            // Create an activity log for the lead
+            const activityLog = new ActivityLog({
+                log_type: 'Discussion Added',
+                remark: `Discussion added by ${req.user.name || req.user.email}: "${comment}"`,
+                user_id: req.user._id,
+                created_at: new Date(),
+            });
+
+            // Save the activity log
+            await activityLog.save();
+
+            // Push the activity log ID into the lead's activity_logs array
+            lead.activity_logs.push(activityLog._id);
+            await lead.save();
+
+            return res.status(201).json({
+                message: 'Discussion added successfully',
+                discussion: newDiscussion,
+                activity_log: activityLog,
+            });
+        }
     } catch (error) {
         console.error('Error adding discussion:', error);
         res.status(500).json({ message: 'Error adding discussion' });
     }
 });
- 
 /// Transfer Lead 
 router.put('/transfer-lead/:id', isAuth, hasPermission(['transfer_lead']), async (req, res) => {
     try {
         const leadId = req.params.id;
         const { pipeline, branch, product_stage, products } = req.body;
 
-        // Ensure required fields are provided
         if (!pipeline || !branch || !product_stage || !products) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
@@ -1711,37 +1963,31 @@ router.put('/transfer-lead/:id', isAuth, hasPermission(['transfer_lead']), async
         const branchId = new mongoose.Types.ObjectId(String(branch));
         const productStageId = new mongoose.Types.ObjectId(String(product_stage));
         const pipelineId = new mongoose.Types.ObjectId(String(pipeline));
-        const productId = new mongoose.Types.ObjectId(String(products)); // Single ObjectId for products
+        const productId = new mongoose.Types.ObjectId(String(products));
 
-        // Check if the lead exists
         const lead = await Lead.findById(leadId);
         if (!lead) {
             return res.status(404).json({ message: 'Lead not found' });
         }
 
-        // Validate product_stage
         const validProductStage = await ProductStage.findById(productStageId);
         if (!validProductStage) {
             return res.status(400).json({ message: 'Invalid product stage' });
         }
 
-        // Check if the previous product is the same as the new product
         if (String(lead.products) === String(productId)) {
-            return res.status(403).json({ message: 'Cannot transfer the lead in the same product please change product' });
+            return res.status(403).json({ message: 'Cannot transfer the lead in the same product; please change product' });
         }
 
-        // Fetch names for old values
         const oldBranch = await Branch.findById(lead.branch).select('name');
         const oldPipeline = await Pipeline.findById(lead.pipeline_id).select('name');
         const oldProductStage = await ProductStage.findById(lead.product_stage).select('name');
         const oldProducts = lead.products;
 
-        // Fetch names for new values
         const newBranch = await Branch.findById(branchId).select('name');
         const newPipeline = await Pipeline.findById(pipelineId).select('name');
         const newProductStage = await ProductStage.findById(productStageId).select('name');
 
-        // Track changes
         let changes = [];
         if (String(lead.pipeline_id) !== String(pipelineId)) {
             changes.push(`Pipeline changed from ${oldPipeline.name} to ${newPipeline.name}`);
@@ -1758,34 +2004,45 @@ router.put('/transfer-lead/:id', isAuth, hasPermission(['transfer_lead']), async
             changes.push(`Product changed from ${oldProduct.name} to ${newProduct.name}`);
         }
 
-        // Update the products field
+        lead.transfer_from = {
+            pipeline: lead.pipeline_id,
+            branch: lead.branch,
+            product_stage: lead.product_stage,
+            products: lead.products,
+        };
+
         lead.products = productId;
 
-        // Find users based on roles and the same pipeline and branch
         const ceoUsers = await User.find({ role: 'CEO' }).select('_id name');
         const superadminUsers = await User.find({ role: 'superadmin' }).select('_id name');
         const mdUsers = await User.find({ role: 'MD' }).select('_id name');
-        const hodUsers = await User.find({ role: 'HOD', pipeline: pipelineId }).select('_id name');
+        const hodUsers = await User.find({ role: 'HOD', products: productId }).select('_id name');
+        const homUsers = await User.find({ role: 'HOM', products: productId }).select('_id name');
+
         const managerUsers = await User.find({
             pipeline: pipelineId,
             role: 'Manager',
-            branch: branchId, // Filter managers by branch
+            branch: branchId,
         }).select('_id name');
 
-        // Find the previous pipeline HOD user from the previous pipeline and branch
-        const previousPipelineId = lead.pipeline_id;
-        const previousBranchId = lead.branch;
-
-        const previousPipelineHodUser = await User.findOne({
+        const previousproduct = lead.products;
+        const previousproductHodUser = await User.findOne({ 
             role: 'HOD',
-            pipeline: previousPipelineId,
-            // branch: previousBranchId,
+            products: previousproduct, 
+        }).select('_id');
+        const previousproductHomUser = await User.findOne({ 
+            role: 'HOM',
+            products: previousproduct, 
+        }).select('_id'); 
+        const previousPipelinemanagerUser = await User.findOne({ 
+            role: 'Manager',
+            pipeline: previousPipelineId, 
         }).select('_id');
 
-        // Set `ref_user` to the previous HOD user if it exists
-        lead.ref_user = previousPipelineHodUser ? previousPipelineHodUser._id : null;
+        lead.ref_hod = previousproductHodUser ? previousproductHodUser._id : null;
+        lead.ref_hom = previousproductHomUser ? previousproductHomUser._id : null;
+        lead.ref_manager = previousPipelinemanagerUser ? previousPipelinemanagerUser._id : null;
 
-        // Combine all selected user IDs
         const newSelectedUserIds = [
             req.user._id.toString(),
             lead.created_by.toString(),
@@ -1793,22 +2050,19 @@ router.put('/transfer-lead/:id', isAuth, hasPermission(['transfer_lead']), async
             ...superadminUsers.map(user => user._id.toString()),
             ...mdUsers.map(user => user._id.toString()),
             ...hodUsers.map(user => user._id.toString()),
+            ...homUsers.map(user => user._id.toString()),
             ...managerUsers.map(user => user._id.toString()),
         ];
 
-        // Merge selected users, ensuring there are no duplicates
         lead.selected_users = getUniqueUserIds(newSelectedUserIds);
 
-        // Update the pipeline, branch, product_stage, and mark lead as transferred
         lead.pipeline_id = pipelineId;
         lead.branch = branchId;
         lead.product_stage = productStageId;
         lead.is_transfer = true;
 
-        // Save the updated lead
         const updatedLead = await lead.save();
 
-        // Create an activity log entry
         const activityLog = new ActivityLog({
             user_id: req.user._id,
             log_type: 'Lead Transfer',
@@ -1818,18 +2072,236 @@ router.put('/transfer-lead/:id', isAuth, hasPermission(['transfer_lead']), async
         });
         await activityLog.save();
 
-        // Push the activity log ID to the lead
         updatedLead.activity_logs.push(activityLog._id);
         await updatedLead.save();
 
-        res.status(200).json({ message: 'Lead transferred successfully', lead: updatedLead });
+        // Notification and Socket.IO logic
+        const io = getIO(); // Initialize socket IO
+        const notifications = [];
+
+        // Filter out users with roles that should not receive notifications
+        const usersToNotify = lead.selected_users.filter(user =>
+            !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role)
+        );
+
+        // Send notification to each selected user
+        for (const user of usersToNotify) {
+            // Create and save the notification using the polymorphic reference
+            const newNotification = new Notification({
+                receiver: user._id,
+                sender: req.user._id, // Save the sender's user ID
+                message: `Lead transferred: ${changes.length ? changes.join(', ') : 'No significant changes'}`,
+                reference_id: lead._id,
+                notification_type: 'Lead', // Polymorphic reference to Lead
+                created_at: Date.now(),
+            });
+
+            const savedNotification = await newNotification.save();
+            notifications.push(savedNotification);
+
+            // Fetch the sender's details (name and image)
+            const sender = await User.findById(req.user._id);
+
+            // Emit notification to the correct user room via WebSockets
+            io.to(`user_${user._id}`).emit('notification', {
+                message: newNotification.message,
+                referenceId: savedNotification.reference_id, // Send the lead's ID
+                notificationType: savedNotification.notification_type, // Send the polymorphic type
+                notificationId: savedNotification._id, // Send the notification ID
+                sender: {
+                    name: sender.name, // Sender's name
+                    image: sender.image, // Sender's image
+                },
+                createdAt: savedNotification.created_at,
+            });
+        }
+
+        res.status(200).json({
+            message: 'Lead transferred successfully, notifications sent',
+            lead: updatedLead,
+            activity_log: activityLog,
+            notifications,
+        });
     } catch (error) {
         console.error('Error transferring lead:', error);
         res.status(500).json({ message: 'Error transferring lead' });
     }
 });
 
+router.put('/add-user-to-lead/:leadId', isAuth, hasPermission(['add_user_lead']), async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const leadId = req.params.leadId;
 
+        const lead = await Lead.findById(leadId)
+            .populate('client selected_users');
+        if (!lead) {
+            return res.status(404).json({ message: 'Lead not found' });
+        }
+
+        // Check if the user already exists in selected_users
+        if (lead.selected_users.some(user => user._id.toString() === userId)) {
+            return res.status(400).json({ message: 'User already added to selected users' });
+        }
+
+        // Fetch the user information to get the name
+        const newUser = await User.findById(userId);
+        if (!newUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Add user to selected_users
+        lead.selected_users.push(newUser);
+        const updatedLead = await lead.save();
+
+        // Log activity for adding a user
+        const activityLog = new ActivityLog({
+            user_id: req.user._id,
+            log_type: 'Add User',
+            remark: `User ${newUser.name} added to selected users`, // Store user name in remark
+            created_at: Date.now(),
+            updated_at: Date.now()
+        });
+        await activityLog.save();
+
+        // Push activity log to lead
+        updatedLead.activity_logs.push(activityLog._id);
+        await updatedLead.save();
+
+        // Notification and Socket.IO logic
+        const io = getIO(); // Initialize socket IO
+        const notifications = [];
+
+        // Get the list of selected users (users who need to be notified)
+        const usersToNotify = lead.selected_users.filter(user =>
+            !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role)
+        );
+
+        // Fetch the sender's details (name and image)
+        const sender = await User.findById(req.user._id);
+
+        // Send notification to each selected user
+        for (const user of usersToNotify) {
+            // Create and save the notification using the polymorphic reference
+            const newNotification = new Notification({
+                receiver: user._id,
+                sender: req.user._id, // Save the sender's user ID
+                message: `User ${newUser.name} was added to the lead ${lead.client.name}`,
+                reference_id: updatedLead._id,
+                notification_type: 'Lead', // Polymorphic reference to Lead
+                created_at: Date.now(),
+            });
+
+            const savedNotification = await newNotification.save();
+            notifications.push(savedNotification);
+
+            // Emit notification to the correct user room via WebSockets
+            io.to(`user_${user._id}`).emit('notification', {
+                message: newNotification.message,
+                referenceId: savedNotification.reference_id,
+                notificationType: savedNotification.notification_type,
+                notificationId: savedNotification._id,
+                sender: {
+                    name: sender.name, // Sender's name
+                    image: sender.image, // Sender's image
+                },
+                createdAt: savedNotification.created_at,
+            });
+        }
+
+        res.status(200).json({
+            message: 'User added to selected users successfully, notifications sent',
+            lead: updatedLead,
+            activity_log: activityLog,
+            notifications,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+ 
+// Add multiple users to selected_users and update branch
+router.put('/add-multiple-users-to-lead/:leadId', isAuth, hasPermission(['add_user_lead']), async (req, res) => {
+    try {
+        const { userIds, branchId } = req.body;
+        const leadId = req.params.leadId;
+
+        const lead = await Lead.findById(leadId).populate('client selected_users');
+        if (!lead) { 
+            return res.status(404).json({ message: 'Lead not found' });
+        }
+
+        const newUsers = await User.find({ _id: { $in: userIds } });
+        if (newUsers.length === 0) {
+            return res.status(404).json({ message: 'No users found' });
+        }
+
+        const addedUsers = [];
+        newUsers.forEach(user => {
+            if (!lead.selected_users.some(selected => selected._id.toString() === user._id.toString())) {
+                lead.selected_users.push(user);
+                addedUsers.push(user.name);
+            }
+        });
+
+        lead.branch = branchId; // Update branch
+        const updatedLead = await lead.save();
+
+        const activityLog = new ActivityLog({
+            user_id: req.user._id,
+            log_type: 'Add Users',
+            remark: `Users [${addedUsers.join(', ')}] added to selected users and branch updated to ${branchId}`,
+            created_at: Date.now(),
+            updated_at: Date.now()
+        });
+        await activityLog.save();
+
+        updatedLead.activity_logs.push(activityLog._id);
+        await updatedLead.save();
+
+        const io = getIO();
+        const usersToNotify = lead.selected_users.filter(user => !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role));
+        const sender = await User.findById(req.user._id);
+
+        const notifications = [];
+        for (const user of usersToNotify) {
+            const newNotification = new Notification({
+                receiver: user._id,
+                sender: req.user._id,
+                message: `Users [${addedUsers.join(', ')}] were added to the lead ${lead.client.name} and branch updated.`,
+                reference_id: updatedLead._id,
+                notification_type: 'Lead',
+                created_at: Date.now(),
+            });
+
+            const savedNotification = await newNotification.save();
+            notifications.push(savedNotification);
+
+            io.to(`user_${user._id}`).emit('notification', {
+                message: newNotification.message,
+                referenceId: savedNotification.reference_id,
+                notificationType: savedNotification.notification_type,
+                notificationId: savedNotification._id,
+                sender: {
+                    name: sender.name,
+                    image: sender.image,
+                },
+                createdAt: savedNotification.created_at,
+            });
+        }
+
+        res.status(200).json({
+            message: 'Users added to selected users, branch updated successfully, and notifications sent',
+            lead: updatedLead,
+            activity_log: activityLog,
+            notifications,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
 const getUniqueUserIds = (userIds) => {
     const uniqueUserMap = {};
@@ -1844,7 +2316,7 @@ const getUniqueUserIds = (userIds) => {
 router.put('/move-lead/:id', isAuth, hasPermission(['move_lead']), async (req, res) => {
     try {
         const leadId = req.params.id;
-        const { pipeline, branch, product_stage } = req.body;
+        const { pipeline, branch, product_stage, product } = req.body;
 
         // Ensure required fields are provided
         if (!pipeline || !branch || !product_stage) {
@@ -1854,6 +2326,7 @@ router.put('/move-lead/:id', isAuth, hasPermission(['move_lead']), async (req, r
         const branchId = new mongoose.Types.ObjectId(String(branch));
         const productStageId = new mongoose.Types.ObjectId(String(product_stage));
         const pipelineId = new mongoose.Types.ObjectId(String(pipeline));
+        const productId = new mongoose.Types.ObjectId(String(product));
 
         // Check if the lead exists
         const lead = await Lead.findById(leadId);
@@ -1896,9 +2369,10 @@ router.put('/move-lead/:id', isAuth, hasPermission(['move_lead']), async (req, r
         const ceoUsers = await User.find({ role: 'CEO' }).select('_id name');
         const superadminUsers = await User.find({ role: 'superadmin' }).select('_id name');
         const mdUsers = await User.find({ role: 'MD' }).select('_id name');
-        const hodUsers = await User.find({ role: 'HOD', pipeline:pipelineId }).select('_id name'); // HOD with no branch filter
+        const hodUsers = await User.find({ role: 'HOD', products: productId }).select('_id name'); // HOD with no branch filter
+        const homUsers = await User.find({ role: 'HOM', products: productId }).select('_id name'); // HOD with no branch filter
         const managerUsers = await User.find({
-            pipeline:pipelineId,
+            pipeline: pipelineId,
             role: 'Manager',
             branch: branchId, // Filter managers by the new branch
         }).select('_id name');
@@ -1914,6 +2388,7 @@ router.put('/move-lead/:id', isAuth, hasPermission(['move_lead']), async (req, r
             ...superadminUsers.map(user => user._id.toString()),
             ...mdUsers.map(user => user._id.toString()),
             ...hodUsers.map(user => user._id.toString()), // Include HOD without branch restriction
+            ...homUsers.map(user => user._id.toString()), // Include HOD without branch restriction
             ...managerUsers.map(user => user._id.toString()), // Manager filtered by branch
             ...updatedSelectedUsers.map(user => user.toString()), // Keep previous selected users
         ].filter(Boolean); // Filter out any null or undefined values
@@ -1944,35 +2419,97 @@ router.put('/move-lead/:id', isAuth, hasPermission(['move_lead']), async (req, r
         updatedLead.activity_logs.push(activityLog._id);
         await updatedLead.save();
 
-        res.status(200).json({ message: 'Lead moved successfully', lead: updatedLead });
+        const io = getIO(); // Initialize socket IO
+        const notifications = [];
+
+        // Filter out users with roles that should not receive notifications
+        const usersToNotify = lead.selected_users.filter(user =>
+            !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role)
+        );
+
+        // Send notification to each selected user
+        for (const user of usersToNotify) {
+            // Create and save the notification using the polymorphic reference
+            const newNotification = new Notification({
+                receiver: user._id,
+                sender: req.user._id, // Save the sender's user ID
+                message: `Lead has been moved. Changes: ${changes.join(', ')}`,
+                reference_id: lead._id,
+                notification_type: 'Lead', // Polymorphic reference to Lead
+                created_at: Date.now(),
+            });
+
+            const savedNotification = await newNotification.save();
+            notifications.push(savedNotification);
+
+            // Fetch the sender's details (name and image)
+            const sender = await User.findById(req.user._id).select('name image');
+
+            // Emit notification to the correct user room via WebSockets
+            io.to(`user_${user._id}`).emit('notification', {
+                message: newNotification.message,
+                referenceId: savedNotification.reference_id, // Send the lead's ID
+                notificationType: savedNotification.notification_type, // Send the polymorphic type
+                notificationId: savedNotification._id, // Send the notification ID
+                sender: {
+                    name: sender.name, // Sender's name
+                    image: sender.image, // Sender's image
+                },
+                createdAt: savedNotification.created_at,
+            });
+        }
+
+        // Respond with success
+        res.status(200).json({
+            message: 'Lead moved successfully, notifications sent',
+            lead: updatedLead,
+            activity_log: activityLog,
+            notifications,
+        }); 
     } catch (error) {
         console.error('Error moving lead:', error);
         res.status(500).json({ message: 'Error moving lead' });
     }
 });
 
+
 router.get('/single-lead/:id', isAuth, hasPermission(['view_lead']), async (req, res) => {
     try {
-        const { id } = req.params; // Extract lead ID from request parameters 
+        const { id } = req.params;
 
         // Validate the ID format
         if (!mongoose.isValidObjectId(id)) {
             return res.status(400).json({ message: 'Invalid lead ID format' });
         }
 
-        // Step 1: Fetch the lead with only the selected_users field
-        const leadForAuthCheck = await Lead.findById(id).select('selected_users');
+        // Step 1: Fetch the lead with necessary fields for authorization and "is_converted" check
+        const leadForAuthCheck = await Lead.findById(id).select('selected_users is_converted');
         if (!leadForAuthCheck) {
             return res.status(404).json({ message: 'Lead not found' });
         }
 
-        // Step 2: Check if req.user._id is in the selected_users of the lead
+        // Check if the lead is converted
+        if (leadForAuthCheck.is_converted) {
+            return res.status(403).json({ message: 'This lead has been converted and cannot be accessed.' });
+        }
+
+        // Ensure `selected_users` is an array and not empty
+        if (!Array.isArray(leadForAuthCheck.selected_users) || leadForAuthCheck.selected_users.length === 0) {
+            return res.status(403).json({ message: 'You are not authorized to view this lead' });
+        }
+
+        // Ensure the user session is valid
+        if (!req.user || !req.user._id) {
+            return res.status(403).json({ message: 'Invalid user session. Authorization failed' });
+        }
+
+        // Step 2: Check if the user is authorized
         const isAuthorized = leadForAuthCheck.selected_users.some(userId => userId.equals(req.user._id));
         if (!isAuthorized) {
             return res.status(403).json({ message: 'You are not authorized to view this lead' });
         }
 
-        // Step 3: Fetch the full lead details and populate necessary fields
+        // Step 3: Fetch the full lead details
         const lead = await Lead.findById(id)
             .populate({
                 path: 'client',
@@ -1985,85 +2522,88 @@ router.get('/single-lead/:id', isAuth, hasPermission(['view_lead']), async (req,
             .populate({
                 path: 'selected_users',
                 match: { role: { $nin: ['CEO', 'MD', 'Developer', 'Marketing'] } },
-                select: 'name role image',
+                select: 'name role image branch',
+                populate: {
+                    path: 'branch',
+                    select: 'name'
+                }
             })
-            .populate({
-                path: 'pipeline_id',
-                select: 'name'
-            })
-            .populate({
-                path: 'product_stage',
-                select: 'name'
-            })
-            .populate({
-                path: 'lead_type',
-                select: 'name'
-            })
-            .populate({
-                path: 'source',
-                select: 'name'
-            })
-            .populate({
-                path: 'products',
-                select: 'name'
-            })
-            .populate({
-                path: 'branch',
-                select: 'name'
-            })
-            .populate({
-                path: 'labels',
-                select: 'name color',
-            })
+            .populate('pipeline_id', 'name')
+            .populate('product_stage', 'name')
+            .populate('lead_type', 'name')
+            .populate('source', 'name')
+            .populate('products', 'name')
+            .populate('branch', 'name')
+            .populate('labels', 'name color')
             .populate({
                 path: 'phonebookcomments',
                 populate: {
-                    path: 'user', // Assuming the Comment model references the User model via 'user' field
+                    path: 'user',
                     select: 'name image'
                 },
-                select: 'remarks createdAt' // Select relevant fields from Comment
+                select: 'remarks createdAt'
             })
             .populate({
                 path: 'messages',
                 populate: [
-                    {
-                        path: 'client',
-                        select: 'name'
-                    },
-                    {
-                        path: 'user',
-                        select: 'name'
-                    }
+                    { path: 'client', select: 'name' },
+                    { path: 'user', select: 'name' }
                 ]
             })
             .populate({
                 path: 'discussions',
-                populate: {
-                    path: 'created_by',
-                    select: 'name image'
-                }
+                populate: { path: 'created_by', select: 'name image' }
             })
             .populate({
                 path: 'files',
-                // Uncomment if you want to populate the `created_by` in `files`
-                // populate: {
-                //     path: 'created_by',
-                //     select: 'name image'
-                // }
+            })
+            .populate({
+                path: 'transfer_from.pipeline',
+                select: 'name'
+            })
+            .populate({
+                path: 'transfer_from.branch',
+                select: 'name'
+            })
+            .populate({
+                path: 'transfer_from.product_stage',
+                select: 'name'
+            })
+            .populate({
+                path: 'transfer_from.products',
+                select: 'name'
+            })
+            .populate({
+                path: 'ref_hod',
+                select: 'name role'
+            })
+            .populate({
+                path: 'ref_manager',
+                select: 'name role'
             })
             .populate({
                 path: 'activity_logs',
                 populate: {
-                    path: 'user_id', // Assuming `user_id` references a User model
-                    select: 'name image' // Select both name and image fields from the User model
+                    path: 'user_id',
+                    select: 'name image'
                 }
             });
 
+        if (!lead) {
+            return res.status(404).json({ message: 'Lead details not found after population' });
+        }
+
         res.status(200).json(lead);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        console.error('Error fetching lead:', error.message, error.stack);
+
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: 'Invalid data type in query' });
+        }
+
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
-}); 
+});
 
 // Update product_stage of a lead
 router.put('/update-product-stage/:leadId', isAuth, hasPermission(['update_product_stage']), async (req, res) => {
@@ -2116,11 +2656,17 @@ router.put('/update-product-stage/:leadId', isAuth, hasPermission(['update_produ
         const io = getIO(); // Initialize socket IO
         const notifications = [];
 
+        // Filter out users with roles that should not receive notifications
+        const usersToNotify = lead.selected_users.filter(user =>
+            !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role)
+        );
+
         // Send notification to each selected user
-        for (const user of lead.selected_users) {
+        for (const user of usersToNotify) {
             // Create and save the notification using the polymorphic reference
             const newNotification = new Notification({
                 receiver: user._id,
+                sender: req.user._id, // Save the sender's user ID
                 message: `Product Stage of ${lead.client.name} has been changed from ${previousStageName} to ${newProductStage.name}`,
                 reference_id: lead._id,
                 notification_type: 'Lead', // Polymorphic reference to Lead
@@ -2130,12 +2676,19 @@ router.put('/update-product-stage/:leadId', isAuth, hasPermission(['update_produ
             const savedNotification = await newNotification.save();
             notifications.push(savedNotification);
 
+            // Fetch the sender's details (name and image)
+            const sender = await User.findById(req.user._id);
+
             // Emit notification to the correct user room via WebSockets
             io.to(`user_${user._id}`).emit('notification', {
                 message: newNotification.message,
                 referenceId: savedNotification.reference_id, // Send the lead's ID
                 notificationType: savedNotification.notification_type, // Send the polymorphic type
                 notificationId: savedNotification._id, // Send the notification ID
+                sender: {
+                    name: sender.name, // Sender's name
+                    image: sender.image, // Sender's image
+                },
                 createdAt: savedNotification.created_at,
             });
         }
@@ -2192,7 +2745,7 @@ router.put('/restore-lead/:id', isAuth, async (req, res) => {
         if (previousProductId !== productId.toString() || previousPipelineId !== pipelineId.toString()) {
             // Fetch new selected users based on the updated pipeline and branch
             const ceoUsers = await User.find({ role: 'CEO' }).select('_id name');
-            const superadminUsers = await User.find({ role: 'superadmin' }).select('_id name');
+            const superadminUsers = await User.find({ role: 'Super Admin' }).select('_id name');
             const mdUsers = await User.find({ role: 'MD' }).select('_id name');
             const managerUsers = await User.find({
                 $or: [
@@ -2200,7 +2753,7 @@ router.put('/restore-lead/:id', isAuth, async (req, res) => {
                     { role: 'Manager', branch: null, pipeline: pipelineId }
                 ]
             }).select('_id name');
-            const hodUsers = await User.find({ role: 'HOD', pipeline: pipelineId }).select('_id name');
+            const hodUsers = await User.find({ role: 'HOD', products: productId }).select('_id name');
 
             // Combine all selected user IDs, ensuring they are unique
             const allSelectedUserIds = [
@@ -2272,27 +2825,24 @@ router.put('/restore-lead/:id', isAuth, async (req, res) => {
     }
 });
 
-router.put('/edit-lead/:id',  isAuth, hasPermission(['edit_lead']), async (req, res) => {
+router.put('/edit-lead/:id', isAuth, hasPermission(['edit_lead']), async (req, res) => {
     try {
         const {
             clientPhone,
             clientName,
             clientEmail,
-            cliente_id,  // new field for client e_id
-            clientw_phone,  // new field for client w_phone
+            cliente_id,
+            clientw_phone,
             product_stage,
             company_Name,
-            lead_type,
+            lead_type, 
             pipeline,
             products,
             source,
             description,
-            branch,
-            selected_users
         } = req.body;
-
+        const UserId = req.user._id;
         const leadId = req.params.id;
-        const branchId = new mongoose.Types.ObjectId(String(branch));
         const productStageId = new mongoose.Types.ObjectId(String(product_stage));
         const leadTypeId = new mongoose.Types.ObjectId(String(lead_type));
         const pipelineId = new mongoose.Types.ObjectId(String(pipeline));
@@ -2306,11 +2856,13 @@ router.put('/edit-lead/:id',  isAuth, hasPermission(['edit_lead']), async (req, 
         }
 
         // Find the lead to get the previous state
-        const lead = await Lead.findById(leadId).populate('selected_users', 'name').exec();
+        const lead = await Lead.findById(leadId).populate('selected_users', 'name')
+            .populate('client', 'name').exec();
         if (!lead) {
             return res.status(404).json({ message: 'Lead not found' });
         }
         let client = await Client.findOne({ phone: clientPhone });
+
         // Capture the previous state of the lead
         const previousState = {
             clientName: client?.name,
@@ -2318,7 +2870,7 @@ router.put('/edit-lead/:id',  isAuth, hasPermission(['edit_lead']), async (req, 
             clientPhone: client?.phone,
             cliente_id: client?.e_id,
             clientw_phone: client?.w_phone,
-            company_Name: lead?.company_Name || null, // Previous company name
+            company_Name: lead?.company_Name || null,
             product_stage: (await ProductStage.findById(lead.product_stage).select('name')).name,
             lead_type: (await LeadType.findById(lead.lead_type).select('name')).name,
             pipeline_id: (await Pipeline.findById(lead.pipeline_id).select('name')).name,
@@ -2331,109 +2883,48 @@ router.put('/edit-lead/:id',  isAuth, hasPermission(['edit_lead']), async (req, 
         // Track client updates 
         let clientUpdated = false;
 
-        // Update client name
+        // Update client details (name, email, phone, etc.)
         if (clientName && client?.name !== clientName) {
             client.name = clientName;
             clientUpdated = true;
         }
-
-        // Update client email
         if (clientEmail && client?.email !== clientEmail) {
             client.email = clientEmail;
             clientUpdated = true;
         }
-
-        // Update client phone
         if (clientPhone && client?.phone !== clientPhone) {
             client.phone = clientPhone;
             clientUpdated = true;
         }
-
-        // Update client w_phone if provided
         if (clientw_phone && client?.w_phone !== clientw_phone) {
             client.w_phone = clientw_phone;
             clientUpdated = true;
         }
-
-        // Update cliente_id (e_id) if provided
         if (cliente_id && client?.e_id !== cliente_id) {
             client.e_id = cliente_id;
             clientUpdated = true;
         }
 
-        // Save the client if any updates were made
         if (clientUpdated) {
             await client.save();
         }
-        // Convert selected_users to ObjectId format
-        const selectedUserIds = selected_users.map(user => {
-            try {
-                return new mongoose.Types.ObjectId(String(user));
-            } catch (error) {
-                console.error('Invalid user ID:', user);
-                return null;
-            }
-        }).filter(id => id !== null);
 
-        const ceoUsers = await User.find({ role: 'CEO' }).select('_id name');
-        const superadminUsers = await User.find({ role: 'superadmin' }).select('_id name');
-        const mdUsers = await User.find({ role: 'MD' }).select('_id name');
-        const hodUsers = await User.find({ role: 'HOD' }).select('_id name'); // HOD with no branch filter
-        const managerUsers = await User.find({
-            role: 'Manager',
-            branch: branchId, // Filter managers by the new branch
-        }).select('_id name');
-
-        const allSelectedUserIds = [
-            req.user._id.toString(),
-            ...selectedUserIds,
-            ...ceoUsers.map(user => user._id.toString()),
-            ...mdUsers.map(user => user._id.toString()),
-            ...superadminUsers.map(user => user._id.toString()),
-            ...hodUsers.map(user => user._id.toString()), // Include HOD without branch restriction
-            ...managerUsers.map(user => user._id.toString()), // Manager filtered by branch
-        ];
-
-        const getUniqueUserIds = (userIds) => {
-            const uniqueUserMap = {};
-            userIds.forEach(id => {
-                if (!uniqueUserMap[id]) {
-                    uniqueUserMap[id] = true;
-                }
-            });
-            return Object.keys(uniqueUserMap);
-        };
-
-        const uniqueUserIds = getUniqueUserIds(allSelectedUserIds);
-
-        // Fetch the names for product_stage, lead_type, pipeline, source, and products
-        const productStage = await ProductStage.findById(productStageId).select('name');
-        const leadType = await LeadType.findById(leadTypeId).select('name');
-        const pipelineObj = await Pipeline.findById(pipelineId).select('name');
-        const sourceObj = await Source.findById(sourceId).select('name');
-        const product = await Product.findById(productId).select('name');
-
-        // Prepare updates
+        // Prepare updates for the lead
         const updates = {
             client: client._id,
             updated_by: req.user._id,
-            selected_users: uniqueUserIds,
             pipeline_id: pipelineId,
             lead_type: leadTypeId,
             source: sourceId,
             product_stage: productStageId,
             products: productId,
-            company_Name,  // Add company name to the updates
+            company_Name,
             description,
-            branch: branchId
         };
 
-        // Update lead
-        const updatedLead = await Lead.findByIdAndUpdate(
-            leadId,
-            updates,
-            { new: true }
-        ).populate('selected_users', 'name').exec();
+        // Update the lead
+        const updatedLead = await Lead.findByIdAndUpdate(leadId, updates, { new: true })
+            .populate('selected_users', 'name').exec();
 
         if (!updatedLead) {
             return res.status(404).json({ message: 'Lead not found' });
@@ -2451,62 +2942,105 @@ router.put('/edit-lead/:id',  isAuth, hasPermission(['edit_lead']), async (req, 
             products: (await Product.findById(updatedLead.products).select('name')).name,
             description: updatedLead.description,
             company_Name: updatedLead.company_Name,
-            branch: updatedLead.branch,
-            selected_users: updatedLead.selected_users.map(user => ({ id: user._id.toString(), name: user.name }))
         };
 
-        // Determine added and removed users
-        const previousUserIds = new Set(previousState.selected_users.map(user => user.id));
-        const newUserIds = new Set(newState.selected_users.map(user => user.id));
-
-        const addedUsers = newState.selected_users.filter(user => !previousUserIds.has(user.id));
-        const removedUsers = previousState.selected_users.filter(user => !newUserIds.has(user.id));
-
-        const addedUserNames = addedUsers.map(user => user.name);
-        const removedUserNames = removedUsers.map(user => user.name).join(', ');
-
-        // Determine changes
+        // Prepare the changes for activity log and notification
         const changes = [];
-        if (addedUserNames.length) changes.push(`Added users: ${addedUserNames.join(', ')}`);
-        if (removedUserNames) changes.push(`Removed users: ${removedUserNames}`);
-        // Track client changes
-        if (clientName && (clientName !== previousState.clientName)) {
-            changes.push(`Client name changed from ${previousState.clientName} to ${clientName}`);
-        }
-        if (clientEmail && (clientEmail !== previousState.clientEmail)) {
-            changes.push(`Client email changed from ${previousState.clientEmail} to ${clientEmail}`);
-        }
-        if (clientPhone && (clientPhone !== previousState.clientPhone)) {
-            changes.push(`Client phone changed from ${previousState.clientPhone} to ${clientPhone}`);
-        }
-        if (company_Name && company_Name !== previousState.company_Name) changes.push(`Company name changed from ${previousState.company_Name} to ${company_Name}`);
-        for (const key in previousState) {
-            if (Array.isArray(previousState[key])) continue; // Skip array comparison for simplicity
-            if (previousState[key] !== newState[key]) {
-                changes.push(`${key} changed from ${previousState[key]} to ${newState[key]}`);
+        const notificationChanges = [];
+
+        const checkAndPushChange = (key, prev, current) => {
+            if (current !== undefined && current !== null && current !== prev) {
+                const changeString = `${key} changed from ${prev || 'null'} to ${current || 'undefined'}`;
+                changes.push(changeString);
+                notificationChanges.push(changeString);
             }
+        };
+
+        checkAndPushChange('clientName', previousState.clientName, clientName);
+        checkAndPushChange('clientEmail', previousState.clientEmail, clientEmail);
+        checkAndPushChange('clientPhone', previousState.clientPhone, clientPhone);
+        checkAndPushChange('company_Name', previousState.company_Name, company_Name);
+        checkAndPushChange('cliente_id', previousState.cliente_id, cliente_id);
+        checkAndPushChange('product_stage', previousState.product_stage, newState.product_stage);
+        checkAndPushChange('lead_type', previousState.lead_type, newState.lead_type);
+        checkAndPushChange('pipeline_id', previousState.pipeline_id, newState.pipeline_id);
+        checkAndPushChange('source', previousState.source, newState.source);
+        checkAndPushChange('products', previousState.products, newState.products);
+        checkAndPushChange('description', previousState.description, newState.description);
+
+        // Create activity log only if there are changes
+        let activityLog = null;
+        if (changes.length > 0) {
+            activityLog = new ActivityLog({
+                user_id: req.user._id,
+                log_type: 'Lead Update',
+                remark: `Lead updated: ${changes.join(', ')}`,
+                created_at: Date.now(),
+                updated_at: Date.now()
+            });
+            await activityLog.save();
         }
 
-        // Create an activity log entry
-        const activityLog = new ActivityLog({
-            user_id: req.user._id,
-            log_type: 'Lead Update',
-            remark: changes.length ? `Lead updated: ${changes.join(', ')}` : 'Lead updated with no changes',
-            created_at: Date.now(),
-            updated_at: Date.now()
+        // Push activity log ID to lead if available
+        if (activityLog) {
+            updatedLead.activity_logs.push(activityLog._id);
+            await updatedLead.save();
+        }
+
+        // Emit notifications for affected users
+        const io = getIO();
+        const notifications = [];
+        const usersToNotify = updatedLead.selected_users.filter(user =>
+            !['CEO', 'MD', 'Developer', 'Super Admin'].includes(user.role)
+        );
+
+        for (const notifiedUser of usersToNotify) {
+            // Create notification
+            const newNotification = new Notification({
+                sender: UserId,
+                receiver: notifiedUser._id,
+                message: `Lead ${lead.client.name} was updated. ${notificationChanges.length ? notificationChanges.join(', ') : 'No changes'}`,
+                reference_id: updatedLead._id,
+                notification_type: 'Lead',
+                created_at: Date.now(),
+            });
+
+            // Fix: Use populate without execPopulate
+            await newNotification.populate('sender', 'name image');
+
+            const savedNotification = await newNotification.save();
+            notifications.push(savedNotification);
+
+            // Emit notification to user via WebSocket
+            io.to(`user_${notifiedUser._id}`).emit('notification', {
+                sender: {
+                    name: newNotification.sender.name,
+                    image: newNotification.sender.image,
+                },
+                message: newNotification.message,
+                referenceId: savedNotification.reference_id,
+                notificationType: savedNotification.notification_type,
+                notificationId: savedNotification._id,
+                createdAt: savedNotification.created_at,
+            });
+        }
+
+        res.status(200).json({
+            message: 'Lead updated successfully, notifications sent',
+            lead: updatedLead,
+            activity_log: activityLog,
+            notifications,
         });
-        await activityLog.save();
-
-        // Push the activity log ID to the lead
-        updatedLead.activity_logs.push(activityLog._id);
-        await updatedLead.save();
-
-        res.status(200).json(updatedLead);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+
+
+
+
 
 
 // Route to create a new lead

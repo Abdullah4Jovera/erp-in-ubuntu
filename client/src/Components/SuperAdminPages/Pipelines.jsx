@@ -17,7 +17,7 @@ const Pipelines = () => {
     useEffect(() => {
         const fetchPipelines = async () => {
             try {
-                const response = await axios.get(`/api/pipelines/get-pipelines`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/pipelines/get-pipelines`);
                 setPipelines(response.data); // Update state with fetched pipelines
             } catch (err) {
                 setError('Error fetching pipelines'); // Update error state
@@ -32,7 +32,7 @@ const Pipelines = () => {
     // Create a new pipeline
     const handleCreatePipeline = async () => {
         try {
-            const response = await axios.post(`/api/pipelines/create-pipeline`, {
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/pipelines/create-pipeline`, {
                 name: newPipelineName,
                 created_by: 'User ID or Name' // Replace with the actual user ID or name
             });
@@ -46,7 +46,7 @@ const Pipelines = () => {
     // Update a pipeline
     const handleUpdatePipeline = async () => {
         try {
-            const response = await axios.put(`/api/pipelines/update-pipeline/${updatePipelineId}`, {
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/pipelines/update-pipeline/${updatePipelineId}`, {
                 name: updatePipelineName,
             });
             setPipelines(pipelines.map(pipeline =>
@@ -61,7 +61,7 @@ const Pipelines = () => {
     // Soft delete a pipeline
     const handleDeletePipeline = async (id) => {
         try {
-            await axios.put(`/api/pipelines/delete-pipeline/${id}`);
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/api/pipelines/delete-pipeline/${id}`);
             setPipelines(pipelines.filter(pipeline => pipeline._id !== id)); // Remove the deleted pipeline from the state
         } catch (err) {
             setError('Error deleting pipeline');

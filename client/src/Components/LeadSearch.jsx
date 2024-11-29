@@ -35,8 +35,8 @@ const LeadSearch = ({ onSearch, fetchLeadsData, selectedBranchId, selectedProduc
         const fetchData = async () => {
             try {
                 const [branchResponse, leadTypeResponse, sourceResponse, clientResponse] = await Promise.all([
-                    axios.get(`/api/branch/get-branches`),
-                    axios.get(`/api/leadtypes/get-all-leadtypes`),
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/api/branch/get-branches`),
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/api/leadtypes/get-all-leadtypes`),
                 ]);
 
                 setBranch(branchResponse.data);
@@ -55,8 +55,8 @@ const LeadSearch = ({ onSearch, fetchLeadsData, selectedBranchId, selectedProduc
         const fetchSources = async () => {
             try {
                 const response = selectedLeadType
-                    ? await axios.get(`/api/sources/${selectedLeadType.value}`)
-                    : await axios.get(`/api/sources/get/get-sources`);
+                    ? await axios.get(`${process.env.REACT_APP_BASE_URL}/api/sources/${selectedLeadType.value}`)
+                    : await axios.get(`${process.env.REACT_APP_BASE_URL}/api/sources/get/get-sources`);
 
                 setSources(response.data);
             } catch (error) {
@@ -72,7 +72,7 @@ const LeadSearch = ({ onSearch, fetchLeadsData, selectedBranchId, selectedProduc
         const fetchUsers = async () => {
             if (selectedProductId) {
                 try {
-                    const response = await axios.get(`/api/users/get-users-by-product/${selectedProductId}`, {
+                    const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/users/get-users-by-product/${selectedProductId}`, {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         }
@@ -92,18 +92,18 @@ const LeadSearch = ({ onSearch, fetchLeadsData, selectedBranchId, selectedProduc
     // Fetch pipelines based on selected branch and product
     useEffect(() => {
         const fetchPipelines = async () => {
-            if (selectedBranchId === '6719fdded3de53c9fb53fb79') {
+            if (selectedBranchId === '673b34924b966621c041caac') {
                 // If the branch is the specific Ajman Branch, set static pipeline data
                 setPipelines([
                     {
-                        _id: '6719fda75035bf8bd708d024', // The specified ID
+                        _id: '673b190186706b218f6f3262', // The specified ID
                         name: 'Ajman Branch' // The specified label
                     }
                 ]);
             } else if (selectedProductId) {
                 // If the branch is not the Ajman Branch, fetch pipelines based on the selected product
                 try {
-                    const response = await axios.get(`/api/products/${selectedProductId}`);
+                    const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/products/${selectedProductId}`);
                     const pipelinesData = response.data.pipeline_id || [];
                     setPipelines(pipelinesData);
                 } catch (error) {
@@ -192,7 +192,7 @@ const LeadSearch = ({ onSearch, fetchLeadsData, selectedBranchId, selectedProduc
         const payloadPhone = `+971${digitsOnly}`;
 
         try {
-            const response = await axios.post(`/api/leads/check-client-phone`, {
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/leads/check-client-phone`, {
                 clientPhone: payloadPhone, // Use the concatenated phone number for API call
             }, {
                 headers: {

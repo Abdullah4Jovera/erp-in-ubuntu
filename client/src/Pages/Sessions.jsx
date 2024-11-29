@@ -17,7 +17,7 @@ const Session = () => {
     useEffect(() => {
         const fetchActiveSessions = async () => {
             try {
-                const response = await axios.get(`/api/users/active-sessions`, {
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/users/active-sessions`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -36,7 +36,7 @@ const Session = () => {
     useEffect(() => {
         const fetchAllUsers = async () => {
             try {
-                const response = await axios.get(`/api/users/get-users`, {
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/users/get-users`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -57,7 +57,7 @@ const Session = () => {
     const toggleBlockUser = async (userId, isBlocked) => {
         try {
             const response = await axios.patch(
-                `/api/users/block-user/${userId}`,
+                `${process.env.REACT_APP_BASE_URL}/api/users/block-user/${userId}`,
                 { block: !isBlocked },
                 {
                     headers: {
@@ -83,7 +83,7 @@ const Session = () => {
     const logoutUser = async (userId) => {
         try {
             const response = await axios.post(
-                `/api/users/logout-user/${userId}`,
+                `${process.env.REACT_APP_BASE_URL}/api/users/logout-user/${userId}`,
                 {},
                 {
                     headers: {

@@ -48,7 +48,7 @@ const dealSchema = new Schema({
     deal_stage: {
         type: Schema.Types.ObjectId,
         ref: 'DealStage',
-        required: true
+        // required: true
     },
     labels: [{
         type: String, // Changed to String
@@ -102,7 +102,7 @@ const dealSchema = new Schema({
     },
     collection_status: {
         type: String,
-        enum: ['0%','10%', '50%','100%'], 
+        enum: ['0%','10%', '50%','100%'],  
         default: '0%'
     },
     created_at: {

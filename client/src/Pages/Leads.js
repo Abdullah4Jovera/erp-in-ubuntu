@@ -119,7 +119,7 @@ const Leads = () => {
         try {
             // Loop through selected users and add them
             for (const user of selectedUsers) {
-                await axios.put(`/api/leads/add-user-to-lead/${'id'}`, {
+                await axios.put(`${process.env.REACT_APP_BASE_URL}/api/leads/add-user-to-lead/${'id'}`, {
                     userId: user.value
                 }, {
                     headers: {
@@ -138,7 +138,7 @@ const Leads = () => {
     const fetchProductDetails = async (productId) => {
         if (!productId) return;
         try {
-            const { data } = await axios.get(`/api/products/${productId}`, {
+            const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/products/${productId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -165,7 +165,7 @@ const Leads = () => {
     const fetchProductStages = async (productId) => {
         if (!productId) return;
         try {
-            const { data } = await axios.get(`/api/productstages/${productId}`, {
+            const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/productstages/${productId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -196,7 +196,7 @@ const Leads = () => {
 
         setLoading(true);
         try {
-            const { data } = await axios.get(`/api/leads/get-leads`, {
+            const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/leads/get-leads`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             console.log(data.leads, 'getallleads')
@@ -273,7 +273,7 @@ const Leads = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(`/api/users/get-users`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/users/get-users`);
                 setAllUsers(response.data);
             } catch (error) {
                 console.log(error, 'err');
@@ -390,7 +390,7 @@ const Leads = () => {
     const draggableCardHandler = async (id, newStageId) => {
         try {
             const response = await axios.put(
-                `/api/leads/update-product-stage/${id}`,
+                `${process.env.REACT_APP_BASE_URL}/api/leads/update-product-stage/${id}`,
                 { newProductStageId: newStageId },
                 {
                     headers: {
@@ -412,7 +412,7 @@ const Leads = () => {
         }
 
         try {
-            await axios.post(`/api/leads/add-discussion/${selectedLeadDiscussion._id}`, {
+            await axios.post(`${process.env.REACT_APP_BASE_URL}/api/leads/add-discussion/${selectedLeadDiscussion._id}`, {
                 comment: discussionText
             }, {
                 headers: {
@@ -495,7 +495,7 @@ const Leads = () => {
 
     const RejectedLead = async (id) => {
         try {
-            await axios.put(`/api/leads/reject-lead/${leadId}`, {}, {
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/api/leads/reject-lead/${leadId}`, {}, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -525,7 +525,7 @@ const Leads = () => {
     // const handleSearch = async (filters) => {
     //     try {
 
-    //         const response = await axios.get(`/api/leads/search-leads`, {
+    //         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/leads/search-leads`, {
     //             params: {
     //                 pipeline: filters.pipeline,
     //                 selected_users: filters.selected_users,
@@ -594,13 +594,13 @@ const Leads = () => {
         const fetchData = async () => {
             try {
                 const [pipelineResponse, productResponse, branchResponse, userResponse, leadTypeResponse, sourceResponse, clientResponse] = await Promise.all([
-                    // axios.get(`/api/pipelines/get-pipelines`),
-                    // axios.get(`/api/products/get-all-products`),
-                    // axios.get(`/api/branch/get-branches`),
-                    axios.get(`/api/users/get-users`),
-                    axios.get(`/api/leadtypes/get-all-leadtypes`),
-                    axios.get(`/api/sources/get/get-sources`),
-                    axios.get(`/api/clients/get-clinets`),
+                    // axios.get(`${process.env.REACT_APP_BASE_URL}/api/pipelines/get-pipelines`),
+                    // axios.get(`${process.env.REACT_APP_BASE_URL}/api/products/get-all-products`),
+                    // axios.get(`${process.env.REACT_APP_BASE_URL}/api/branch/get-branches`),
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/api/users/get-users`),
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/api/leadtypes/get-all-leadtypes`),
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/api/sources/get/get-sources`),
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/api/clients/get-clinets`),
                 ]);
 
                 // setBranch(branchResponse.data);
@@ -806,7 +806,7 @@ const Leads = () => {
                                                                                                 })
                                                                                                 .map((leadImage, index) => {
                                                                                                     const imageSrc = leadImage?.image
-                                                                                                        ? `/images/${leadImage?.image}`
+                                                                                                        ? `${process.env.REACT_APP_BASE_URL}/images/${leadImage?.image}`
                                                                                                         : default_image;
 
                                                                                                     return (
@@ -947,7 +947,7 @@ const Leads = () => {
                                                                                                                     {selectedLeadDiscussion?.discussions?.length > 0 ? (
                                                                                                                         selectedLeadDiscussion.discussions.reverse().map((leadDiscussion, index) => {
                                                                                                                             const imageSrc = leadDiscussion.created_by?.image
-                                                                                                                                ? `/images/${leadDiscussion.created_by?.image}`
+                                                                                                                                ? `${process.env.REACT_APP_BASE_URL}/images/${leadDiscussion.created_by?.image}`
                                                                                                                                 : 'default_image_url_here';
 
                                                                                                                             return (

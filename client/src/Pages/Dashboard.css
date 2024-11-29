@@ -22,7 +22,7 @@
     border-radius: 14px;
     padding: 10px;
     margin-bottom: 10px;
-    background: #efefef;
+    background: #fff;
     box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
     margin: 10px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -87,12 +87,16 @@
 }
 
 .stage-card {
-    background-color: #fefefe;
+    background-color: #2d3134 !important;
     border-radius: 8px;
     padding: 0px 0px !important;
     height: 100%;
-    overflow-y: auto;
+    overflow-y: hidden;
     box-shadow: rgba(67, 71, 85, 0.27) 0px 0px 0.25em, rgba(90, 125, 188, 0.05) 0px 0.25em 1em;
     width: 100%;
     max-width: 262px !important;
+}
+.lead_stage_card_main{
+    height: 100%;
+    overflow-y: auto !important;
 }

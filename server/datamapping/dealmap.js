@@ -19,7 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/transfer', {
+mongoose.connect('mongodb://localhost:27017/crm', {
     useNewUrlParser: true,
     useUnifiedTopology: true
 });
@@ -320,9 +320,9 @@ const loadDeals = async () => {
                 // Populate lead to get selected users
                 const lead = await Lead.findById(leadId).populate('selected_users');
                 const selectedUsers = lead.selected_users.map(user => user._id);
-
+ 
                 // Determine deal stage
-                const dealStageId = dealStagesMap.get(lead.deal_stage) || null;
+                const dealStageId = dealStagesMap.get(deal.stage_id) || null;
                 const isTransfer = deal.contract_stage === 'cm_signed';
 
                 // Skip deal if isTransfer is false 

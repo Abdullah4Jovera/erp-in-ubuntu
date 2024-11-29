@@ -31,6 +31,7 @@ import SingleContract from '../Pages/SingleContract '
 import ContractStages from '../Components/SuperAdminPages/ContractStages'
 import CreateLabels from '../Pages/CreateLabels'
 import Dashboard from '../Pages/Dashboard'
+import TeamLeaderUnassigned from '../Pages/UnAssignTeamLeader'
 
 const Routing = () => {
     const ProtectedRoute = ({ element: Component, requiredPermission, ...rest }) => {
@@ -49,7 +50,7 @@ const Routing = () => {
                     <Route path='/' element={<Login />} />
                     <Route path="/leads" element={<ProtectedRoute element={CEODashboard} requiredPermission="crm_dashboard" />} />
                     <Route path="/createlabels" element={<ProtectedRoute element={CreateLabels} requiredPermission="label_management" />} />
-                    <Route path="/dashboard" element={<Dashboard/>} />
+                    <Route path="/dashboard" element={<Dashboard />} />
                     <Route path='/superadmindashboard' element={<SuperAdminDashboard />} />
                     <Route path='/single-leads/:id' element={<SingleLead />} />
                     <Route path='/rejectedlead' element={<RejectedLeads />} />
@@ -76,6 +77,7 @@ const Routing = () => {
                     <Route path='/contract' element={<Contract />} />
                     <Route path="/contracts/:id" element={<SingleContract />} />
                     <Route path="/contractstages" element={<ContractStages />} />
+                    <Route path="/teamleaderunassigned" element={<TeamLeaderUnassigned />} />
                 </Routes>
 
             </Router>

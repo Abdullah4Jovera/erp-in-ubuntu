@@ -27,7 +27,7 @@ const AddCommentsModal = ({
         if (token) {
           // Post the new comment
           await axios.post(
-            `/api/phonebook/add-comment`,
+            `${process.env.REACT_APP_BASE_URL}/api/phonebook/add-comment`,
             {
               phonebookId: selectedEntry._id,
               comment: currentComment,
@@ -60,7 +60,7 @@ const AddCommentsModal = ({
   const fetchData = async () => {
     try {
       const response = await axios.get(
-        `/api/phonebook/get-all-phonebook`,
+        `${process.env.REACT_APP_BASE_URL}/api/phonebook/get-all-phonebook`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

@@ -9,6 +9,54 @@ const Notification = require('../models/notificationModel');
 const { getIO } = require('../socket');
 
 
+router.get('/get-deals-marketing', async (req, res) => {
+  try {
+    // Fetch deals where lead_type.name is "Marketing"
+    const deals = await Deal.find()
+      .populate({
+        path: 'lead_type',
+        match: { name: 'Marketing' }, // Match only lead types with name 'Marketing'
+        select: 'name' // Only select the name field for lead_type
+      })
+      .populate('client_id', 'name email') // Populate client_id fields
+      .populate('created_by', 'name email') // Populate created_by fields
+      .populate('pipeline_id', 'name') // Populate pipeline_id fields
+      .populate('deal_stage', 'name') // Populate deal_stage fields
+      .populate('source_id', 'name') // Populate source_id fields
+      .populate('products', 'name') // Populate products fields
+      .populate({
+        path: 'service_commission_id',
+        populate: [
+          { path: 'hodsale', select: 'name email' },
+          { path: 'salemanager', select: 'name email' },
+          { path: 'coordinator', select: 'name email' },
+          { path: 'team_leader', select: 'name email' },
+          { path: 'salesagent', select: 'name email' },
+          { path: 'team_leader_one', select: 'name email' },
+          { path: 'sale_agent_one', select: 'name email' },
+          { path: 'salemanagerref', select: 'name email' },
+          { path: 'agentref', select: 'name email' },
+          { path: 'ts_hod', select: 'name email' },
+          { path: 'ts_team_leader', select: 'name email' },
+          { path: 'tsagent', select: 'name email' },
+          { path: 'marketingmanager', select: 'name email' },
+        ]
+      })
+      .populate('activity_logs') // Populate activity logs
+      .exec();
+
+    // Filter out deals where lead_type was not populated due to no match
+    const filteredDeals = deals.filter(deal => deal.lead_type !== null);
+
+    res.status(200).json(filteredDeals);
+  } catch (error) {
+    console.error('Error fetching Marketing deals:', error);
+    res.status(500).json({ message: 'Error fetching Marketing deals', error });
+  }
+});
+
+
+
 router.get('/get-deals', async (req, res) => {
   try {
     const deals = await Deal.find()
@@ -99,25 +147,25 @@ router.put('/update-deal-stage/:id', isAuth, async (req, res) => {
       const selectedUsers = deal.selected_users; // Assuming this field exists and contains user IDs
       const clientName = deal.client_id ? deal.client_id.name : 'Unknown Client'; // Get client name
 
-      for (const userId of selectedUsers) {
-          const notification = new Notification({
-              receiver: userId,
-              message: `${req.user.name} has changed the deal stage for ${clientName} from '${previousStageName}' to '${updatedStageName}'`,
-              reference_id: updatedDeal._id, // Reference to the updated deal
-              notification_type: 'Deal',
-          });
-          await notification.save(); // Save the notification to the database
+      // for (const userId of selectedUsers) {
+      //     const notification = new Notification({
+      //         receiver: userId,
+      //         message: `${req.user.name} has changed the deal stage for ${clientName} from '${previousStageName}' to '${updatedStageName}'`,
+      //         reference_id: updatedDeal._id, // Reference to the updated deal
+      //         notification_type: 'Deal',
+      //     });
+      //     await notification.save(); // Save the notification to the database
 
-          // Emit notification to the user via Socket.IO
-          const io = getIO(); // Get the initialized Socket.IO instance
-          io.to(`user_${userId}`).emit('notification', {
-              message: notification.message,
-              referenceId: notification.reference_id,
-              notificationType: notification.notification_type,
-              notificationId: notification._id,
-              createdAt: notification.created_at,
-          });
-      }
+      //     // Emit notification to the user via Socket.IO
+      //     const io = getIO(); // Get the initialized Socket.IO instance
+      //     io.to(`user_${userId}`).emit('notification', {
+      //         message: notification.message,
+      //         referenceId: notification.reference_id,
+      //         notificationType: notification.notification_type,
+      //         notificationId: notification._id,
+      //         createdAt: notification.created_at,
+      //     });
+      // }
 
       res.status(200).json(updatedDeal);
   } catch (error) {

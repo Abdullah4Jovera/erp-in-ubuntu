@@ -70,33 +70,60 @@ router.get('/get-users-with-unactive-products', async (req, res) => {
 
 
 
-router.patch('/resign-user/:id',  async (req, res) => {
+router.patch('/resign-user/:id', async (req, res) => {
   try {
     const userId = req.params.id;
+    const { replacementUserId } = req.body; // Replacement user ID
+
+    // Find the user who is resigning
     const user = await User.findById(userId);
-    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Automatically mark user as resigned
+    // Mark the user as resigned
     user.resigned = true;
     await user.save();
 
-    // Remove the resigned user from selected_users in all leads
-    await leadModel.updateMany(
-      { selected_users: userId },
-      { $pull: { selected_users: userId } }
-    );
+    // Handle replacement or removal logic
+    if (replacementUserId) {
+      // Validate the replacement user
+      const replacementUser = await User.findById(replacementUserId);
+      if (!replacementUser) {
+        return res.status(404).json({ message: 'Replacement user not found' });
+      }
 
-    res.status(200).json({ 
-      message: 'User has been marked as resigned and removed from selected users in leads' 
-    });
+      // Replace the resigned user with the replacement user in all leads
+      await leadModel.updateMany(
+        { selected_users: userId },
+        { $set: { 'selected_users.$[user]': replacementUserId } },
+        { arrayFilters: [{ user: userId }] } // Match the user to replace in the array
+      );
+
+      return res.status(200).json({
+        message: 'User has been marked as resigned and replaced in selected users in leads',
+        replacedUser: userId,
+        replacementUser: replacementUserId,
+      });
+    } else {
+      // Remove the resigned user from the selected_users array in all leads
+      await leadModel.updateMany(
+        { selected_users: userId },
+        { $pull: { selected_users: userId } } // Remove the user from the array
+      );
+
+      return res.status(200).json({
+        message: 'User has been marked as resigned and removed from selected users in leads',
+        removedUser: userId,
+      });
+    }
   } catch (error) {
     console.error('Error marking user as resigned:', error);
     res.status(500).json({ message: 'Error marking user as resigned' });
   }
 });
+
+
 
 
 router.patch('/block-user/:id', isAuth, hasPermission(['app_management']), async (req, res) => {
@@ -223,7 +250,12 @@ router.get('/get-users-by-branch/:branchId/:productId', async (req, res) => {
     }
 
     // Construct the query based on branch, role, and product
-    const query = { branch: branchId, role: 'Sales', products: productId };
+    const query = { 
+      branch: branchId, 
+      role: { $in: ['Sales', 'Team Leader'] }, 
+      products: productId 
+  };
+  
 
     // Find users by branch, role "Sales", and product filter
     const users = await User.find(query)
@@ -330,7 +362,7 @@ router.get('/get-users', async (req, res) => {
     const users = await User.find(query)
       .select('-password') // Exclude the password field
       .populate('pipeline') // Populate the pipeline field
-      .populate('branch') // Populate the pipeline field
+      .populate('branch name') // Populate the pipeline field
       .populate('products') // Populate the pipeline field
       .exec();
 
@@ -402,8 +434,6 @@ router.post('/create-user', upload.single('image'),isAuth,hasRole(['Super Admin'
 });
 
 // POST route for user login
-
-
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -466,9 +496,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
 ///update User
-
 router.put('/update-user/:id', upload.single('image'),isAuth,hasRole(['Super Admin', 'Developer']), async (req, res) => {
   try {
     const { id } = req.params;

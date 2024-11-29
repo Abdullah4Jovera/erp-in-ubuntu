@@ -90,15 +90,6 @@
         "updated_at": "2023-05-19 07:36:30"
     },
     {
-        "id": "24",
-        "name": "Jovera Sales",
-        "color": "warning",
-        "pipeline_id": "2",
-        "created_by": "2",
-        "created_at": "2023-05-24 07:24:15",
-        "updated_at": "2023-05-24 10:59:10"
-    },
-    {
         "id": "27",
         "name": "SME",
         "color": "secondary",
@@ -304,15 +295,6 @@
         "created_by": "2",
         "created_at": "2023-05-30 15:16:26",
         "updated_at": "2023-05-30 15:16:26"
-    },
-    {
-        "id": "79",
-        "name": "M.L - B.L",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-05-30 15:29:49",
-        "updated_at": "2023-09-19 08:00:08"
     },
     {
         "id": "80",
@@ -565,15 +547,6 @@
         "created_by": "2",
         "created_at": "2023-06-08 08:49:11",
         "updated_at": "2023-11-06 09:53:18"
-    },
-    {
-        "id": "113",
-        "name": "P.L EIB",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-06-08 08:49:25",
-        "updated_at": "2023-11-28 04:21:36"
     },
     {
         "id": "114",
@@ -880,24 +853,6 @@
         "created_by": "2",
         "created_at": "2023-07-12 13:22:10",
         "updated_at": "2023-08-04 11:45:57"
-    },
-    {
-        "id": "153",
-        "name": "Hassan",
-        "color": "primary",
-        "pipeline_id": "4",
-        "created_by": "2",
-        "created_at": "2023-07-12 13:22:52",
-        "updated_at": "2023-08-04 11:48:23"
-    },
-    {
-        "id": "154",
-        "name": "A. jawawdah",
-        "color": "primary",
-        "pipeline_id": "4",
-        "created_by": "2",
-        "created_at": "2023-07-12 13:23:09",
-        "updated_at": "2023-07-12 13:23:09"
     },
     {
         "id": "155",
@@ -1432,30 +1387,30 @@
     },
     {
         "id": "220",
-        "name": "Not Eligible",
-        "color": "secondary",
+        "name": "BL - LG",
+        "color": "info",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-08 15:43:13",
-        "updated_at": "2023-09-19 08:18:38"
+        "updated_at": "2024-10-31 12:43:59"
     },
     {
         "id": "221",
-        "name": "Cancel",
-        "color": "secondary",
+        "name": "BL - LC",
+        "color": "info",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-08 15:44:03",
-        "updated_at": "2023-09-19 08:20:08"
+        "updated_at": "2024-10-31 12:44:13"
     },
     {
         "id": "222",
-        "name": "Return T.C",
-        "color": "secondary",
+        "name": "BL - Fleet",
+        "color": "info",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-08 15:44:40",
-        "updated_at": "2023-09-19 08:20:44"
+        "updated_at": "2024-10-31 12:44:33"
     },
     {
         "id": "224",
@@ -1495,12 +1450,12 @@
     },
     {
         "id": "229",
-        "name": "Not Answer",
-        "color": "danger",
+        "name": "Cancel",
+        "color": "secondary",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-14 08:55:42",
-        "updated_at": "2023-09-19 08:22:21"
+        "updated_at": "2024-10-31 12:44:54"
     },
     {
         "id": "231",
@@ -1522,66 +1477,57 @@
     },
     {
         "id": "235",
-        "name": "Flat",
-        "color": "info",
+        "name": "Black List",
+        "color": "secondary",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-14 09:34:08",
-        "updated_at": "2023-11-06 08:55:28"
+        "updated_at": "2024-10-31 12:45:41"
     },
     {
         "id": "236",
-        "name": "Land",
-        "color": "info",
+        "name": "No Answer",
+        "color": "warning",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-14 09:34:38",
-        "updated_at": "2023-11-06 08:56:10"
+        "updated_at": "2024-10-31 12:46:02"
     },
     {
         "id": "237",
-        "name": "Villa",
-        "color": "info",
+        "name": "Hold",
+        "color": "warning",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-14 09:35:01",
-        "updated_at": "2023-11-06 08:56:27"
+        "updated_at": "2024-10-31 12:46:17"
     },
     {
         "id": "238",
-        "name": "building",
-        "color": "info",
+        "name": "T.S",
+        "color": "success",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-14 09:35:32",
-        "updated_at": "2023-11-06 08:56:52"
+        "updated_at": "2024-10-31 12:46:44"
     },
     {
         "id": "239",
-        "name": "For Sale",
-        "color": "info",
+        "name": "Marketing",
+        "color": "success",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-14 09:36:29",
-        "updated_at": "2023-11-06 08:57:11"
+        "updated_at": "2024-10-31 12:47:11"
     },
     {
         "id": "241",
-        "name": "Urgint Mr Fady",
-        "color": "info",
+        "name": "Sales Refferal",
+        "color": "success",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-08-14 19:10:16",
-        "updated_at": "2023-09-19 08:23:17"
-    },
-    {
-        "id": "243",
-        "name": "Urgint Eng. Ramy",
-        "color": "info",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-08-16 12:14:17",
-        "updated_at": "2023-09-19 08:24:26"
+        "updated_at": "2024-10-31 12:47:40"
     },
     {
         "id": "245",
@@ -1672,15 +1618,6 @@
         "created_by": "2",
         "created_at": "2023-08-21 14:43:08",
         "updated_at": "2023-08-21 14:43:08"
-    },
-    {
-        "id": "257",
-        "name": "M.L",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-08-24 11:53:02",
-        "updated_at": "2023-09-19 07:47:27"
     },
     {
         "id": "258",
@@ -1998,60 +1935,6 @@
         "updated_at": "2023-08-31 17:29:58"
     },
     {
-        "id": "294",
-        "name": "B.L",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-05 14:13:50",
-        "updated_at": "2023-09-19 07:48:25"
-    },
-    {
-        "id": "295",
-        "name": "P.L Un Listed",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-05 14:16:38",
-        "updated_at": "2023-09-19 07:48:50"
-    },
-    {
-        "id": "296",
-        "name": "P.F Ajman Bank",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-05 14:51:22",
-        "updated_at": "2023-09-19 07:50:12"
-    },
-    {
-        "id": "297",
-        "name": "Credit Card",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-05 14:51:36",
-        "updated_at": "2023-09-19 07:52:57"
-    },
-    {
-        "id": "298",
-        "name": "R.S - M.L",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-05 14:52:36",
-        "updated_at": "2023-09-19 07:53:50"
-    },
-    {
-        "id": "299",
-        "name": "R.S - B.L",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-05 14:53:27",
-        "updated_at": "2023-09-19 07:59:01"
-    },
-    {
         "id": "300",
         "name": "Follow up",
         "color": "info",
@@ -2104,15 +1987,6 @@
         "created_by": "2",
         "created_at": "2023-09-08 12:36:14",
         "updated_at": "2023-09-08 12:36:14"
-    },
-    {
-        "id": "307",
-        "name": "R.S - P.L",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-09 09:38:48",
-        "updated_at": "2023-09-19 07:59:32"
     },
     {
         "id": "308",
@@ -2448,42 +2322,6 @@
         "updated_at": "2023-09-18 10:03:46"
     },
     {
-        "id": "346",
-        "name": "New",
-        "color": "danger",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-19 08:09:33",
-        "updated_at": "2023-09-19 08:16:13"
-    },
-    {
-        "id": "347",
-        "name": "Interested",
-        "color": "danger",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-19 08:10:26",
-        "updated_at": "2023-09-19 08:15:25"
-    },
-    {
-        "id": "348",
-        "name": "Collect Paper",
-        "color": "danger",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-19 08:10:59",
-        "updated_at": "2023-09-19 08:16:50"
-    },
-    {
-        "id": "349",
-        "name": "Hold",
-        "color": "warning",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-19 08:13:11",
-        "updated_at": "2023-09-19 08:19:12"
-    },
-    {
         "id": "350",
         "name": "Long Term",
         "color": "success",
@@ -2565,24 +2403,6 @@
         "updated_at": "2023-09-21 08:13:00"
     },
     {
-        "id": "370",
-        "name": "finalize",
-        "color": "danger",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-22 15:19:07",
-        "updated_at": "2023-09-22 15:19:07"
-    },
-    {
-        "id": "371",
-        "name": "R.S",
-        "color": "success",
-        "pipeline_id": "9",
-        "created_by": "2",
-        "created_at": "2023-09-23 09:42:43",
-        "updated_at": "2023-09-23 09:42:43"
-    },
-    {
         "id": "372",
         "name": "Waiting Documents",
         "color": "info",
@@ -2638,48 +2458,48 @@
     },
     {
         "id": "379",
-        "name": "30%",
-        "color": "primary",
+        "name": "ML - Con",
+        "color": "danger",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-09-28 14:34:06",
-        "updated_at": "2023-09-28 14:34:06"
+        "updated_at": "2024-10-31 12:41:25"
     },
     {
         "id": "380",
-        "name": "50%",
-        "color": "primary",
+        "name": "ML - N.P",
+        "color": "danger",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-09-28 14:34:25",
-        "updated_at": "2023-09-28 14:34:25"
+        "updated_at": "2024-10-31 12:41:43"
     },
     {
         "id": "381",
-        "name": "70%",
-        "color": "primary",
+        "name": "ML - Mow",
+        "color": "danger",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-09-28 14:34:37",
-        "updated_at": "2023-09-28 14:34:37"
+        "updated_at": "2024-10-31 12:42:31"
     },
     {
         "id": "382",
-        "name": "100 %",
-        "color": "primary",
+        "name": "BL- SME",
+        "color": "info",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-09-28 14:34:51",
-        "updated_at": "2023-09-28 14:35:17"
+        "updated_at": "2024-10-31 12:43:16"
     },
     {
         "id": "383",
-        "name": "AD Case",
+        "name": "BL - O.A",
         "color": "info",
         "pipeline_id": "9",
         "created_by": "2",
         "created_at": "2023-10-03 08:11:45",
-        "updated_at": "2023-11-17 14:38:22"
+        "updated_at": "2024-10-31 12:43:40"
     },
     {
         "id": "384",
@@ -3465,15 +3285,6 @@
         "updated_at": "2024-05-09 13:58:41"
     },
     {
-        "id": "476",
-        "name": "Sara",
-        "color": "primary",
-        "pipeline_id": "4",
-        "created_by": "2",
-        "created_at": "2024-05-09 13:59:03",
-        "updated_at": "2024-05-09 13:59:03"
-    },
-    {
         "id": "477",
         "name": "Campaign 1",
         "color": "warning",
@@ -3517,5 +3328,239 @@
         "created_by": "2",
         "created_at": "2024-06-19 13:13:41",
         "updated_at": "2024-06-19 13:13:41"
+    },
+    {
+        "id": "482",
+        "name": "Website",
+        "color": "primary",
+        "pipeline_id": "6137",
+        "created_by": "2",
+        "created_at": "2024-08-07 13:57:46",
+        "updated_at": "2024-08-07 13:57:46"
+    },
+    {
+        "id": "483",
+        "name": "Digital Marketing",
+        "color": "danger",
+        "pipeline_id": "6137",
+        "created_by": "2",
+        "created_at": "2024-08-07 13:58:02",
+        "updated_at": "2024-08-07 13:58:02"
+    },
+    {
+        "id": "484",
+        "name": "Advertising",
+        "color": "success",
+        "pipeline_id": "6137",
+        "created_by": "2",
+        "created_at": "2024-08-07 13:58:16",
+        "updated_at": "2024-08-07 13:58:16"
+    },
+    {
+        "id": "485",
+        "name": "Black List",
+        "color": "danger",
+        "pipeline_id": "2",
+        "created_by": "2",
+        "created_at": "2024-08-29 11:04:00",
+        "updated_at": "2024-08-29 11:04:00"
+    },
+    {
+        "id": "486",
+        "name": "Not Eligible",
+        "color": "secondary",
+        "pipeline_id": "9",
+        "created_by": "2",
+        "created_at": "2024-08-29 11:04:12",
+        "updated_at": "2024-10-31 12:45:20"
+    },
+    {
+        "id": "487",
+        "name": "Black List",
+        "color": "danger",
+        "pipeline_id": "4",
+        "created_by": "2",
+        "created_at": "2024-08-29 11:04:22",
+        "updated_at": "2024-08-29 11:04:22"
+    },
+    {
+        "id": "488",
+        "name": "Black List",
+        "color": "danger",
+        "pipeline_id": "8",
+        "created_by": "2",
+        "created_at": "2024-08-29 11:04:31",
+        "updated_at": "2024-08-29 11:04:31"
+    },
+    {
+        "id": "489",
+        "name": "Black List",
+        "color": "danger",
+        "pipeline_id": "6",
+        "created_by": "2",
+        "created_at": "2024-08-29 11:04:42",
+        "updated_at": "2024-08-29 11:04:42"
+    },
+    {
+        "id": "490",
+        "name": "Black List",
+        "color": "danger",
+        "pipeline_id": "3",
+        "created_by": "2",
+        "created_at": "2024-08-29 11:04:51",
+        "updated_at": "2024-08-29 11:04:51"
+    },
+    {
+        "id": "491",
+        "name": "Black List",
+        "color": "danger",
+        "pipeline_id": "5",
+        "created_by": "2",
+        "created_at": "2024-08-29 11:05:00",
+        "updated_at": "2024-08-29 11:05:00"
+    },
+    {
+        "id": "492",
+        "name": "Black List",
+        "color": "danger",
+        "pipeline_id": "7",
+        "created_by": "2",
+        "created_at": "2024-08-29 11:05:10",
+        "updated_at": "2024-08-29 11:05:10"
+    },
+    {
+        "id": "493",
+        "name": "Campaign 1",
+        "color": "primary",
+        "pipeline_id": "6138",
+        "created_by": "2",
+        "created_at": "2024-10-01 12:16:17",
+        "updated_at": "2024-10-01 12:16:17"
+    },
+    {
+        "id": "494",
+        "name": "Self",
+        "color": "secondary",
+        "pipeline_id": "6138",
+        "created_by": "2",
+        "created_at": "2024-10-01 12:16:59",
+        "updated_at": "2024-10-01 12:16:59"
+    },
+    {
+        "id": "495",
+        "name": "3rd Party",
+        "color": "warning",
+        "pipeline_id": "6138",
+        "created_by": "2",
+        "created_at": "2024-10-01 12:18:55",
+        "updated_at": "2024-10-01 12:18:55"
+    },
+    {
+        "id": "496",
+        "name": "POS Campaign 5",
+        "color": "info",
+        "pipeline_id": "4",
+        "created_by": "2",
+        "created_at": "2024-10-02 11:44:03",
+        "updated_at": "2024-10-02 11:44:15"
+    },
+    {
+        "id": "497",
+        "name": "Fatima Ezzahra",
+        "color": "primary",
+        "pipeline_id": "4",
+        "created_by": "2",
+        "created_at": "2024-10-02 17:04:29",
+        "updated_at": "2024-10-02 18:12:17"
+    },
+    {
+        "id": "499",
+        "name": "Nadia",
+        "color": "primary",
+        "pipeline_id": "4",
+        "created_by": "2",
+        "created_at": "2024-10-25 15:20:01",
+        "updated_at": "2024-10-25 15:34:45"
+    },
+    {
+        "id": "500",
+        "name": "Mariem",
+        "color": "primary",
+        "pipeline_id": "4",
+        "created_by": "2",
+        "created_at": "2024-10-25 15:21:59",
+        "updated_at": "2024-10-25 15:34:57"
+    },
+    {
+        "id": "501",
+        "name": "Mariem Ajman",
+        "color": "primary",
+        "pipeline_id": "4",
+        "created_by": "2",
+        "created_at": "2024-10-25 15:22:17",
+        "updated_at": "2024-10-25 15:35:08"
+    },
+    {
+        "id": "502",
+        "name": "Wafaa",
+        "color": "primary",
+        "pipeline_id": "4",
+        "created_by": "2",
+        "created_at": "2024-10-25 15:23:28",
+        "updated_at": "2024-10-25 15:35:22"
+    },
+    {
+        "id": "503",
+        "name": "Ibrahim",
+        "color": "primary",
+        "pipeline_id": "4",
+        "created_by": "2",
+        "created_at": "2024-10-25 15:23:43",
+        "updated_at": "2024-10-25 15:35:31"
+    },
+    {
+        "id": "504",
+        "name": "Abdullah",
+        "color": "primary",
+        "pipeline_id": "4",
+        "created_by": "2",
+        "created_at": "2024-10-25 15:24:03",
+        "updated_at": "2024-10-25 15:35:40"
+    },
+    {
+        "id": "505",
+        "name": "SA",
+        "color": "success",
+        "pipeline_id": "9",
+        "created_by": "2",
+        "created_at": "2024-10-31 12:48:13",
+        "updated_at": "2024-10-31 12:48:13"
+    },
+    {
+        "id": "506",
+        "name": "Urgent",
+        "color": "primary",
+        "pipeline_id": "9",
+        "created_by": "2",
+        "created_at": "2024-10-31 12:48:46",
+        "updated_at": "2024-10-31 12:48:46"
+    },
+    {
+        "id": "507",
+        "name": "Mr. Fady",
+        "color": "primary",
+        "pipeline_id": "9",
+        "created_by": "2",
+        "created_at": "2024-10-31 12:49:06",
+        "updated_at": "2024-10-31 12:49:06"
+    },
+    {
+        "id": "508",
+        "name": "Eng. Ramy",
+        "color": "primary",
+        "pipeline_id": "9",
+        "created_by": "2",
+        "created_at": "2024-10-31 12:49:24",
+        "updated_at": "2024-10-31 12:49:24"
     }
 ]

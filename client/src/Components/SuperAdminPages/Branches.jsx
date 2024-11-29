@@ -27,7 +27,7 @@ const Branches = () => {
     useEffect(() => {
         const fetchBranches = async () => {
             try {
-                const response = await axios.get(`/api/branch/get-branches`)
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branch/get-branches`)
                 const activeBranches = response.data.filter(branch => !branch.delstatus);
                 setBranches(activeBranches);
                 setLoading(false);
@@ -50,7 +50,7 @@ const Branches = () => {
 
         try {
             setCreatingBranch(true);
-            const response = await axios.post(`/api/branch/create-branch`, {
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/branch/create-branch`, {
                 name: newBranchName
             });
             setBranches([...branches, response.data]);
@@ -75,7 +75,7 @@ const Branches = () => {
 
         try {
             setUpdatingBranch(true);
-            const response = await axios.put(`/api/branch/update-branch/${selectedBranchId}`, {
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/branch/update-branch/${selectedBranchId}`, {
                 name: editingBranchName
             });
             setBranches(branches.map(branch =>
@@ -98,7 +98,7 @@ const Branches = () => {
         // if (!window.confirm('Are you sure you want to delete this branch?')) return;
         try {
             setDeletingBranch(true);
-            await axios.delete(`/api/branch/delete-branch/${id}`);
+            await axios.delete(`${process.env.REACT_APP_BASE_URL}/api/branch/delete-branch/${id}`);
             setBranches(branches.filter(branch => branch._id !== id));
             toast.success('Branch deleted successfully!'); // Using toast for success notification
             setDeletingBranch(false);

@@ -45,7 +45,7 @@ const GenerateReport = () => {
     const getHodPhoneBookData = async () => {
         try {
             const response = await axios.get(
-                `/api/phonebook/get-all-phonebook`,
+                `${process.env.REACT_APP_BASE_URL}/api/phonebook/get-all-phonebook`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -63,7 +63,7 @@ const GenerateReport = () => {
     const getAllUsers = async () => {
         try {
             const response = await axios.get(
-                `/api/users/get-users-by-pipeline`,
+                `${process.env.REACT_APP_BASE_URL}/api/users/get-users-by-pipeline`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,

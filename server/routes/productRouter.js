@@ -34,6 +34,15 @@ router.get('/get-all-products',  async (req, res) => {
         res.status(500).json({ message: 'Server error', error });
     }
 });
+router.get('/get-products',  async (req, res) => {
+    try {
+        // Find all products that are not marked as deleted and populate pipeline_id
+        const products = await Product.find({ delStatus: false ,}).populate('pipeline_id'); 
+        res.status(200).json(products);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+});
 
 // Get a single product by ID
 router.get('/:id', async (req, res) => {
@@ -53,7 +62,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update a product by ID
-router.put('/:id', isAuth,hasPermission(['app_management']),async (req, res) => {
+router.put('/:id', async (req, res) => {
     try {
         const { name, pipeline_id } = req.body; // Include pipeline_id in request
 

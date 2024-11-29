@@ -1,12 +1,11 @@
 .lead-discussion-main-card-activity-log {
     padding: 0px;
-    border-radius: 10px;
+    border-radius: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    height: 100%;
-    max-height: 310px;
-    overflow-y: scroll;
+    height: 100vh;
+    max-height: 358px;
     margin-bottom: 4%;
-    background-color: #efefef;
+    overflow: hidden;
 }
 
 .activity-heading {
@@ -17,17 +16,18 @@
 
 
 .image_control_discussion {
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     border-radius: 20%;
+    border: 1px solid rgb(215, 170, 71) !important;
 }
 
 .activity-log {
     padding: 10px;
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    background-color: #f9f9f9;
+    background-color: #2d3134;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    height: 100%;
     max-height: 100px;
     overflow: hidden;
     transition: transform 0.3s;

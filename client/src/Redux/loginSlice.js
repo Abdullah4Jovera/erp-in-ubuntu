@@ -18,7 +18,7 @@ export const loginApi = createAsyncThunk(
     'user/login',
     async (values, { dispatch, rejectWithValue }) => {
         try {
-            const response = await axios.post(`/api/users/login`, {
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/users/login`, {
                 email: values.email,
                 password: values.password,
             });
@@ -42,7 +42,7 @@ export const fetchPipelines = createAsyncThunk(
     'pipeline/fetchPipelines',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`/api/pipelines/get-pipelines`,);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/pipelines/get-pipelines`,);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response.data);
@@ -55,7 +55,7 @@ export const fetchBranches = createAsyncThunk(
     'branches/fetchBranches',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`/api/branch/get-branches`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branch/get-branches`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response.data);
@@ -68,7 +68,7 @@ export const fetchAllProducts = createAsyncThunk(
     'products/fetchAllProducts',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`/api/products/get-all-products`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/products/get-all-products`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response.data);
@@ -81,7 +81,7 @@ export const fetchProductNames = createAsyncThunk(
     'productNames/fetchProductNames',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`/api/products/get-all-products`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/products/get-all-products`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response.data);
@@ -94,7 +94,7 @@ export const fetchLeadType = createAsyncThunk(
     'leadType/fetchLeadType',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`/api/leadtypes/get-all-leadtypes`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/leadtypes/get-all-leadtypes`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response.data);
@@ -108,7 +108,7 @@ export const fetchUpdatedPermission = createAsyncThunk(
     async (_, { getState, rejectWithValue }) => {
         const token = getState().loginSlice.user?.token;
         try {
-            const response = await axios.get(`/api/users/permissions`, {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/users/permissions`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -126,7 +126,7 @@ export const refreshToken = createAsyncThunk(
     async (_, { getState, rejectWithValue }) => {
         const token = getState().loginSlice.user?.token;
         try {
-            const response = await axios.post(`/api/users/refresh-token`, {}, {
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/users/refresh-token`, {}, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -146,7 +146,7 @@ export const logoutUser = createAsyncThunk(
         const navigate = useNavigate();
  
         try {
-            await axios.post(`/api/users/logout`, {}, {
+            await axios.post(`${process.env.REACT_APP_BASE_URL}/api/users/logout`, {}, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

@@ -21,6 +21,7 @@ const Request = () => {
     const [delLabelModal, setDelLabelModal] = useState(false);
     const [deleteLabelId, setDeleteLabelId] = useState(null)
     const navigate = useNavigate()
+    const [rtl, setRtl] = useState(null);
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -29,7 +30,7 @@ const Request = () => {
     const fetchRequests = async () => {
         try {
             const response = await axios.get(
-                `/api/request/my-requests`,
+                `${process.env.REACT_APP_BASE_URL}/api/request/my-requests`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -69,13 +70,18 @@ const Request = () => {
     };
 
     useEffect(() => {
+        const savedRtl = localStorage.getItem('rtl');
+        setRtl(savedRtl); // Update state with the 'rtl' value from localStorage
+    }, [rtl]);
+
+    useEffect(() => {
         fetchRequests();
     }, [token]);
 
     const handleActionChange = async (requestId, action) => {
         try {
             const response = await axios.put(
-                `/api/request/change-action/${requestId}`,
+                `${process.env.REACT_APP_BASE_URL}/api/request/change-action/${requestId}`,
                 { action },
                 {
                     headers: {
@@ -98,7 +104,7 @@ const Request = () => {
 
     const handleMarkReadChange = async (requestId) => {
         try {
-            await axios.put(`/api/request/mark-read/${requestId}`, {}, {
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/api/request/mark-read/${requestId}`, {}, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -111,10 +117,11 @@ const Request = () => {
 
     // Filter options for Select dropdown
     const actionOptions = [
-        { value: 'All', label: 'All' },
-        { value: 'Pending', label: 'Pending' },
-        { value: 'Accept', label: 'Accepted' },
-        { value: 'Decline', label: 'Decline' },
+        { value: 'All', label: rtl === 'true' ? 'الكل' : 'All' },
+        { value: 'Pending', label: rtl === 'true' ? 'قيد الانتظار' : 'Pending' },
+        { value: 'Accept', label: rtl === 'true' ? 'مقبول' : 'Accepted' },
+        { value: 'Decline', label: rtl === 'true' ? 'مرفوض' : 'Decline' },
+        ,
     ];
 
     // Handle filter change
@@ -145,7 +152,7 @@ const Request = () => {
 
     const handleDelete = async (id) => {
         try {
-            await axios.put(`/api/request/soft-delete/${id}`, {}, {
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/api/request/soft-delete/${id}`, {}, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -163,15 +170,15 @@ const Request = () => {
 
     return (
         <div>
-            <Container fluid>
+            <Container fluid style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
                 <Row>
                     <Col xs={12} md={12} lg={2}>
                         <Sidebar />
                     </Col>
 
                     <Col xs={12} md={12} lg={10}>
-                        <Card className='leads_main_cards' style={{ maxHeight: '95vh', overflowX: 'auto' }}>
-                            <h2 className='text-center mt-3'>Lead Requests</h2>
+                        <Card className='leads_main_cards mt-4' style={{ maxHeight: '95vh', overflowX: 'auto' }}>
+                            <h2 className='text-center mt-3 mutual_heading_class'>  {rtl === 'true' ? 'طلبات القادة' : 'Lead Requests'}</h2>
 
                             {/* Action Filter */}
                             <div className="mb-4 d-flex justify-content-end">
@@ -181,12 +188,14 @@ const Request = () => {
                                     defaultValue={actionOptions[0]}
                                     isClearable={false}
                                     placeholder="Filter by Action"
-                                    className="custom-select w-50 w-sm-50"  // Ensure it's responsive
+                                    className="custom-select w-50 w-sm-50 "  // Ensure it's responsive
+                                    // classNamePrefix="react-select"
+                                    // input_field_input_field
                                     styles={{
                                         control: (provided) => ({
                                             ...provided,
                                             borderRadius: '8px',  // Rounded corners
-                                            borderColor: '#ced4da',  // Subtle border color
+                                            border: 'none',  // Subtle border color
                                             padding: '2px',  // Padding for better touch targets
                                             boxShadow: 'none',  // Remove default box-shadow
                                         }),
@@ -210,29 +219,39 @@ const Request = () => {
                             </div>
 
                             {filteredRequests.length === 0 ? (
-                                <p>No lead requests found.</p>
+                                <p className='mutual_heading_class'>{rtl === 'true' ? 'لا توجد طلبات ليد' : 'No lead requests found.'}</p>
                             ) : (
                                 <>
                                     <Row>
                                         {currentRequests.map((request) => {
                                             const imageSrc = request.sender.image
-                                                ? `/images/${request.sender.image}`
+                                                ? `${process.env.REACT_APP_BASE_URL}/images/${request.sender.image}`
                                                 : null;
                                             return (
                                                 <Col key={request._id} xs={12} sm={12} md={12} lg={12} xxl={6} className="mb-4">
                                                     <Card style={{ width: '100%' }} className='lead_request_main_card' >
                                                         <Card.Body>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} >
-                                                                <Card.Title className='request_message' >{request.message}</Card.Title>
+                                                                <Card.Title className='request_message' > <span style={{ color: 'white' }} >{request.message}</span> </Card.Title>
                                                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'start' }}>
                                                                     <AiFillDelete onClick={() => DelRequestModal(request?._id)} style={{ fontSize: '20px', color: 'red', cursor: 'pointer' }} />
                                                                     <GrView onClick={() => navigate(`/single-leads/${request?.lead_id?._id}`)} style={{ fontSize: '20px', color: '#d7aa47', cursor: 'pointer' }} />
                                                                 </div>
                                                             </div>
                                                             <Row className='mt-2'>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} >
+                                                                <div
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        justifyContent: 'space-between',
+                                                                        alignItems: 'center',
+                                                                        textAlign: rtl === 'true' ? 'right' : 'left', // Align text dynamically
+                                                                        direction: rtl === 'true' ? 'rtl' : 'ltr',   // Set text direction dynamically
+                                                                    }}
+                                                                >
                                                                     <div>
-                                                                        <strong>Sender:</strong>
+                                                                        <strong style={{ color: 'white' }}>
+                                                                            {rtl === 'true' ? 'المرسل' : 'Sender'}
+                                                                        </strong>
                                                                         <Card.Subtitle className="mb-2 text-muted">
                                                                             {imageSrc && (
                                                                                 <OverlayTrigger
@@ -246,64 +265,108 @@ const Request = () => {
                                                                                     />
                                                                                 </OverlayTrigger>
                                                                             )}
-                                                                            <span style={{ color: '#979797', fontWeight: '500' }} > {request.sender?.name}</span>
+                                                                            <span style={{ color: '#d7aa47', fontWeight: '500' }}> {request.sender?.name}</span>
                                                                         </Card.Subtitle>
                                                                     </div>
 
-                                                                    <div className='mt-1'>
+                                                                    <div className="mt-1">
                                                                         <Card.Text>
-                                                                            <strong>Client:</strong>
-                                                                            <p style={{ color: '#979797', fontWeight: '500' }}>{request.lead_id?.client.name}</p>
+                                                                            <strong style={{ color: 'white' }}>
+                                                                                {rtl === 'true' ? 'العميل' : 'Client'}
+                                                                            </strong>
+                                                                            <p style={{ color: '#d7aa47', fontWeight: '500' }}>
+                                                                                {request.lead_id?.client.name}
+                                                                            </p>
                                                                         </Card.Text>
                                                                     </div>
 
                                                                     <div>
                                                                         <Card.Text>
-                                                                            <strong>Type:</strong>
-                                                                            <p style={{ color: '#979797', fontWeight: '500' }}>{request.type}</p>
+                                                                            <strong style={{ color: 'white' }}>
+                                                                                {rtl === 'true' ? 'النوع' : 'Type'}
+                                                                            </strong>
+                                                                            <p style={{ color: '#d7aa47', fontWeight: '500' }}>
+                                                                                {request.type}
+                                                                            </p>
                                                                         </Card.Text>
                                                                     </div>
 
                                                                     <div>
                                                                         <Card.Text>
-                                                                            <strong>Action:</strong>
-                                                                            <p style={{ color: '#979797', fontWeight: '500' }}> {request.action || 'Pending'}</p>
+                                                                            <strong style={{ color: 'white' }}>
+                                                                                {rtl === 'true' ? 'الإجراء' : 'Action'}
+                                                                            </strong>
+                                                                            <p style={{ color: '#d7aa47', fontWeight: '500' }}>
+                                                                                {request.action || (rtl === 'true' ? 'معلق' : 'Pending')}
+                                                                            </p>
                                                                         </Card.Text>
                                                                     </div>
                                                                 </div>
 
-                                                                <Col md={6} lg={6}>
-                                                                    <Card className='current_request_status' >
+
+                                                                <Col
+                                                                    md={6}
+                                                                    lg={6}
+                                                                    style={{
+                                                                        textAlign: rtl === 'true' ? 'right' : 'left', // Align text dynamically
+                                                                        direction: rtl === 'true' ? 'rtl' : 'ltr',   // Set text direction dynamically
+                                                                    }}
+                                                                >
+                                                                    <Card className='current_request_status'>
                                                                         <Card.Text>
-                                                                            <strong>Current Status:</strong>
+                                                                            <strong>{rtl === 'true' ? 'الحالة الحالية:' : 'Current Status:'}</strong>
                                                                             <div>
-                                                                                <p className='mt-3'><strong>Branch:</strong> {request.currentBranch?.name || 'N/A'}</p>
-                                                                                <p><strong>Product:</strong> {request?.currentProduct?.name || 'N/A'}</p>
-                                                                                <p><strong>Pipeline:</strong> {request.currentPipeline?.name || 'N/A'}</p>
-                                                                                <p><strong>Product Stage:</strong> {request.currentProductStage?.name || 'N/A'}</p>
+                                                                                <p className='mt-3'>
+                                                                                    <strong>{rtl === 'true' ? 'الفرع:' : 'Branch:'}</strong> {request.currentBranch?.name || 'N/A'}
+                                                                                </p>
+                                                                                <p>
+                                                                                    <strong>{rtl === 'true' ? 'المنتج:' : 'Product:'}</strong> {request?.currentProduct?.name || 'N/A'}
+                                                                                </p>
+                                                                                <p>
+                                                                                    <strong>{rtl === 'true' ? 'الأنبوب:' : 'Pipeline:'}</strong> {request.currentPipeline?.name || 'N/A'}
+                                                                                </p>
+                                                                                <p>
+                                                                                    <strong>{rtl === 'true' ? 'مرحلة المنتج:' : 'Product Stage:'}</strong> {request.currentProductStage?.name || 'N/A'}
+                                                                                </p>
                                                                             </div>
                                                                         </Card.Text>
                                                                     </Card>
                                                                 </Col>
 
-                                                                <Col md={6} lg={6}>
+                                                                <Col
+                                                                    md={6}
+                                                                    lg={6}
+                                                                    style={{
+                                                                        textAlign: rtl === 'true' ? 'right' : 'left', // Align text dynamically
+                                                                        direction: rtl === 'true' ? 'rtl' : 'ltr',   // Set text direction dynamically
+                                                                    }}
+                                                                >
                                                                     <Card className='current_request_status'>
                                                                         <Card.Text>
-                                                                            <strong>Requested Status:</strong>
+                                                                            <strong>{rtl === 'true' ? 'الحالة المطلوبة:' : 'Requested Status:'}</strong>
                                                                             <div>
-                                                                                <p className='mt-3' ><strong>Branch:</strong> {request.branch?.name || 'N/A'}</p>
-                                                                                <p><strong>Product:</strong> {request.products?.name || 'N/A'}</p>
-                                                                                <p><strong>Pipeline:</strong> {request.pipeline_id?.name || 'N/A'}</p>
-                                                                                <p><strong>Product Stage:</strong> {request.product_stage?.name || 'N/A'}</p>
+                                                                                <p className='mt-3'>
+                                                                                    <strong>{rtl === 'true' ? 'الفرع:' : 'Branch:'}</strong> {request.branch?.name || 'N/A'}
+                                                                                </p>
+                                                                                <p>
+                                                                                    <strong>{rtl === 'true' ? 'المنتج:' : 'Product:'}</strong> {request.products?.name || 'N/A'}
+                                                                                </p>
+                                                                                <p>
+                                                                                    <strong>{rtl === 'true' ? 'الأنبوب:' : 'Pipeline:'}</strong> {request.pipeline_id?.name || 'N/A'}
+                                                                                </p>
+                                                                                <p>
+                                                                                    <strong>{rtl === 'true' ? 'مرحلة المنتج:' : 'Product Stage:'}</strong> {request.product_stage?.name || 'N/A'}
+                                                                                </p>
                                                                             </div>
                                                                         </Card.Text>
                                                                     </Card>
                                                                 </Col>
+
                                                             </Row>
 
                                                             <Card.Text className='mt-2' >
-                                                                <strong>Receivers:</strong>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                                <strong style={{ color: 'white' }}>Receivers</strong>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer' }}>
                                                                     {request.receivers?.map((receiver) => (
                                                                         <OverlayTrigger
                                                                             key={receiver._id}
@@ -311,7 +374,7 @@ const Request = () => {
                                                                             overlay={<Tooltip id={`tooltip-${receiver._id}`}>{receiver.name}</Tooltip>}
                                                                         >
                                                                             <Image
-                                                                                src={`/images/${receiver.image}`}
+                                                                                src={`${process.env.REACT_APP_BASE_URL}/images/${receiver.image}`}
                                                                                 alt="Receiver Image"
                                                                                 style={{ width: '40px', height: '40px', borderRadius: '50%' }}
                                                                             />
@@ -320,32 +383,47 @@ const Request = () => {
                                                                 </div>
 
                                                                 {request?.action !== 'Pending' && request?.actionChangedBy && (
-                                                                    <Card.Text className={`mt-3 ${request.action === 'Accept' ? 'text-success' : request.action === 'Decline' ? 'text-danger' : ''}`}>
-                                                                        Lead Request of type "{request?.type}"{request.action.toLowerCase()} by <strong>{request.actionChangedBy.name}</strong>
+                                                                    <Card.Text
+                                                                        className={`mt-3 ${request.action === 'Accept' ? 'text-success' : request.action === 'Decline' ? 'text-danger' : ''}`}
+                                                                        style={{
+                                                                            textAlign: rtl === 'true' ? 'right' : 'left', // Align text dynamically
+                                                                            direction: rtl === 'true' ? 'rtl' : 'ltr'    // Set text direction dynamically
+                                                                        }}
+                                                                    >
+                                                                        Lead Request of type "{request?.type}" {request.action.toLowerCase()} by <strong>{request.actionChangedBy.name}</strong>
                                                                         {request.actionChangedBy.image && (
                                                                             <Image
-                                                                                src={`/images/${request?.actionChangedBy.image}`}
+                                                                                src={`${process.env.REACT_APP_BASE_URL}/images/${request?.actionChangedBy.image}`}
                                                                                 alt="Action Changed By"
-                                                                                style={{ width: '30px', height: '30px', borderRadius: '50%', marginLeft: '8px' }}
+                                                                                style={{
+                                                                                    width: '30px',
+                                                                                    height: '30px',
+                                                                                    borderRadius: '50%',
+                                                                                    marginLeft: rtl === 'true' ? '0' : '8px', // Adjust image margin based on RTL
+                                                                                    marginRight: rtl === 'true' ? '8px' : '0'  // Adjust image margin based on RTL
+                                                                                }}
                                                                             />
                                                                         )}
                                                                     </Card.Text>
+
                                                                 )}
                                                                 <div>
 
                                                                     {request.action === 'Pending' && request.receivers?.some((receiver) => receiver._id === userId) && (
-                                                                        <div className="mt-3" style={{ display: 'flex', gap: '10px' }}>
+                                                                        <div className="mt-3" style={{ display: 'flex', gap: '10px', flexDirection: rtl === 'true' ? 'row-reverse' : 'row' }}>
                                                                             <Button
                                                                                 variant="success"
                                                                                 onClick={() => handleActionChange(request._id, 'Accept')}
+                                                                                style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }}
                                                                             >
-                                                                                Accept
+                                                                                {rtl === 'true' ? 'قبول' : 'Accept'}
                                                                             </Button>
                                                                             <Button
                                                                                 variant="danger"
                                                                                 onClick={() => handleActionChange(request._id, 'Decline')}
+                                                                                style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }}
                                                                             >
-                                                                                Decline
+                                                                                {rtl === 'true' ? 'رفض' : 'Decline'}
                                                                             </Button>
                                                                         </div>
                                                                     )}
@@ -355,7 +433,7 @@ const Request = () => {
                                                                                 variant="success"
                                                                                 onClick={() => handleMarkReadChange(request._id)}
                                                                             >
-                                                                                Mark as Read
+                                                                                {rtl === 'true' ? 'تم الوسم كـ مقروء' : 'Mark as Read'}
                                                                             </Button>
                                                                         </div>
                                                                     )}
@@ -370,21 +448,23 @@ const Request = () => {
                                     </Row>
 
                                     {/* Pagination */}
-                                    <div className="pagination mt-1 d-flex justify-content-center ">
+                                    <div className="pagination mt-1 d-flex justify-content-center" style={{ textAlign: rtl === 'true' ? 'right' : 'left' }}>
                                         <Button
                                             onClick={() => handlePageChange(currentPage - 1)}
                                             disabled={currentPage === 1}
                                             style={{ backgroundColor: '#d7aa47', border: 'none' }}
                                         >
-                                            Previous
+                                            {rtl === 'true' ? 'السابق' : 'Previous'}
                                         </Button>
-                                        <span className="mx-2 mb-0">{currentPage} of {totalPages}</span>
+                                        <span className="mx-2 mb-0" style={{ color: 'white' }}>
+                                            {currentPage} {rtl === 'true' ? 'من' : 'of'} {totalPages}
+                                        </span>
                                         <Button
                                             onClick={() => handlePageChange(currentPage + 1)}
                                             disabled={currentPage === totalPages}
                                             style={{ backgroundColor: '#d7aa47', border: 'none' }}
                                         >
-                                            Next
+                                            {rtl === 'true' ? 'التالي' : 'Next'}
                                         </Button>
                                     </div>
                                 </>
@@ -400,20 +480,27 @@ const Request = () => {
                     show={delLabelModal}
                     onHide={() => setDelLabelModal(false)}
                 >
-                    <Modal.Header closeButton>
-                        <Modal.Title id="contained-modal-title-vcenter">
-                            Delete Label
+                    <Modal.Header closeButton style={{ border: 'none' }}>
+                        <Modal.Title id="contained-modal-title-vcenter" className='mutual_heading_class'>
+                            {rtl === 'true' ? 'حذف التسمية' : 'Delete Request'}
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body className="text-center">
                         <TiDeleteOutline className="text-danger" style={{ fontSize: '6rem' }} />
-                        <p>Are you sure you want to Delete this Label ?</p>
+                        <p className='mutual_heading_class'>
+                            {rtl === 'true' ? 'هل أنت متأكد أنك تريد حذف هذه التسمية؟' : 'Are you sure you want to Delete this Request?'}
+                        </p>
                     </Modal.Body>
-                    <Modal.Footer>
-                        <Button className='all_close_btn_container' onClick={() => setDelLabelModal(false)}>No</Button>
-                        <Button className='all_single_leads_button' onClick={() => handleDelete(deleteLabelId)}>Yes</Button>
+                    <Modal.Footer style={{ border: 'none' }}>
+                        <Button className='all_close_btn_container' onClick={() => setDelLabelModal(false)}>
+                            {rtl === 'true' ? 'لا' : 'No'}
+                        </Button>
+                        <Button className='all_common_btn_single_lead' onClick={() => handleDelete(deleteLabelId)}>
+                            {rtl === 'true' ? 'نعم' : 'Yes'}
+                        </Button>
                     </Modal.Footer>
                 </Modal>
+
             </Container>
         </div>
     );

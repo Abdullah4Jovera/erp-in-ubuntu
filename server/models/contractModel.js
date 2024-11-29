@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-
+ 
 const contractSchema = new Schema({
     is_reject: { 
         type: Boolean,
@@ -33,15 +33,21 @@ const contractSchema = new Schema({
         ref: 'Source',
         required: true
     },
-    products: [{
+    products: {
         type: Schema.Types.ObjectId,
         ref: 'Product',
         required: true
-    }],
+    },
+    branch: {
+        type: Schema.Types.ObjectId,
+        ref: 'Branch',
+        required: true
+    },
     contract_stage: {
         type: Schema.Types.ObjectId,
         ref: 'ContractStage',
         required: true
+        // type: String
     },
     labels: [{
         type: String,
@@ -94,12 +100,12 @@ const contractSchema = new Schema({
     },
 });
 
-// // Update timestamps before saving
-// contractSchema.pre('save', function (next) {
-//     if (this.isModified()) {
-//         this.updated_at = Date.now();
-//     }
-//     next();
-// });
+// Update timestamps before saving
+contractSchema.pre('save', function (next) {
+    if (this.isModified()) {
+        this.updated_at = Date.now();
+    }
+    next();
+});
 
 module.exports = mongoose.model('Contract', contractSchema);

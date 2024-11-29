@@ -12,14 +12,14 @@ const productStageSchema = new mongoose.Schema({
     ref: 'Product',  
     required: true, 
   },
-  pipeline_id: {
-    type: Schema.Types.ObjectId,
-    ref: 'Pipeline',  
-  },
-  //   pipeline_id: {
-  //   type:String,
-    
+  // pipeline_id: {
+  //   type: Schema.Types.ObjectId,
+  //   ref: 'Pipeline',  
   // },
+    pipeline_id: {
+    type:String,
+    
+  },
   order: {
     type: Number,
     required: true,

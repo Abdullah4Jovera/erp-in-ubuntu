@@ -24,6 +24,7 @@ const LabelManagement = () => {
     const [newLabelPipeline, setNewLabelPipeline] = useState('');
     const [delLabelModal, setDelLabelModal] = useState(false);
     const [deleteLabelId, setDeleteLabelId] = useState(null)
+    const [rtl, setRtl] = useState(null);
 
     const fetchLabels = async () => {
         setLoading(true);
@@ -31,16 +32,16 @@ const LabelManagement = () => {
 
         try {
             const requests = selectedPipeline
-                ? [axios.get(`/api/labels/pipeline/${selectedPipeline}`, {
+                ? [axios.get(`${process.env.REACT_APP_BASE_URL}/api/labels/pipeline/${selectedPipeline}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 })]
                 : UserPipeline.length
                     ? UserPipeline.map(pipeline =>
-                        axios.get(`/api/labels/pipeline/${pipeline}`, {
+                        axios.get(`${process.env.REACT_APP_BASE_URL}/api/labels/pipeline/${pipeline}`, {
                             headers: { Authorization: `Bearer ${token}` },
                         })
                     )
-                    : [axios.get(`/api/labels/all`, {
+                    : [axios.get(`${process.env.REACT_APP_BASE_URL}/api/labels/all`, {
                         headers: { Authorization: `Bearer ${token}` },
                     })];
 
@@ -53,6 +54,12 @@ const LabelManagement = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const savedRtl = localStorage.getItem('rtl');
+        setRtl(savedRtl); // Update state with the 'rtl' value from localStorage
+    }, [rtl]);
+
 
     useEffect(() => {
         if (token) {
@@ -79,7 +86,7 @@ const LabelManagement = () => {
 
     const handleDelete = async (labelId) => {
         try {
-            await axios.delete(`/api/labels/${labelId}`, {
+            await axios.delete(`${process.env.REACT_APP_BASE_URL}/api/labels/${labelId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setLabels(labels.filter(label => label._id !== labelId));
@@ -95,7 +102,7 @@ const LabelManagement = () => {
                 name: newLabelName,
                 color: newLabelColor,
             };
-            const response = await axios.put(`/api/labels/${selectedLabel._id}`, updatedLabel, {
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/labels/${selectedLabel._id}`, updatedLabel, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             fetchLabels();
@@ -116,7 +123,7 @@ const LabelManagement = () => {
                 color: newLabelColor,
                 pipeline_id: newLabelPipeline || UserPipeline, // Only send pipeline if selected
             };
-            const response = await axios.post(`/api/labels/create`, newLabel, {
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/labels/create`, newLabel, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             fetchLabels();
@@ -175,20 +182,28 @@ const LabelManagement = () => {
 
     return (
         <div>
-            <Container fluid>
+            <Container fluid style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
                 <Row>
                     <Col xs={12} md={12} lg={2}>
                         <Sidebar />
                     </Col>
 
                     <Col xs={12} md={12} lg={10}>
-                        <Card className="leads_main_cards">
-                            <h1 className="text-center">Label Management</h1>
+                        <Card className="leads_main_cards"  >
+                            <h1
+                                className="text-center mutual_heading_class"
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'center', // Align text dynamically
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',    // Set text direction dynamically
+                                }}
+                            >
+                                {rtl === 'true' ? 'إدارة التسميات' : 'Label Management'}
+                            </h1>
 
                             {/* Pipeline Buttons for filtering */}
                             {Array.isArray(UserPipeline) && UserPipeline.length === 0 && (
                                 <div className="text-center">
-                                    <Button variant="secondary" onClick={handleClearFilter} className="mx-2 mt-3">
+                                    <Button onClick={handleClearFilter} className="mx-2 mt-3 " style={{ backgroundColor: '#6c757da2', border: 'none' }}>
                                         All Pipelines
                                     </Button>
                                     {pipelines.map((pipeline) => (
@@ -198,7 +213,7 @@ const LabelManagement = () => {
                                             onClick={() => handlePipelineClick(pipeline._id)}
                                             className="mx-2 mt-3"
                                             style={{
-                                                backgroundColor: selectedPipeline === pipeline._id ? '#ffa000' : 'black',
+                                                backgroundColor: selectedPipeline === pipeline._id ? '#d7aa47' : '#6c757da2',
                                                 color: selectedPipeline === pipeline._id ? 'white' : 'white',
                                                 border: "none"
                                             }}
@@ -211,56 +226,95 @@ const LabelManagement = () => {
 
                             {/* Create Label Button */}
                             <div className="text-end">
-                                <BiSolidMessageAltAdd onClick={() => setShowCreateModal(true)} style={{ fontSize: '40px', color: 'green', cursor: 'pointer' }} />
+                                <BiSolidMessageAltAdd onClick={() => setShowCreateModal(true)} style={{ fontSize: '40px', color: '#d7aa47', cursor: 'pointer' }} />
                             </div>
 
                             {loading ? (
                                 <div className="text-center">
-                                    <Spinner animation="border" />
+                                    <Spinner animation="grow" style={{ color: '#d7aa47' }} />
                                 </div>
                             ) : error ? (
                                 <div className="text-center text-danger">
                                     {error}
                                 </div>
                             ) : (
-                                <Table hover striped>
-                                    <thead>
-                                        <tr>
-                                            <th>Color</th>
-                                            <th>Name</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {labels.map((label) => (
-                                            <tr key={label._id}>
-                                                <td>
-                                                    <div
-                                                        style={{
-                                                            width: '20px',
-                                                            height: '20px',
-                                                            backgroundColor: getBackgroundColor(label.color),
-                                                            borderRadius: '4px'
-                                                        }}
-                                                    ></div>
-                                                </td>
-                                                <td>{label.name}</td>
-                                                <td >
-                                                    <BiMessageSquareEdit
-                                                        onClick={() => handleEdit(label)}
-                                                        style={{ fontSize: '20px', color: '#ffa21d', cursor: 'pointer', marginRight: '30px' }}
-                                                    />
-                                                    <AiFillDelete
-                                                        // onClick={() => handleDelete(label._id)}
-                                                        onClick={() => handleOpenDeleteModal(label._id)}
-                                                        style={{ fontSize: '20px', color: 'red', cursor: 'pointer' }}
-                                                    />
+                                <div style={{ height: '100%', maxHeight: '700px', overflowY: 'auto' }}>
+                                    <Table hover striped >
+                                        <thead style={{ backgroundColor: '#d7aa47' }} className='sticky-top' >
+                                            <tr className="teble_tr_class" style={{
+                                                backgroundColor: '#d7aa47',
+                                                color: '#343a40',
+                                                border: '1px solid #d7aa47',
+                                                transition: 'background-color 0.3s ease',
+                                            }}>
+                                                <th
+                                                    style={{
+                                                        backgroundColor: '#d7aa47',
+                                                        color: "white",
+                                                        textAlign: rtl === 'true' ? 'right' : 'left', // Align text dynamically based on rtl
+                                                        direction: rtl === 'true' ? 'rtl' : 'ltr',   // Set text direction dynamically
+                                                    }}
+                                                >
+                                                    {rtl === 'true' ? 'اللون' : 'Color'}
+                                                </th>
 
-                                                </td>
+                                                <th
+                                                    className='text-center'
+                                                    style={{
+                                                        backgroundColor: '#d7aa47',
+                                                        color: "white",
+                                                        textAlign: rtl === 'true' ? 'right' : 'center', // Align text dynamically
+                                                        direction: rtl === 'true' ? 'rtl' : 'ltr',     // Set text direction dynamically
+                                                    }}
+                                                >
+                                                    {rtl === 'true' ? 'الاسم' : 'Name'}
+                                                </th>
+
+                                                <th
+                                                    className='text-center'
+                                                    style={{
+                                                        backgroundColor: '#d7aa47',
+                                                        color: "white",
+                                                        textAlign: rtl === 'true' ? 'right' : 'center', // Align text dynamically
+                                                        direction: rtl === 'true' ? 'rtl' : 'ltr',     // Set text direction dynamically
+                                                    }}
+                                                >
+                                                    {rtl === 'true' ? 'الإجراءات' : 'Actions'}
+                                                </th>
+
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
+                                        </thead>
+                                        <tbody >
+                                            {labels.map((label) => (
+                                                <tr key={label._id} className='table_td_class'>
+                                                    <td className="cell-width table_td_class">
+                                                        <div
+                                                            style={{
+                                                                width: '20px',
+                                                                height: '20px',
+                                                                backgroundColor: getBackgroundColor(label.color),
+                                                                borderRadius: '4px'
+                                                            }}
+                                                        ></div>
+                                                    </td>
+                                                    <td className="cell-width table_td_class">{label.name}</td>
+                                                    <td className="cell-width table_td_class" >
+                                                        <BiMessageSquareEdit
+                                                            onClick={() => handleEdit(label)}
+                                                            style={{ fontSize: '20px', color: '#ffa21d', cursor: 'pointer', marginRight: '10px' }}
+                                                        />
+                                                        <AiFillDelete
+                                                            // onClick={() => handleDelete(label._id)}
+                                                            onClick={() => handleOpenDeleteModal(label._id)}
+                                                            style={{ fontSize: '20px', color: 'red', cursor: 'pointer' }}
+                                                        />
+
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                </div>
                             )}
                         </Card>
                     </Col>
@@ -269,22 +323,37 @@ const LabelManagement = () => {
 
             {/* Edit Label Modal */}
             <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Edit Label</Modal.Title>
+                <Modal.Header
+                    closeButton
+                    style={{
+                        border: 'none',
+                        textAlign: rtl === 'true' ? 'right' : 'left',
+                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                    }}
+                >
+                    <Modal.Title className='mutual_heading_class'>
+                        {rtl === 'true' ? 'تعديل التسمية' : 'Edit Label'}
+                    </Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
+
+                <Modal.Body style={{ textAlign: rtl === 'true' ? 'right' : 'left', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
                     <Form>
                         <Form.Group controlId="labelName">
-                            <Form.Label>Label Name</Form.Label>
+                            <Form.Label className='mutual_heading_class'>
+                                {rtl === 'true' ? 'اسم التسمية' : 'Label Name'}
+                            </Form.Label>
                             <Form.Control
                                 type="text"
                                 value={newLabelName}
                                 onChange={(e) => setNewLabelName(e.target.value)}
+                                className='input_field_input_field'
                             />
                         </Form.Group>
 
                         <Form.Group controlId="labelColor">
-                            <Form.Label>Label Color</Form.Label>
+                            <Form.Label className='mutual_heading_class'>
+                                {rtl === 'true' ? 'لون التسمية' : 'Label Color'}
+                            </Form.Label>
                             <div className="d-flex flex-wrap">
                                 {colorOptions.map(option => (
                                     <Button
@@ -304,13 +373,16 @@ const LabelManagement = () => {
                         </Form.Group>
 
                         <Form.Group controlId="labelPipeline">
-                            <Form.Label>Pipeline</Form.Label>
+                            <Form.Label className='mutual_heading_class'>
+                                {rtl === 'true' ? 'الأنبوب' : 'Pipeline'}
+                            </Form.Label>
                             <Form.Control
                                 as="select"
                                 value={newLabelPipeline}
                                 onChange={(e) => setNewLabelPipeline(e.target.value)}
+                                className='input_field_input_field'
                             >
-                                <option value="">Select Pipeline</option>
+                                <option value="">{rtl === 'true' ? 'اختر الأنبوب' : 'Select Pipeline'}</option>
                                 {pipelines.map((pipeline) => (
                                     <option key={pipeline._id} value={pipeline._id}>
                                         {pipeline.name}
@@ -320,7 +392,14 @@ const LabelManagement = () => {
                         </Form.Group>
                     </Form>
                 </Modal.Body>
-                <Modal.Footer>
+
+                <Modal.Footer
+                    style={{
+                        border: 'none',
+                        textAlign: rtl === 'true' ? 'right' : 'left',
+                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                    }}
+                >
                     <Button
                         className='all_close_btn_container'
                         onClick={() => {
@@ -333,32 +412,52 @@ const LabelManagement = () => {
                             setShowEditModal(false);
                         }}
                     >
-                        Close
+                        {rtl === 'true' ? 'إغلاق' : 'Close'}
                     </Button>
-                    <Button className='all_single_leads_button' onClick={handleUpdateLabel}>
-                        Update
+                    <Button className='all_common_btn_single_lead' onClick={handleUpdateLabel}>
+                        {rtl === 'true' ? 'تحديث' : 'Update'}
                     </Button>
                 </Modal.Footer>
             </Modal>
 
             {/* Create Label Modal */}
             <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Create Label</Modal.Title>
+                <Modal.Header
+                    closeButton
+                    style={{
+                        border: 'none',
+                        textAlign: rtl === 'true' ? 'right' : 'left',
+                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                    }}
+                >
+                    <Modal.Title className='mutual_heading_class'>
+                        {rtl === 'true' ? 'إنشاء التسمية' : 'Create Label'}
+                    </Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
+
+                <Modal.Body
+                    style={{
+                        textAlign: rtl === 'true' ? 'right' : 'left',
+                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                    }}
+                >
                     <Form>
                         <Form.Group controlId="newLabelName">
-                            <Form.Label>Label Name</Form.Label>
+                            <Form.Label className='mutual_heading_class'>
+                                {rtl === 'true' ? 'اسم التسمية' : 'Label Name'}
+                            </Form.Label>
                             <Form.Control
                                 type="text"
                                 value={newLabelName}
                                 onChange={(e) => setNewLabelName(e.target.value)}
+                                className='input_field_input_field'
                             />
                         </Form.Group>
 
                         <Form.Group controlId="newLabelColor">
-                            <Form.Label>Label Color</Form.Label>
+                            <Form.Label className='mutual_heading_class'>
+                                {rtl === 'true' ? 'لون التسمية' : 'Label Color'}
+                            </Form.Label>
                             <div className="d-flex flex-wrap">
                                 {colorOptions.map(option => (
                                     <Button
@@ -378,13 +477,16 @@ const LabelManagement = () => {
                         </Form.Group>
 
                         <Form.Group controlId="newLabelPipeline">
-                            <Form.Label>Pipeline</Form.Label>
+                            <Form.Label className='mutual_heading_class'>
+                                {rtl === 'true' ? 'الأنبوب' : 'Pipeline'}
+                            </Form.Label>
                             <Form.Control
                                 as="select"
                                 value={newLabelPipeline}
                                 onChange={(e) => setNewLabelPipeline(e.target.value)}
+                                className='input_field_input_field'
                             >
-                                <option value="">Select Pipeline</option>
+                                <option value="">{rtl === 'true' ? 'اختر الأنبوب' : 'Select Pipeline'}</option>
                                 {pipelines.map((pipeline) => (
                                     <option key={pipeline._id} value={pipeline._id}>
                                         {pipeline.name}
@@ -394,17 +496,27 @@ const LabelManagement = () => {
                         </Form.Group>
                     </Form>
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button className='all_close_btn_container' onClick={() => {
-                        setShowCreateModal(false);
-                        setNewLabelName('');
-                        setNewLabelColor('');
-                        setNewLabelPipeline('');
-                    }}>
-                        Close
+
+                <Modal.Footer
+                    style={{
+                        border: 'none',
+                        textAlign: rtl === 'true' ? 'right' : 'left',
+                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                    }}
+                >
+                    <Button
+                        className='all_close_btn_container'
+                        onClick={() => {
+                            setShowCreateModal(false);
+                            setNewLabelName('');
+                            setNewLabelColor('');
+                            setNewLabelPipeline('');
+                        }}
+                    >
+                        {rtl === 'true' ? 'إغلاق' : 'Close'}
                     </Button>
-                    <Button className='all_single_leads_button' onClick={handleCreateLabel}>
-                        Create Label
+                    <Button className='all_common_btn_single_lead' onClick={handleCreateLabel}>
+                        {rtl === 'true' ? 'إنشاء التسمية' : 'Create Label'}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -417,20 +529,29 @@ const LabelManagement = () => {
                 show={delLabelModal}
                 onHide={() => setDelLabelModal(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
-                        Delete Label
+                <Modal.Header closeButton style={{ border: 'none', textAlign: rtl === 'true' ? 'right' : 'left', direction: rtl === 'true' ? 'rtl' : 'ltr' }} >
+                    <Modal.Title id="contained-modal-title-vcenter" className='mutual_heading_class'>
+                        {rtl === 'true' ? 'حذف التسمية' : 'Delete Label'}
                     </Modal.Title>
                 </Modal.Header>
-                <Modal.Body className="text-center">
+
+                <Modal.Body className="text-center" style={{ textAlign: rtl === 'true' ? 'right' : 'center', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
                     <TiDeleteOutline className="text-danger" style={{ fontSize: '6rem' }} />
-                    <p>Are you sure you want to Delete this Label ?</p>
+                    <p className='mutual_heading_class'>
+                        {rtl === 'true' ? 'هل أنت متأكد أنك تريد حذف هذه التسمية؟' : 'Are you sure you want to delete this label?'}
+                    </p>
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button className='all_close_btn_container' onClick={() => setDelLabelModal(false)}>No</Button>
-                    <Button className='all_single_leads_button' onClick={() => handleDelete(deleteLabelId)}>Yes</Button>
+
+                <Modal.Footer style={{ border: 'none', textAlign: rtl === 'true' ? 'right' : 'left', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                    <Button className='all_close_btn_container' onClick={() => setDelLabelModal(false)}>
+                        {rtl === 'true' ? 'لا' : 'No'}
+                    </Button>
+                    <Button className='all_common_btn_single_lead' onClick={() => handleDelete(deleteLabelId)}>
+                        {rtl === 'true' ? 'نعم' : 'Yes'}
+                    </Button>
                 </Modal.Footer>
             </Modal>
+
         </div>
     );
 };

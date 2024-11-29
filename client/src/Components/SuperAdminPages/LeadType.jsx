@@ -16,7 +16,7 @@ const LeadType = () => {
     useEffect(() => {
         const fetchLeadTypes = async () => {
             try {
-                const response = await axios.get(`/api/leadtypes/get-all-leadtypes`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/leadtypes/get-all-leadtypes`);
                 setLeadTypes(response.data); // Set the lead types in state
             } catch (err) {
                 setError(err.message); // Set error message if the request fails
@@ -40,7 +40,7 @@ const LeadType = () => {
         if (editingLeadTypeId) {
             // Update existing lead type
             try {
-                const response = await axios.put(`/api/leadtypes/${editingLeadTypeId}`, formData);
+                const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/leadtypes/${editingLeadTypeId}`, formData);
                 setLeadTypes((prevTypes) => prevTypes.map((type) => (type._id === editingLeadTypeId ? response.data : type)));
                 resetForm();
                 setIsEditModalOpen(false); // Close the edit modal
@@ -50,7 +50,7 @@ const LeadType = () => {
         } else {
             // Create new lead type
             try {
-                const response = await axios.post(`/api/leadtypes`, formData);
+                const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/leadtypes`, formData);
                 setLeadTypes((prevTypes) => [...prevTypes, response.data]);
                 resetForm();
                 setIsCreateModalOpen(false); // Close the create modal
@@ -70,7 +70,7 @@ const LeadType = () => {
     // Handle soft delete of a lead type
     const handleDelete = async (id) => {
         try {
-            await axios.put(`/api/leadtypes/delete/${id}`);
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/api/leadtypes/delete/${id}`);
             setLeadTypes((prevTypes) => prevTypes.filter((type) => type._id !== id)); // Remove deleted lead type from state
         } catch (err) {
             setError(err.message);

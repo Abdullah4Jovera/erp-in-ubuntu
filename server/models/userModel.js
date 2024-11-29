@@ -6,9 +6,9 @@ const userSchema = new mongoose.Schema(
     pipeline: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Pipeline',
-      required: false, // Allow null or undefined
+      required: false, 
     }],
- 
+
     email: { type: String, required: true, unique: true },
     password: { type: String, default: null },
     image: { type: String },
@@ -19,16 +19,16 @@ const userSchema = new mongoose.Schema(
       required: false, 
     },
     // branch: {
-    //  type: String 
+    //   type: String
     // },
     phone: {
       type: String,
-      
+
     },
     commission: {
       type: Number,
       default: 0
-  },  
+    },
     products: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
@@ -48,4 +48,3 @@ const userSchema = new mongoose.Schema(
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;
- 

@@ -13,5 +13,6 @@ const whatsAppMessageSchema = new mongoose.Schema({
     media_urls: [{ type: String }], // Array to store media URLs
     createdAt: { type: Date, default: Date.now }
 });
-
+ 
 module.exports = mongoose.model('WhatsAppMessage', whatsAppMessageSchema);
+ 

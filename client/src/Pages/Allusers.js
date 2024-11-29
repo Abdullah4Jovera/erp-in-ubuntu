@@ -59,7 +59,7 @@ const AllUsers = () => {
     // Fetch all users
     const fetchUsers = async () => {
         try {
-            const response = await axios.get(`/api/users/get-users`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/users/get-users`);
             setUsers(response.data);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -73,7 +73,7 @@ const AllUsers = () => {
     useEffect(() => {
         const fetchPipelines = async () => {
             try {
-                const response = await axios.get(`/api/pipelines/get-pipelines`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/pipelines/get-pipelines`);
                 setPipelines(response.data);
             } catch (error) {
                 console.error('Error fetching pipelines:', error);
@@ -82,7 +82,7 @@ const AllUsers = () => {
 
         const fetchBranches = async () => {
             try {
-                const response = await axios.get(`/api/branch/get-branches`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branch/get-branches`);
                 setBranches(response.data);
             } catch (error) {
                 console.error('Error fetching branches:', error);
@@ -91,7 +91,7 @@ const AllUsers = () => {
 
         const fetchProducts = async () => {
             try {
-                const response = await axios.get(`/api/products/get-all-products`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/products/get-all-products`);
                 setProducts(response.data);
             } catch (error) {
                 console.error('Error fetching products:', error);
@@ -100,7 +100,7 @@ const AllUsers = () => {
 
         const fetchRoles = async () => {
             try {
-                const response = await axios.get(`/api/roles`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/roles`);
                 setRoles(response.data); // Store roles in state
             } catch (error) {
                 console.error('Error fetching roles:', error);
@@ -124,6 +124,7 @@ const AllUsers = () => {
 
     // Open modal and populate form data with the selected user's data
     const handleEditClick = (user) => {
+        console.log(user,'edituser')
         setSelectedUser(user);
         setFormData({
             name: user.name || '',
@@ -158,7 +159,7 @@ const AllUsers = () => {
 
         try {
             const response = await axios.put(
-                `/api/users/update-user/${selectedUser._id}`,
+                `${process.env.REACT_APP_BASE_URL}/api/users/update-user/${selectedUser._id}`,
                 updatedFormData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -185,7 +186,7 @@ const AllUsers = () => {
     // Delete User API
     const handleDeleteClick = async (id) => {
         try {
-            await axios.put(`/api/users//delete-user/${id}`,{}, {
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/api/users//delete-user/${id}`,{}, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -233,7 +234,7 @@ const AllUsers = () => {
 
         try {
             const response = await axios.post(
-                `/api/users/create-user`,
+                `${process.env.REACT_APP_BASE_URL}/api/users/create-user`,
                 formData,
                 {
                     headers: {
@@ -346,7 +347,7 @@ const AllUsers = () => {
 
         try {
             const response = await axios.put(
-                `/api/users/reset-password/${id}`,
+                `${process.env.REACT_APP_BASE_URL}/api/users/reset-password/${id}`,
                 { password: passwords.newPassword },
                 {
                     headers: {
@@ -396,7 +397,7 @@ const AllUsers = () => {
 
     const ResignHandler = async () => {
         try {
-            await axios.patch(`/api/users/resign-user/${userId}`, {}, {
+            await axios.patch(`${process.env.REACT_APP_BASE_URL}/api/users/resign-user/${userId}`, {}, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

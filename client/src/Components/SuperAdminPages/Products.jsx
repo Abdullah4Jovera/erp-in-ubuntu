@@ -25,7 +25,7 @@ const Products = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await axios.get(`/api/products/get-all-products`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/products/get-all-products`);
                 setProducts(response.data);
             } catch (err) {
                 setError('Error fetching products');
@@ -36,7 +36,7 @@ const Products = () => {
 
         const fetchPipelines = async () => {
             try {
-                const response = await axios.get(`/api/pipelines/get-pipelines`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/pipelines/get-pipelines`);
                 setPipelines(response.data.map(pipeline => ({ value: pipeline._id, label: pipeline.name })));
             } catch (err) {
                 setError('Error fetching pipelines');
@@ -50,7 +50,7 @@ const Products = () => {
     const handleCreateProduct = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post(`/api/products/create-new-product`, {
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/products/create-new-product`, {
                 name: newProductName,
                 pipeline_id: selectedPipelines.map(option => option.value),
             });
@@ -64,7 +64,7 @@ const Products = () => {
     const handleEditProduct = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.put(`/api/products/${editProductId}`, {
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/products/${editProductId}`, {
                 name: editProductName,
                 pipeline_id: editSelectedPipelines.map(option => option.value),
             });
@@ -79,7 +79,7 @@ const Products = () => {
 
     const handleDeleteProduct = async (productId) => {
         try {
-            const response = await axios.put(`/api/products/delete-product/${productId}`);
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/products/delete-product/${productId}`);
             setProducts((prevProducts) =>
                 prevProducts.map((product) => (product._id === productId ? response.data.product : product))
             );
