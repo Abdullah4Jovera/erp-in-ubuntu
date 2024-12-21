@@ -6,13 +6,13 @@ const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
 const WhatsAppMessage = require('../models/whatsAppMessageModel');
-const Lead = require('../models/leadModel');
+const Lead = require('../models/leadModel'); 
 const Client = require('../models/clientModel');
 const File = require('../models/fileModel'); // Import the File model
 const { isAuth } = require('../utils');
 const { getMedia } = require('../twilioUtils');
-const accountSid = 'AC48e99fa5d2a4ecdd660e8f5391e375ed'; // Your Twilio Account SID
-const authToken = '8d6ad3c2eb9063995cea53598eec5d93'; // Your Twilio Auth Token
+const accountSid = 'AC9f10e22cf1b500ee219526db55a7c523'; // Your Twilio Account SID
+const authToken = 'c60d3e301b72583350dfe257438ebb2b'; // Your Twilio Auth Token
 const fromWhatsAppNumber = 'whatsapp:+14155238886'; // Your Twilio WhatsApp number
 const client = twilio(accountSid, authToken);
 const url = require('url'); // Add this
@@ -108,25 +108,63 @@ async function getFileExtensionAndSave(mediaUrl, messageSid) {
         return null;
     }
 }
+const axios = require('axios');
 
-
-
-
+async function isUrlAccessible(url) {
+    try {
+        const response = await axios.head(url);
+        return response.status >= 200 && response.status < 400;
+    } catch (error) {
+        console.error(`Error checking URL accessibility: ${error.message}`);
+        return false;
+    }
+}
 
 
 // Export a function that takes the io instance
 module.exports = (io) => {
     // Route to send a WhatsApp message
-    router.post('/send-message', isAuth, async (req, res) => {
+    router.post('/send-message', isAuth, upload.single('mediaFile'), async (req, res) => {
         const { leadId, messageBody, mediaUrl } = req.body;
         const userId = req.user._id;
-
-        // Validate the message body
-        if (!messageBody && !mediaUrl) {
-            return res.status(400).json({ error: 'A text message body or media URL must be provided' });
-        }
+        const forwardedBaseUrl = 'https://q6fvlbkv-4000.inc1.devtunnels.ms'; // Use the forwarded URL
+        let uploadedFileUrl = null;
 
         try {
+            // Handle file upload
+            if (req.file) {
+                const filePath = path.join('lead_files', req.file.filename);
+                uploadedFileUrl = `${forwardedBaseUrl}/${filePath}`; // Use the forwarded base URL
+            
+                console.log(`Uploaded file path: ${filePath}`);
+                console.log(`Uploaded file URL: ${uploadedFileUrl}`);
+            
+                // Debugging file URL properties
+                console.log('Final Uploaded File URL:', uploadedFileUrl);
+                const isAccessible = await isUrlAccessible(uploadedFileUrl); // Helper function
+                console.log('Twilio Media URL Check:', {
+                    isHttp: uploadedFileUrl.startsWith('http'),
+                    isAccessible,
+                });
+            
+                // Save file metadata in the database
+                const newFile = new File({
+                    added_by: userId,
+                    file_name: req.file.originalname,
+                    file_path: filePath,
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                });
+            
+                await newFile.save();
+            }
+            
+
+            // Validate message content
+            if (!messageBody && !mediaUrl && !uploadedFileUrl) {
+                return res.status(400).json({ error: 'A message body, media URL, or uploaded file is required' });
+            }
+
             const lead = await Lead.findById(leadId).populate('client');
             if (!lead || !lead.client) {
                 return res.status(400).json({ error: 'Invalid lead or client' });
@@ -141,12 +179,14 @@ module.exports = (io) => {
 
             if (messageBody) {
                 messageOptions.body = messageBody;
-            } else if (mediaUrl) {
-                messageOptions.mediaUrl = [mediaUrl];
+            }
+            if (mediaUrl || uploadedFileUrl) {
+                messageOptions.mediaUrl = [mediaUrl || uploadedFileUrl];
             }
 
             const message = await client.messages.create(messageOptions);
 
+            // Save WhatsApp message to the database
             const newMessage = new WhatsAppMessage({
                 lead: leadId,
                 client: clientData._id,
@@ -157,24 +197,27 @@ module.exports = (io) => {
                 status: 'sent',
                 read: true,
                 twilio_message_sid: message.sid,
-                media_urls: mediaUrl ? [mediaUrl] : [],
+                media_urls: mediaUrl ? [mediaUrl] : uploadedFileUrl ? [uploadedFileUrl] : [],
             });
 
             const savedMessage = await newMessage.save();
 
+            // Update the lead with the new message
             lead.messages = lead.messages || [];
             lead.messages.push(savedMessage._id);
             await lead.save();
 
+            // Emit the new message via Socket.IO
             io.to(`lead_${leadId}`).emit('new_message', savedMessage);
 
             res.status(200).json({ message: 'WhatsApp message sent successfully', messageId: savedMessage._id });
         } catch (error) {
+            console.error('Error sending WhatsApp message:', error);
             res.status(500).json({ error: 'Failed to send WhatsApp message', details: error.message });
         }
     });
 
-    // Webhook to receive incoming messages from WhatsApp
+    // Webhook to receive incoming messages from WhatsApp 
     // Modified webhook route
  // Webhook to receive incoming messages from WhatsApp
 router.post('/webhook', async (req, res) => {
@@ -260,8 +303,6 @@ router.post('/webhook', async (req, res) => {
         res.status(500).json({ error: 'Failed to process webhook', details: error.message });
     }
 });
-
-    
 
     // Route to get chat history
     router.get('/chat-history/:leadId', isAuth, async (req, res) => {

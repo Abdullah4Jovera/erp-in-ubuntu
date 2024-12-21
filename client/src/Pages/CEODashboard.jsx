@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { Dropdown, Menu } from 'antd';
-import Navbar from '../Components/navbar/Navbar';
 import { Container, Row, Col, Button, Card, Form, Modal, Image, Spinner, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Sidebar from '../Components/sidebar/Sidebar';
 import { Link } from 'react-router-dom';
@@ -29,7 +28,12 @@ import WhatsappNotification from '../Components/whatsappNotification/WhatsappNot
 import CreateLead from '../Components/createLead/CreateLead';
 import { RxCross1 } from "react-icons/rx";
 import { MdClear } from "react-icons/md";
+import { RiFileAddFill } from "react-icons/ri";
+import { AiOutlineFileAdd } from "react-icons/ai";
 import rejected_image from '../Assets/rejected_image.png'
+import DatePicker from 'react-datepicker'; // Import DatePicker
+import "react-datepicker/dist/react-datepicker.css";
+import { GrAttachment } from "react-icons/gr";
 
 const CeoDashboard = () => {
     const token = useSelector((state) => state.loginSlice.user?.token);
@@ -82,6 +86,7 @@ const CeoDashboard = () => {
     const [phoneNumber, setPhoneNumber] = useState('')
     const [phoneNumberSuccess, setPhoneumberSuccess] = useState(false)
     const [apiData, setApiData] = useState(null);
+    const [rtl, setRtl] = useState(null);
     const initialBranchId = localStorage.getItem('selectedBranchId') || branch || (branches.length > 0 ? branches[0]._id : null);
     const initialProductId = localStorage.getItem('selectedProductId') || product || (products.length > 0 ? products[0]._id : null);
 
@@ -94,7 +99,7 @@ const CeoDashboard = () => {
     const [sources, setSources] = useState([]);
     const [selectedPipeline, setSelectedPipeline] = useState(null);
     const [users, setUsers] = useState([]);
-    // const [selectedUsers, setSelectedUsers] = useState('');
+    const [messageCounts, setMessageCounts] = useState({});
     const [leadTypes, setLeadTypes] = useState([]);
     // New Data
     useEffect(() => {
@@ -112,6 +117,11 @@ const CeoDashboard = () => {
 
         fetchSources();
     }, [selectedLeadType]);
+
+    useEffect(() => {
+        const savedRtl = localStorage.getItem('rtl');
+        setRtl(savedRtl); // Update state with the 'rtl' value from localStorage
+    }, [rtl]);
 
     useEffect(() => {
         // Set default selected product and branch ID in localStorage if not already set
@@ -160,10 +170,10 @@ const CeoDashboard = () => {
 
     useEffect(() => {
         const fetchPipelines = async () => {
-            if (selectedBranchId === '6719fdded3de53c9fb53fb79') {
+            if (selectedBranchId === '673b34924b966621c041caac') {
                 setPipelines([
                     {
-                        _id: '6719fda75035bf8bd708d024',
+                        _id: '673b190186706b218f6f3262',
                         name: 'Ajman Branch'
                     }
                 ]);
@@ -215,6 +225,12 @@ const CeoDashboard = () => {
 
             setLeads(response.data.leads);
             organizeLeadsByStage(response.data.leads);
+            const messageCountMap = {};
+            response.data.leads.forEach(lead => {
+                const messageCount = Array.isArray(lead.messages) ? lead.messages.length : 0;
+                messageCountMap[lead._id] = messageCount;
+            });
+            setMessageCounts(messageCountMap);
         } catch (error) {
             console.error('Error searching leads:', error);
         }
@@ -304,6 +320,12 @@ const CeoDashboard = () => {
             });
             setLeads(response.data);
             organizeLeadsByStage(response.data);
+            const messageCountMap = {};
+            response.data.leads.forEach(lead => {
+                const messageCount = Array.isArray(lead.messages) ? lead.messages.length : 0;
+                messageCountMap[lead._id] = messageCount;
+            });
+            setMessageCounts(messageCountMap);
         } catch (err) {
             setError(err.message);
         }
@@ -344,7 +366,6 @@ const CeoDashboard = () => {
 
     const handleBranchSelect = (branchId) => {
         setSelectedBranchId(branchId);
-        console.log(branchId, 'selected Branch ID stored');
         if (selectedProductId) {
             fetchLeads(selectedProductId, branchId);
         }
@@ -353,7 +374,6 @@ const CeoDashboard = () => {
     const handleProductSelect = (productId) => {
         setSelectedProductId(productId);
         localStorage.setItem('selectedProductId', productId);
-        console.log(productId, 'selected Product ID stored');
         setSelectedPipeline('');
         setSelectedUsers('');
         fetchProductStages(productId);
@@ -415,7 +435,7 @@ const CeoDashboard = () => {
 
     if (loading) {
         return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <Spinner animation="grow" />
+            <Spinner animation="grow" style={{ color: '#d7aa47' }} />
         </div>;
     }
 
@@ -508,6 +528,7 @@ const CeoDashboard = () => {
             // Clear the selection and close the modal
             setSelectedLeadUsers([]);
             setUserModal(false);
+            fetchLeads(selectedProductId, selectedBranchId);
         } catch (error) {
             setUserError(error.response.data.message && error.response.data.message);
         }
@@ -522,10 +543,16 @@ const CeoDashboard = () => {
         setSelectedLead(lead);
         setSelectedLeadUsers(selectedUsers[leadId] || []); // Using the selectedUsers map
 
-        const filteredUsers = allUsers.filter(user =>
-            user.pipeline?.[0]?._id === lead.pipeline_id?._id
-        );
-        setPipelineUsers(filteredUsers); // Store the filtered users in state
+        // const filteredUsers = allUsers.filter(user =>
+        //     user.pipeline?.[0]?._id === lead.pipeline_id?._id
+        // );
+        const excludedRoles = ["MD", "CEO", "HOD", "Super Admin", "Developer", "Marketing", "No Role"];
+
+        // Filter users to exclude specific roles
+        const filteredUsers = allUsers.filter(user => !excludedRoles.includes(user.role));
+
+        // Set the state with filtered users
+        setPipelineUsers(filteredUsers);
 
         // Open the modal
         setUserModal(true);
@@ -548,6 +575,7 @@ const CeoDashboard = () => {
                 },
             });
             setDiscussionText('');
+            setLeadDiscussionModal(false)
             fetchLeads(getProductID, getBranchID);
         } catch (error) {
             console.log(error, 'err');
@@ -585,84 +613,73 @@ const CeoDashboard = () => {
     }
 
     const renderMenu = (lead) => (
-        <Menu style={{ padding: '10px 20px', inset: '0px 0px auto auto', display: 'flex', gap: '5px', flexDirection: 'column' }} >
-            {
-                canEditLead && canEditLead ? <>
-                    <Menu.Item key="edit" onClick={() => openModal(lead._id)}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} >
-                            <FiEdit2 style={{ color: '#95630d', fontSize: '16px' }} /> <span>Edit</span>
-                        </div>
-                    </Menu.Item>
-                </>
-                    :
-                    null
-            }
+        <Menu
+            style={{
+                padding: '10px 20px',
+                inset: '0px 0px auto auto',
+                display: 'flex',
+                gap: '5px',
+                flexDirection: 'column',
+                backgroundColor: '#000',
+                direction: rtl === 'true' ? 'rtl' : 'ltr',
+            }}
+        >
+            {canEditLead && (
+                <Menu.Item key="edit" onClick={() => openModal(lead._id)}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <FiEdit2 style={{ color: '#d7aa47', fontSize: '16px' }} />
+                        <span style={{ color: '#d7aa47' }}>
+                            {rtl === 'true' ? 'تحرير' : 'Edit'}
+                        </span>
+                    </div>
+                </Menu.Item>
+            )}
 
-            {
-                canMoveLead && canMoveLead ? <>
-                    <Menu.Item key="move" onClick={() => openMoveLeadModal(lead._id)}>
+            {canMoveLead && (
+                <Menu.Item key="move" onClick={() => openMoveLeadModal(lead._id)}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <LuMoveUpLeft style={{ color: '#d7aa47', fontSize: '16px' }} />
+                        <span style={{ color: '#d7aa47' }}>
+                            {rtl === 'true' ? 'نقل' : 'Move'}
+                        </span>
+                    </div>
+                </Menu.Item>
+            )}
 
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} >
-                            <LuMoveUpLeft style={{ color: '#95630d', fontSize: '16px' }} /> <span>Move</span>
-                        </div>
-                    </Menu.Item>
-                </>
-                    :
-                    null
-            }
+            {canTransferLead && (
+                <Menu.Item key="transfer" onClick={() => openTransferLeadModal(lead._id)}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <TbTransfer style={{ color: '#d7aa47', fontSize: '16px' }} />
+                        <span style={{ color: '#d7aa47' }}>
+                            {rtl === 'true' ? 'تحويل' : 'Transfer'}
+                        </span>
+                    </div>
+                </Menu.Item>
+            )}
 
-            {
-                canTransferLead && canTransferLead ? <>
-                    <Menu.Item key="transfer" onClick={() => openTransferLeadModal(lead._id)}>
+            {canRejectLead && (
+                <Menu.Item key="reject" onClick={() => openRejectedLead(lead._id)}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <AiFillDelete style={{ color: '#d7aa47', fontSize: '16px' }} />
+                        <span style={{ color: '#d7aa47' }}>
+                            {rtl === 'true' ? 'رفض' : 'Reject'}
+                        </span>
+                    </div>
+                </Menu.Item>
+            )}
 
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} >
-                            <TbTransfer style={{ color: '#6c757d', fontSize: '16px' }} /> <span>Transfer</span>
-                        </div>
-                    </Menu.Item>
-                </>
-                    :
-                    null
-            }
-
-            {
-                canRejectLead && canRejectLead ? <>
-                    <Menu.Item key="reject" onClick={() => openRejectedLead(lead._id)}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} >
-                            <AiFillDelete style={{ color: 'red', fontSize: '16px' }} />  <span>Reject</span>
-                        </div>
-                    </Menu.Item>
-                </>
-                    :
-                    null
-            }
-
-            {
-                canContractLead && canContractLead ? <>
-                    <Menu.Item key="convert" onClick={() => openLeadConvertModal(lead._id)}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} >
-                            <RiContractLine style={{ color: '#6fd943', fontSize: '16px' }} /> <span>Contract</span>
-                        </div>
-                    </Menu.Item>
-                </>
-                    :
-                    null
-            }
-
-            {
-                canLabelLead && canLabelLead ? <>
-                    <Menu.Item key="labels" onClick={() => openLabelsLead(lead._id)}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} >
-                            <BiSolidLabel style={{ color: '#ff3a6e', fontSize: '16px' }} />
-                            <span>
-                                Labels
-                            </span>
-                        </div>
-                    </Menu.Item>
-                </>
-                    :
-                    null
-            }
+            {canLabelLead && (
+                <Menu.Item key="labels" onClick={() => openLabelsLead(lead._id)}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <BiSolidLabel style={{ color: '#d7aa47', fontSize: '16px' }} />
+                        <span style={{ color: '#d7aa47' }}>
+                            {rtl === 'true' ? 'التصنيفات' : 'Labels'}
+                        </span>
+                    </div>
+                </Menu.Item>
+            )}
         </Menu>
+
     );
 
     // Custom styles for the select dropdown
@@ -699,22 +716,22 @@ const CeoDashboard = () => {
         let inputValue = e.target.value;
 
         // Validation and formatting
-        let processedValue = inputValue.replace(/^\+971\s?/, '').replace(/^0+/, '');
+        let processedValue = inputValue.replace(/^\+971\s?/, '').replace(/^971\s?/, '').replace(/^0+/, '');
         const digitsOnly = processedValue.replace(/\D/g, '').slice(0, 9); // Keep only digits
         const formattedValue = digitsOnly.replace(/(\d{2})(\d{3})(\d{4})/, '$1 $2 $3'); // Format the number
 
         setPhoneNumber(formattedValue); // Update state with formatted number
 
-        // If no digits are left after processing, return early
-        if (digitsOnly.length === 0) {
-            return; // Optionally, add a message to inform the user if needed
+        // If there are not exactly 9 digits, return early and don't make an API call
+        if (digitsOnly.length !== 9) {
+            return; // Optionally, you can display a message or reset the state here
         }
 
         // Concatenate +971 with the processed phone number for the payload
         const payloadPhone = `+971${digitsOnly}`;
 
         try {
-            const response = await axios.post(`/api/leads/check-client-phone`, {
+            const response = await axios.post(`/api/leads/check-client-phone-search`, {
                 clientPhone: payloadPhone, // Use the concatenated phone number for API call
             }, {
                 headers: {
@@ -728,7 +745,7 @@ const CeoDashboard = () => {
 
             // Check if apiData exists and if the phone number matches
             if (responseData && responseData.client && responseData.client.phone === payloadPhone) {
-                setPhoneumberSuccess(true)
+                setPhoneumberSuccess(true);
             }
         } catch (error) {
             console.error('Error checking client phone:', error);
@@ -736,27 +753,44 @@ const CeoDashboard = () => {
         }
     };
 
+
+
     return (
         <div>
             {/* <Navbar /> */}
-            <Container fluid>
+            <Container fluid style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }} >
                 <Row>
                     <Col xs={12} md={12} lg={1}>
-                        <Sidebar />
+                        {/* <Sidebar /> */}
                     </Col>
 
                     <Col xs={12} md={12} lg={11}>
-                        <Card className='leads_main_cards'>
+                        <Card className='leads_main_cards mt-4'>
 
                             {/* <div className='mb-3 lead_search_container '  > */}
-                            <div className="lead-search mb-3" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', }} >
+                            <div className="lead-search" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginBottom: '4%' }}>
                                 <div>
                                     <Select
                                         id="pipeline"
                                         value={selectedPipeline}
                                         onChange={setSelectedPipeline}
                                         options={pipelines.map((pipeline) => ({ value: pipeline._id, label: pipeline.name }))}
-                                        placeholder="Select Pipeline"
+                                        placeholder={rtl === 'true' ? 'اختر الخط الأنابيب' : 'Pipeline'}
+                                        classNamePrefix="react-select"
+                                        className='input_field_input_field'
+                                        styles={{
+                                            container: (provided) => ({
+                                                ...provided,
+                                                width: '100vw',          // Full viewport width
+                                                maxWidth: '200px',
+                                                borderRadius: '0.375rem'      // Maximum width set to 200px
+                                            }),
+                                            option: (provided) => ({
+                                                ...provided,
+                                                whiteSpace: 'nowrap',    // Ensuring no wrapping of option text
+                                                overflowX: 'hidden'
+                                            }),
+                                        }}
                                     />
                                 </div>
 
@@ -766,111 +800,156 @@ const CeoDashboard = () => {
                                         value={selectedUsers}
                                         onChange={setSelectedUsers}
                                         options={users.map((user) => ({ value: user._id, label: user.name }))}
-                                        // isMulti
-                                        placeholder="Select Users"
-                                        styles={customStyles}
-
+                                        placeholder={rtl === 'true' ? 'اختر المستخدمين' : 'Users'}
+                                        classNamePrefix="react-select"
+                                        className='input_field_input_field'
+                                        styles={{
+                                            container: (provided) => ({
+                                                ...provided,
+                                                width: '100vw',          // Full viewport width
+                                                maxWidth: '200px',
+                                                borderRadius: '0.375rem'      // Maximum width set to 200px
+                                            }),
+                                            option: (provided) => ({
+                                                ...provided,
+                                                whiteSpace: 'nowrap',    // Ensuring no wrapping of option text
+                                                overflowX: 'hidden'
+                                            }),
+                                        }}
                                     />
                                 </div>
+
                                 <div>
                                     <Select
                                         id="lead_type"
                                         value={selectedLeadType}
                                         onChange={setSelectedLeadType}
                                         options={leadTypes.map((leadType) => ({ value: leadType._id, label: leadType.name }))}
-                                        placeholder="Select Lead Type"
+                                        placeholder={rtl === 'true' ? 'اختر نوع العميل' : 'Lead Type'}
+                                        classNamePrefix="react-select"
+                                        className='input_field_input_field'
+                                        styles={{
+                                            container: (provided) => ({
+                                                ...provided,
+                                                width: '100vw',          // Full viewport width
+                                                maxWidth: '200px',
+                                                borderRadius: '0.375rem'      // Maximum width set to 200px
+                                            }),
+                                            option: (provided) => ({
+                                                ...provided,
+                                                whiteSpace: 'nowrap',    // Ensuring no wrapping of option text
+                                                overflowX: 'hidden'
+                                            }),
+                                        }}
                                     />
                                 </div>
+
                                 <div>
                                     <Select
                                         id="source"
                                         value={selectedSource}
                                         onChange={setSelectedSource}
                                         options={sources.map((source) => ({ value: source._id, label: source.name }))}
-                                        placeholder="Select Source"
-                                        styles={customStyles}
-
+                                        placeholder={rtl === 'true' ? 'اختر المصدر' : 'Source'}
+                                        classNamePrefix="react-select"
+                                        className='input_field_input_field'
+                                        styles={{
+                                            container: (provided) => ({
+                                                ...provided,
+                                                width: '100vw',          // Full viewport width
+                                                maxWidth: '200px',
+                                                borderRadius: '0.375rem'      // Maximum width set to 200px
+                                            }),
+                                            option: (provided) => ({
+                                                ...provided,
+                                                whiteSpace: 'nowrap',    // Ensuring no wrapping of option text
+                                                overflowX: 'hidden'
+                                            }),
+                                        }}
                                     />
                                 </div>
 
                                 <div>
-                                    <Form.Control type="text" placeholder="Search By Number" value={phoneNumber} name='phoneNumber' onChange={handlePhoneInputChange} />
-                                </div>
-
-                                <div>
-                                    <Form.Control
-                                        type="date"
-                                        id="created_at_start"
-                                        value={createdAtStart}
-                                        onChange={(e) => setCreatedAtStart(e.target.value)}
-                                    />
-                                </div>
-
-                                <div>
-                                    <Form.Control
-                                        type="date"
-                                        id="created_at_end"
-                                        value={createdAtEnd}
-                                        onChange={(e) => setCreatedAtEnd(e.target.value)}
-                                        placeholder='End Date'
-                                        className='date_picker'
-                                    />
-                                </div>
-
-                                <div style={{ cursor: 'pointer' }} className='clear_filter_btn' onClick={handleClearFilters}>
-                                    <MdClear style={{ color: 'white', fontSize: '25px' }} />
-                                </div>
-                            </div>
-
-
-                            <Row>
-                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', justifyContent: 'flex-end' }}>
                                     <Form>
                                         <Form.Group controlId="searchLeads">
                                             <Form.Control
                                                 type="text"
-                                                placeholder="Search by Client Name"
+                                                placeholder={rtl === 'true' ? 'العميل/الشركة' : 'Client/Company'}
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                                className='input_field_input_field'
                                             />
                                         </Form.Group>
                                     </Form>
-                                    {/* <div className="create_lead_icon">
-                                        <IoMdAdd
-                                            style={{ fontSize: '24px', cursor: 'pointer' }}
-                                            onClick={() => setModal2Open(true)}
-                                        />
-                                    </div> */}
-                                    <Button style={{ backgroundColor: '#ffa000', border: 'none' }} onClick={() => setModal2Open(true)} >Create Lead</Button>
                                 </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className='mt-3' >
+                                <div>
+                                    <Form.Control
+                                        className='input_field_input_field'
+                                        type="text"
+                                        placeholder={rtl === 'true' ? 'ابحث برقم الهاتف' : 'Number'}
+                                        value={phoneNumber}
+                                        name='phoneNumber'
+                                        onChange={handlePhoneInputChange}
+                                    />
+                                </div>
+
+                                <DatePicker
+                                    id="created_at_start"
+                                    selected={createdAtStart}
+                                    onChange={(date) => setCreatedAtStart(date)}
+                                    // onChange={(e) => setCreatedAtStart(e.target.value)}
+                                    className="form-control input_field_input_field"
+                                    placeholderText={rtl === 'true' ? 'تاريخ البدء' : 'Start Date'}
+                                />
+                                <DatePicker
+                                    id="created_at_end"
+                                    selected={createdAtEnd}
+                                    onChange={(date) => setCreatedAtEnd(date)}
+                                    placeholderText={rtl === 'true' ? 'تاريخ النهاية' : 'End Date'}
+                                    className="form-control input_field_input_field"
+                                />
+
+                                <div
+                                    style={{ cursor: 'pointer', backgroundColor: '#d7aa47' }}
+                                    className='clear_filter_btn'
+                                    onClick={handleClearFilters}
+                                >
+                                    <MdClear style={{ color: 'black', fontSize: '25px' }} />
+                                </div>
+
+                            </div>
+
+                            <Row>
+                                <div className='' >
                                     {!branch && (
-                                        <div className="">
-                                            {branches.length > 0 ? (
-                                                branches.map((branch) => (
-                                                    <Button
-                                                        key={branch._id}
-                                                        className={`button ${selectedBranchId === branch._id ? 'selected' : ''}`}
-                                                        style={{
-                                                            backgroundColor: selectedBranchId === branch._id ? '#ffa000' : '#000',
-                                                            color: selectedBranchId === branch._id ? 'white' : 'white',
-                                                            border: 'none'
-                                                        }}
-                                                        onClick={() => handleBranchSelect(branch._id)}
-                                                    >
-                                                        {branch.name}
-                                                    </Button>
-                                                ))
-                                            ) : (
-                                                <p>No branches available</p>
-                                            )}
+                                        <div style={{ position: 'relative' }}>
+                                            <div style={{ position: 'absolute', left: 0, bottom: 0, zIndex: 1 }}>
+                                                {branches.length > 0 ? (
+                                                    branches.map((branch) => (
+                                                        <Button
+                                                            key={branch._id}
+                                                            className={`button ${selectedBranchId === branch._id ? 'selected' : ''} outside_lead_class`}
+                                                            style={{
+                                                                backgroundColor: selectedBranchId === branch._id ? '#d7aa47' : '#2d3134',
+                                                                color: selectedBranchId === branch._id ? 'white' : 'white',
+                                                                border: 'none'
+                                                            }}
+                                                            onClick={() => handleBranchSelect(branch._id)}
+                                                        >
+                                                            {branch.name}
+                                                        </Button>
+                                                    ))
+                                                ) : (
+                                                    <p className='mutual_heading_class' >No Branches Available</p>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
 
                                     {!product && (
-                                        <>
-                                            <div>
+                                        <div style={{ position: 'relative' }} >
+                                            <div style={{ position: 'absolute', right: 0, bottom: 0, zIndex: 1 }} >
                                                 {products.length > 0 ? (
                                                     products.map((product) => (
                                                         <Button
@@ -878,7 +957,7 @@ const CeoDashboard = () => {
                                                             className={`button ${selectedProductId === product._id ? 'selected' : ''}`}
                                                             onClick={() => handleProductSelect(product._id)}
                                                             style={{
-                                                                backgroundColor: selectedProductId === product._id ? '#ffa000' : '#000',
+                                                                backgroundColor: selectedProductId === product._id ? '#d7aa47' : '#2d3134',
                                                                 color: selectedProductId === product._id ? 'white' : 'white',
                                                                 border: 'none',
                                                             }}
@@ -887,11 +966,11 @@ const CeoDashboard = () => {
                                                         </Button>
                                                     ))
                                                 ) : (
-                                                    <p>No products available</p>
+                                                    <p className='mutual_heading_class'>No Products Available</p>
                                                 )}
+                                                <AiOutlineFileAdd style={{ backgroundColor: '#d7aa47', borderRadius: '5px', cursor: 'pointer', fontSize: '35px' }} onClick={() => setModal2Open(true)} />
                                             </div>
-
-                                        </>
+                                        </div>
                                     )}
 
                                 </div>
@@ -900,12 +979,12 @@ const CeoDashboard = () => {
 
                             {isFetchingLeads ? ( // Show spinner while fetching leads
                                 <div className="text-center my-5">
-                                    <Spinner animation="grow" role="status"></Spinner>
+                                    <Spinner animation="grow" role="status" style={{ color: '#d7aa47' }}></Spinner>
                                 </div>
                             ) : (
 
                                 <DragDropContext onDragEnd={onDragEnd}>
-                                    <div className="stages-wrapper d-flex overflow-auto mt-3" style={{ maxHeight: '70vh', overflowX: 'auto' }}>
+                                    <div className="stages-wrapper d-flex overflow-auto mt-3" style={{ maxHeight: '75vh', overflowX: 'auto' }}>
                                         {stages.length > 0 ? (
                                             // Sort stages by the 'order' field before rendering
                                             stages
@@ -915,11 +994,11 @@ const CeoDashboard = () => {
                                                         {(provided) => (
                                                             <Card
                                                                 className="stage-card"
-                                                                style={{ minWidth: '268px', margin: '0 7px', height: 'auto', borderRadius: '20px', }}
+                                                                style={{ minWidth: '268px', margin: '0 7px', height: '100%', maxHeight: '750px', overflowY: 'auto', borderRadius: '20px', }}
                                                                 ref={provided.innerRef}
                                                                 {...provided.droppableProps}
                                                             >
-                                                                <h5 className='sticky-top stageNames' style={{ backgroundColor: 'black', color: 'white', textAlign: 'center', fontSize: '16px', padding: '15px 0px' }} >
+                                                                <h5 className='sticky-top stageNames' style={{ backgroundColor: '#d7aa47', color: 'white', textAlign: 'center', fontSize: '16px', padding: '15px 0px', zIndex: 0 }} >
                                                                     {stage.name}
                                                                     {leadsByStage[stage._id]?.leads.length > 0 && (
                                                                         <span style={{ fontSize: '14px', color: '#666', marginLeft: '10px', color: 'white', textAlign: 'center' }}>
@@ -928,179 +1007,224 @@ const CeoDashboard = () => {
                                                                     )}
                                                                 </h5>
 
-                                                                {leadsByStage[stage._id] ? (
-                                                                    leadsByStage[stage._id].leads
-                                                                        ?.filter((lead) =>
-                                                                            lead.client?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-                                                                        )
-                                                                        .map((lead, index) => (
-                                                                            <Draggable key={lead._id} draggableId={lead._id} index={index}>
-                                                                                {(provided) => (
-                                                                                    <Card
-                                                                                        className="lead-card mt-3"
-                                                                                        ref={provided.innerRef}
-                                                                                        {...provided.draggableProps}
-                                                                                        {...provided.dragHandleProps}
-                                                                                    >
-                                                                                        {/* Labels Section */}
-                                                                                        <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', marginTop: '-27px' }}>
-                                                                                            {lead.labels.map((labelname, index) => {
-                                                                                                console.log(labelname, 'labelname')
-                                                                                                let backgroundColor = labelname.color || '#ccc';
-                                                                                                switch (labelname.color) {
-                                                                                                    case 'success':
-                                                                                                        backgroundColor = '#6fd943';
-                                                                                                        break;
-                                                                                                    case 'danger':
-                                                                                                        backgroundColor = '#ff3a6e';
-                                                                                                        break;
-                                                                                                    case 'primary':
-                                                                                                        backgroundColor = '#5c91dc';
-                                                                                                        break;
-                                                                                                    case 'warning':
-                                                                                                        backgroundColor = '#ffa21d';
-                                                                                                        break;
-                                                                                                    case 'info':
-                                                                                                        backgroundColor = '#6ac4f4';
-                                                                                                        break;
-                                                                                                    case 'secondary':
-                                                                                                        backgroundColor = '#6c757d';
-                                                                                                        break;
-                                                                                                    default:
-                                                                                                        backgroundColor = '#ccc'; // Default color if no match
-                                                                                                }
-                                                                                                return (
-                                                                                                    <div key={index} style={{ marginRight: '4px', marginTop: '8px' }}>
-                                                                                                        <div
-                                                                                                            className='labels_class'
-                                                                                                            style={{
-                                                                                                                backgroundColor: backgroundColor,
-                                                                                                                borderRadius: '4px',
-                                                                                                                display: 'flex',
-                                                                                                                alignItems: 'center',
-                                                                                                                padding: '4px 8px',
-                                                                                                                cursor: 'pointer'
-                                                                                                            }}
-                                                                                                        >
-                                                                                                            <p style={{ color: '#000', margin: 0, fontSize: '11px' }}>{labelname.name}</p>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                );
-                                                                                            })}
-                                                                                        </div>
-
-                                                                                        {/* Lead Info */}
-                                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '28px' }}>
-                                                                                            <div style={{ width: '100%', maxWidth: '160px' }}>
-                                                                                                <Link to={`/single-leads/${lead._id}`} style={{ textDecoration: 'none', color: 'black' }}>
-                                                                                                    <p className='mb-1' style={{ color: '#B9406B', fontWeight: '600', fontSize: '14px' }}>
-                                                                                                        {lead.company_Name ? lead.company_Name : lead.client?.name && lead.client?.name}
-                                                                                                    </p>
-                                                                                                </Link>
-                                                                                            </div>
-                                                                                            <Dropdown overlay={renderMenu(lead)} trigger={['click']}>
-                                                                                                <BsThreeDotsVertical style={{ cursor: 'pointer', fontSize: '20px' }} />
-                                                                                            </Dropdown>
-                                                                                        </div>
-
-                                                                                        {/* User Images */}
-                                                                                        <div className="image_container">
-                                                                                            {lead.selected_users
-                                                                                                .filter((leadImage) => {
-                                                                                                    const excludedRoles = ['Developer', 'Marketing', 'CEO', 'MD', 'Super Admin', 'HOD', 'Admin'];
-                                                                                                    return !excludedRoles.includes(leadImage?.role);
-                                                                                                })
-                                                                                                .map((leadImage, index) => {
-                                                                                                    const imageSrc = leadImage?.image
-                                                                                                        ? `/images/${leadImage?.image}`
-                                                                                                        : default_image;
+                                                                <div className='lead_stage_card_main' >
+                                                                    {leadsByStage[stage._id] ? (
+                                                                        leadsByStage[stage._id].leads
+                                                                            ?.filter((lead) =>
+                                                                            (lead.client?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                                                lead.company_Name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                                                                            )
+                                                                            .map((lead, index) => (
+                                                                                <Draggable key={lead._id} draggableId={lead._id} index={index}>
+                                                                                    {(provided) => (
+                                                                                        <Card
+                                                                                            className="lead-card mt-3"
+                                                                                            ref={provided.innerRef}
+                                                                                            {...provided.draggableProps}
+                                                                                            {...provided.dragHandleProps}
+                                                                                        >
+                                                                                            {/* Labels Section */}
+                                                                                            <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', marginTop: '-27px' }}>
+                                                                                                {lead.labels.map((labelname, index) => {
+                                                                                                    let backgroundColor = labelname.color || '#ccc';
+                                                                                                    switch (labelname.color) {
+                                                                                                        case 'success':
+                                                                                                            backgroundColor = '#6fd943';
+                                                                                                            break;
+                                                                                                        case 'danger':
+                                                                                                            backgroundColor = '#ff3a6e';
+                                                                                                            break;
+                                                                                                        case 'primary':
+                                                                                                            backgroundColor = '#5c91dc';
+                                                                                                            break;
+                                                                                                        case 'warning':
+                                                                                                            backgroundColor = '#ffa21d';
+                                                                                                            break;
+                                                                                                        case 'info':
+                                                                                                            backgroundColor = '#6ac4f4';
+                                                                                                            break;
+                                                                                                        case 'secondary':
+                                                                                                            backgroundColor = '#6c757d';
+                                                                                                            break;
+                                                                                                        default:
+                                                                                                            backgroundColor = '#ccc'; // Default color if no match
+                                                                                                    }
                                                                                                     return (
-                                                                                                        <OverlayTrigger
-                                                                                                            key={index}
-                                                                                                            placement="top" // Change this to 'bottom', 'left', or 'right' as needed
-                                                                                                            overlay={
-                                                                                                                <Tooltip id={`tooltip-${index}`}>
-                                                                                                                    {leadImage.name}
-                                                                                                                </Tooltip>
-                                                                                                            }
-                                                                                                        >
-                                                                                                            <div style={{ display: 'inline-block', cursor: 'pointer' }}>
-                                                                                                                <Image
-                                                                                                                    src={imageSrc}
-                                                                                                                    alt={`Lead ${index}`}
-                                                                                                                    className="image_control_discussion_main_lead"
-                                                                                                                // style={{ width: '100px', height: '100px' }} 
-                                                                                                                />
+                                                                                                        <div key={index} style={{ marginRight: '4px', marginTop: '8px' }}>
+                                                                                                            <div
+                                                                                                                className='labels_class'
+                                                                                                                style={{
+                                                                                                                    backgroundColor: backgroundColor,
+                                                                                                                    borderRadius: '4px',
+                                                                                                                    display: 'flex',
+                                                                                                                    alignItems: 'center',
+                                                                                                                    padding: '4px 8px',
+                                                                                                                    cursor: 'pointer'
+                                                                                                                }}
+                                                                                                            >
+                                                                                                                <p style={{ color: '#000', margin: 0, fontSize: '11px' }}>{labelname.name}</p>
                                                                                                             </div>
-                                                                                                        </OverlayTrigger>
+                                                                                                        </div>
                                                                                                     );
                                                                                                 })}
-                                                                                        </div>
+                                                                                            </div>
 
-                                                                                        {/* Lead Metadata */}
-                                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className='mb-2'>
-                                                                                            <div className='marketing_source_lead'>
+                                                                                            {/* Lead Info */}
+                                                                                            <div style={{ paddingTop: '20px' }}>
+                                                                                                <div style={{ width: '100%' }}>
+                                                                                                    <Link to={`/single-leads/${lead._id}`} style={{ textDecoration: 'none', color: 'black' }}>
+                                                                                                        <p className='mb-1' style={{ color: '#000', fontWeight: '600', fontSize: '14px' }}>
+                                                                                                            {lead.company_Name ? lead.company_Name : lead.client?.name && lead.client?.name}
+                                                                                                        </p>
+                                                                                                    </Link>
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            {/* User Images */}
+                                                                                            <div className="image_container">
+                                                                                                {lead.selected_users
+                                                                                                    .filter((leadImage) => {
+                                                                                                        const excludedRoles = ['Developer', 'Marketing', 'CEO', 'MD', 'Super Admin', 'HOD', 'Admin'];
+                                                                                                        return !excludedRoles.includes(leadImage?.role);
+                                                                                                    })
+                                                                                                    .map((leadImage, index) => {
+                                                                                                        const imageSrc = leadImage?.image
+                                                                                                            ? `/images/${leadImage?.image}`
+                                                                                                            : default_image;
+                                                                                                        return (
+                                                                                                            <OverlayTrigger
+                                                                                                                key={index}
+                                                                                                                placement="top" // Change this to 'bottom', 'left', or 'right' as needed
+                                                                                                                overlay={
+                                                                                                                    <Tooltip id={`tooltip-${index}`}>
+                                                                                                                        {leadImage.name}
+                                                                                                                    </Tooltip>
+                                                                                                                }
+                                                                                                            >
+                                                                                                                <div style={{ display: 'inline-block', cursor: 'pointer' }}>
+                                                                                                                    <Image
+                                                                                                                        src={imageSrc}
+                                                                                                                        alt={`Lead ${index}`}
+                                                                                                                        className="image_control_discussion_main_lead"
+                                                                                                                    // style={{ width: '100px', height: '100px' }} 
+                                                                                                                    />
+                                                                                                                </div>
+                                                                                                            </OverlayTrigger>
+                                                                                                        );
+                                                                                                    })}
+                                                                                            </div>
+
+                                                                                            {/* Lead Metadata */}
+                                                                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }} className='mb-2 mt-2'>
+
+                                                                                                <div style={{ display: 'flex', gap: '5px', width: '100%', justifyContent: 'space-around', alignItems: 'center' }}>
+                                                                                                    {
+                                                                                                        canAddUserLead && canAddUserLead ?
+
+                                                                                                            <div className="main_lead_users_delete_btn">
+                                                                                                                <IoMdAdd style={{ fontSize: '30px', color: 'white', cursor: 'pointer' }} onClick={() => handleAddUserClick(lead._id)} />
+                                                                                                            </div>
+                                                                                                            :
+                                                                                                            null
+
+                                                                                                    }
+                                                                                                    <SiImessage className='' style={{ fontSize: '25px', color: '#5c91dc', cursor: 'pointer' }} onClick={() => showLeadDiscussion(lead)} />
+                                                                                                    <TbFileDescription className='' style={{ fontSize: '25px', color: '#5c91dc', cursor: 'pointer' }} onClick={() => showLeadDetails(lead)} />
+                                                                                                    <div style={{ position: 'relative' }}>
+                                                                                                        <IoLogoWhatsapp
+                                                                                                            style={{
+                                                                                                                color: 'green',
+                                                                                                                fontSize: '25px',
+                                                                                                                cursor: 'pointer'
+                                                                                                            }}
+                                                                                                            onClick={() => openWhtsappModal(lead._id, lead.client._id)}
+                                                                                                        />
+                                                                                                        {messageCounts[lead._id] > 0 && (
+                                                                                                            <span
+                                                                                                                className='w_message_notification'
+                                                                                                                style={{
+                                                                                                                    position: 'absolute',
+                                                                                                                    top: '-8px',
+                                                                                                                    right: '-5px',
+                                                                                                                    backgroundColor: 'red',
+                                                                                                                    color: 'white',
+                                                                                                                    borderRadius: '50%',
+                                                                                                                    padding: '2px 6px',
+                                                                                                                    fontSize: '8px',
+                                                                                                                }}
+                                                                                                            >
+                                                                                                                {messageCounts[lead._id]}
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                </div>
+
+                                                                                                <div>
+                                                                                                    <Dropdown overlay={renderMenu(lead)} trigger={['click']}>
+                                                                                                        <BsThreeDotsVertical style={{ cursor: 'pointer', fontSize: '25px' }} />
+                                                                                                    </Dropdown>
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            <div
+                                                                                                className='marketing_source_lead'
+                                                                                                style={{
+                                                                                                    backgroundColor:
+                                                                                                        lead.lead_type?.name === 'Marketing'
+                                                                                                            ? '#1877F2'
+                                                                                                            : lead.lead_type?.name === 'Tele Sales'
+                                                                                                                ? '#32c5bc'
+                                                                                                                : lead.lead_type?.name === 'Others'
+                                                                                                                    ? '#f97820'
+                                                                                                                    : 'transparent', // fallback for other cases
+                                                                                                }}
+                                                                                            >
                                                                                                 <p className='mb-0 text-center' style={{ fontSize: '11px' }}>
-                                                                                                    {lead.lead_type?.name && lead.lead_type?.name}
+                                                                                                    {`${lead.lead_type?.name && lead.lead_type?.name} / ${lead.source?.name && lead.source?.name}`}
                                                                                                 </p>
+                                                                                            </div>
+
+                                                                                            {/* Product Stage Lead */}
+                                                                                            <div
+                                                                                                className='product_stage_lead'
+                                                                                                style={{
+                                                                                                    backgroundColor:
+                                                                                                        lead.pipeline_id?.name === 'Personal Loan'
+                                                                                                            ? '#ffa000'
+                                                                                                            : lead.pipeline_id?.name === 'EIB Bank'
+                                                                                                                ? '#08448c'
+                                                                                                                : 'defaultBackgroundColor', // Set a default background color if needed
+                                                                                                }}
+                                                                                            >
                                                                                                 <p className='mb-0 text-center' style={{ fontSize: '11px' }}>
-                                                                                                    {lead.source?.name && lead.source?.name}
+                                                                                                    {lead.pipeline_id?.name && lead.pipeline_id?.name}
                                                                                                 </p>
                                                                                             </div>
-                                                                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end', gap: '5px' }}>
-                                                                                                {
-                                                                                                    canAddUserLead && canAddUserLead ?
 
-                                                                                                        <div className="main_lead_users_delete_btn">
-                                                                                                            <IoMdAdd style={{ fontSize: '20px', color: 'white', cursor: 'pointer' }} onClick={() => handleAddUserClick(lead._id)} />
-                                                                                                        </div>
-                                                                                                        :
-                                                                                                        null
+                                                                                            {/* Transfer Stage Lead */}
+                                                                                            {lead.is_transfer && (
+                                                                                                <div className='Transfer_stage_lead' onClick={() => TransferMessageModal(lead)}>
+                                                                                                    <p className={`mb-0 ${rtl === 'true' ? 'text-right' : 'text-center'}`} style={{ fontSize: '11px', cursor: 'pointer' }}>
+                                                                                                        {rtl === 'true' ? 'نموذج التحويل' : 'Transfer Foam'}
+                                                                                                    </p>
 
-                                                                                                }
-                                                                                                <SiImessage className='mt-2' style={{ fontSize: '20px', color: '#5c91dc', cursor: 'pointer' }} onClick={() => showLeadDiscussion(lead)} />
-                                                                                                <TbFileDescription className='mt-2' style={{ fontSize: '20px', color: '#5c91dc', cursor: 'pointer' }} onClick={() => showLeadDetails(lead)} />
-                                                                                                <IoLogoWhatsapp style={{ color: 'green', fontSize: '20px', cursor: 'pointer' }} onClick={() => openWhtsappModal(lead._id, lead.client._id)} />
-                                                                                            </div>
-                                                                                        </div>
-
-                                                                                        {/* Product Stage Lead */}
-                                                                                        <div
-                                                                                            className='product_stage_lead'
-                                                                                            style={{
-                                                                                                backgroundColor:
-                                                                                                    lead.pipeline_id?.name === 'Personal Loan'
-                                                                                                        ? '#ffa000'
-                                                                                                        : lead.pipeline_id?.name === 'EIB Bank'
-                                                                                                            ? '#08448c'
-                                                                                                            : 'defaultBackgroundColor', // Set a default background color if needed
-                                                                                            }}
-                                                                                        >
-                                                                                            <p className='mb-0 text-center' style={{ fontSize: '11px' }}>
-                                                                                                {lead.pipeline_id?.name && lead.pipeline_id?.name}
-                                                                                            </p>
-                                                                                        </div>
-
-                                                                                        {/* Transfer Stage Lead */}
-                                                                                        {lead.is_transfer && (
-                                                                                            <div className='Transfer_stage_lead' onClick={() => TransferMessageModal(lead._id)}>
-                                                                                                <p className="mb-0 text-center" style={{ fontSize: '11px', cursor: 'pointer' }}>Transfer Form</p>
-                                                                                            </div>
-                                                                                        )}
-                                                                                    </Card>
-                                                                                )}
-                                                                            </Draggable>
-                                                                        ))
-                                                                ) : (
-                                                                    <p className='text-center' >No leads available</p>
-                                                                )}
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </Card>
+                                                                                    )}
+                                                                                </Draggable>
+                                                                            ))
+                                                                    ) : (
+                                                                        <p className='text-center' style={{ color: 'white' }} >No leads available</p>
+                                                                    )}
+                                                                </div>
                                                                 {provided.placeholder}
                                                             </Card>
                                                         )}
                                                     </Droppable>
                                                 ))
                                         ) : (
-                                            <p>No stages available</p>
+                                            <p className='mutual_heading_class'>No Stages Available</p>
                                         )}
                                     </div>
                                 </DragDropContext>
@@ -1117,21 +1241,53 @@ const CeoDashboard = () => {
                     show={leadTransferMessageModal}
                     onHide={() => setLeadTransferMessageModal(false)}
                 >
-                    <Modal.Header closeButton>
-                        <Modal.Title id="contained-modal-title-vcenter">
-                            Lead Transfer Form
+                    <Modal.Header closeButton style={{ border: 'none' }}>
+                        <Modal.Title id="contained-modal-title-vcenter" className={`mutual_heading_class ${rtl === 'true' ? 'text-right' : ''}`}>
+                            {rtl === 'true' ? 'حالة تحويل القيادة' : 'Lead Transfer Status'}
                         </Modal.Title>
                     </Modal.Header>
-                    <Modal.Body>
-                        <p>
-                            {selectedTransferForm ?
-                                `The lead  has been successfully transferred.` :
-                                'No lead selected.'}
+
+                    <Modal.Body className={rtl === 'true' ? 'text-right' : ''}>
+                        {/* Lead Transfer From */}
+                        <p className='mb-0' style={{ fontWeight: '500', color: '#d7aa47' }}>
+                            {rtl === 'true' ? 'تم تحويل القيادة من : ' : 'Lead Transfer From : '}
                         </p>
+                        <p className='mutual_heading_class'>
+                            {selectedTransferForm ?
+                                `${rtl === 'true' ? 'الفرع' : 'Branch'} : ${selectedTransferForm?.transfer_from?.branch?.name} - ${rtl === 'true' ? 'المنتج' : 'Product'} : ${selectedTransferForm?.transfer_from?.products?.name} - ${rtl === 'true' ? 'خط الأنابيب' : 'Pipeline'} : ${selectedTransferForm?.transfer_from?.pipeline?.name} - ${rtl === 'true' ? 'مرحلة المنتج' : 'Product-Stage'} : ${selectedTransferForm?.transfer_from?.product_stage?.name}` :
+                                (rtl === 'true' ? 'لم يتم تحديد القيادة.' : 'No lead selected.')}
+                        </p>
+
+                        {/* Lead Transfer To */}
+                        <p className='mb-0' style={{ fontWeight: '500', color: '#d7aa47' }}>
+                            {rtl === 'true' ? 'تم تحويل القيادة إلى : ' : 'Lead Transfer To : '}
+                        </p>
+                        <p className='mutual_heading_class'>
+                            {selectedTransferForm ?
+                                `${rtl === 'true' ? 'الفرع' : 'Branch'} : ${selectedTransferForm?.branch?.name} - ${rtl === 'true' ? 'المنتج' : 'Product'} : ${selectedTransferForm?.products?.name} - ${rtl === 'true' ? 'خط الأنابيب' : 'Pipeline'} : ${selectedTransferForm?.pipeline_id?.name} - ${rtl === 'true' ? 'مرحلة المنتج' : 'Product-Stage'} : ${selectedTransferForm?.product_stage?.name}` :
+                                (rtl === 'true' ? 'لم يتم تحديد القيادة.' : 'No lead selected.')}
+                        </p>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <p style={{ fontWeight: '500', color: '#d7aa47' }}>
+                                {new Date(selectedTransferForm?.updated_at).toLocaleDateString(rtl === 'true' ? 'ar-EG' : 'en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: true
+                                })}
+                            </p>
+                        </div>
                     </Modal.Body>
-                    <Modal.Footer>
-                        <Button onClick={() => setLeadTransferMessageModal(false)} >Close</Button>
+
+                    <Modal.Footer style={{ border: 'none' }}>
+                        <Button onClick={() => setLeadTransferMessageModal(false)} className='all_close_btn_container'>
+                            {rtl === 'true' ? 'إغلاق' : 'Close'}
+                        </Button>
                     </Modal.Footer>
+
                 </Modal>
 
                 {/* Lead Discussion */}
@@ -1141,39 +1297,42 @@ const CeoDashboard = () => {
                     aria-labelledby="contained-modal-title-vcenter"
                     centered
                     onHide={() => setLeadDiscussionModal(false)}
+                    dir={rtl === 'true' ? "rtl" : "ltr"} // Set direction based on rtl state
                 >
-                    <Modal.Header closeButton>
-                        <Modal.Title id="contained-modal-title-vcenter">
-                            Lead Discussion
+                    <Modal.Header closeButton style={{ border: 'none' }} >
+                        <Modal.Title id="contained-modal-title-vcenter" style={{ color: "#d7aa47" }}>
+                            {rtl === 'true' ? 'مناقشة القيادة' : 'Lead Discussion'}
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <Card className="mt-4 lead_discussion_main_card_main" style={{ padding: '15px' }}>
+                        <Card className="lead_discussion_main_card_main_lead_discussion" style={{ padding: '15px', backgroundColor: '#6c757da2' }}>
                             <Container>
                                 <Row>
                                     <Col xs={12}>
                                         <div className="chat-history mb-3" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                             {selectedLeadDiscussion?.discussions?.length > 0 ? (
-                                                selectedLeadDiscussion.discussions.reverse().map((leadDiscussion, index) => {
-                                                    const imageSrc = leadDiscussion.created_by?.image
-                                                        ? `/images/${leadDiscussion.created_by?.image}`
-                                                        : 'default_image_url_here';
+                                                selectedLeadDiscussion.discussions.map((leadDiscussion, index, array) => {
+                                                    // Access items from the end of the array to the beginning
+                                                    const discussion = array[array.length - 1 - index];
+                                                    const imageSrc = discussion.created_by?.image
+                                                        ? `/images/${discussion.created_by?.image}`
+                                                        : default_image;
 
                                                     return (
                                                         <div key={index} style={{ marginBottom: '15px' }}>
                                                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                                 <Image
                                                                     src={imageSrc}
-                                                                    alt={leadDiscussion.created_by?.name}
+                                                                    alt={discussion.created_by?.name}
                                                                     className="image_control_discussion"
                                                                     style={{ width: '40px', height: '40px', borderRadius: '50%' }}
                                                                 />
-                                                                <p className="mb-0" style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
-                                                                    {leadDiscussion.created_by?.name}
+                                                                <p className="mb-0" style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#ffbf00' }}>
+                                                                    {discussion.created_by?.name}
                                                                 </p>
                                                             </div>
-                                                            <p className="mb-0" style={{ fontSize: '0.75rem', color: '#888' }}>
-                                                                {new Date(leadDiscussion?.created_at).toLocaleDateString('en-US', {
+                                                            <p className="mb-0" style={{ fontSize: '0.75rem', color: '#aeaeae' }}>
+                                                                {new Date(discussion?.created_at).toLocaleDateString(rtl === 'true' ? 'ar-EG' : 'en-US', {
                                                                     year: 'numeric',
                                                                     month: 'long',
                                                                     day: 'numeric',
@@ -1182,40 +1341,43 @@ const CeoDashboard = () => {
                                                                     hour12: true,
                                                                 })}
                                                             </p>
-                                                            <p style={{ fontSize: '14px' }} className="mb-4 mt-2">
-                                                                {leadDiscussion?.comment}
+                                                            <p style={{ fontSize: '14px', color: 'white' }} className="mb-4 mt-2">
+                                                                {discussion?.comment}
                                                             </p>
                                                         </div>
                                                     );
                                                 })
                                             ) : (
-                                                <p>No discussions available.</p>
+                                                <p className='mutual_class_color'>{rtl ? 'لا توجد مناقشات متاحة.' : 'No discussions available.'}</p>
                                             )}
                                         </div>
 
-                                        <Form>
-                                            <Form.Control
-                                                as="textarea"
-                                                placeholder="Leave a comment here"
-                                                rows={1}
-                                                value={discussionText}
-                                                onChange={handleInputChange}
-                                                required
-                                                ref={textareaRef}
-                                                maxLength={300}
-                                                className="lead_discussion_class"
-                                            />
-                                            {error && <div style={{ color: 'red', marginTop: '5px' }}>{error}</div>}
-                                        </Form>
-                                        <Button onClick={sendDiscussionMessage} className="mt-2 all_single_leads_button">
-                                            Create
-                                        </Button>
+                                        <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'start' }}>
+                                            <div className="w-100">
+                                                <Form>
+                                                    <Form.Control
+                                                        as="textarea"
+                                                        placeholder={rtl === 'true' ? 'اترك تعليق هنا' : 'Leave a comment here'}
+                                                        rows={1}
+                                                        value={discussionText}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                        ref={textareaRef}
+                                                        maxLength={300}
+                                                        className="w-100 input_field_input_field"
+                                                    />
+                                                    {error && <div style={{ color: 'red', marginTop: '5px' }}>{error}</div>}
+                                                </Form>
+                                            </div>
+                                            <Button onClick={sendDiscussionMessage} className="all_common_btn_single_lead" style={{ marginRight: '10px' }} >
+                                                {rtl === 'true' ? 'إنشاء' : 'Create'}
+                                            </Button>
+                                        </div>
                                     </Col>
                                 </Row>
                             </Container>
                         </Card>
                     </Modal.Body>
-
                 </Modal>
 
                 {/* Lead Description Modal */}
@@ -1226,12 +1388,15 @@ const CeoDashboard = () => {
                     show={openLeadDescriptionModal}
                     onHide={() => setOpenLeadDescriptionModal(false)}
                 >
-                    <Modal.Header closeButton>
-                        <Modal.Title id="contained-modal-title-vcenter">
-                            Lead Details
+                    <Modal.Header closeButton style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }} >
+                        <Modal.Title
+                            id="contained-modal-title-vcenter"
+                            style={{ color: "#d7aa47", textAlign: rtl === 'true' ? 'right' : 'left' }}
+                        >
+                            {rtl === 'true' ? 'تفاصيل العميل' : 'Lead Details'}
                         </Modal.Title>
                     </Modal.Header>
-                    <Modal.Body>
+                    <Modal.Body className={`modal_body_bg_color ${rtl === 'true' ? 'rtl' : 'ltr'}`} style={{ height: '100%', maxHeight: '500px', overflowY: 'auto' }} >
                         {selectedLead ? (
                             <div>
                                 {selectedLead.description
@@ -1239,17 +1404,19 @@ const CeoDashboard = () => {
                                         <p
                                             key={index}
                                             style={{ fontWeight: index % 2 === 0 ? 'bold' : 'normal' }}
+                                            className={`mb-1 ${index % 2 === 0 ? 'mutual_class_color' : 'mutual_heading_class'} ${rtl === 'true' ? 'text-left' : 'text-left'}`}
                                         >
                                             {line}
                                         </p>
                                     ))
-                                    : <p>No description available.</p>
+                                    : <p className='mutual_class_color' >{rtl === 'true' ? 'لا توجد تفاصيل متاحة.' : 'No description available.'}</p>
                                 }
                             </div>
                         ) : (
-                            <p>No lead selected.</p>
+                            <p>{rtl === 'true' ? 'لم يتم تحديد العميل.' : 'No lead selected.'}</p>
                         )}
                     </Modal.Body>
+
                 </Modal>
 
                 {/* Add user Modal */}
@@ -1260,35 +1427,52 @@ const CeoDashboard = () => {
                     show={userModal}
                     onHide={() => setUserModal(false)}
                 >
-                    <Modal.Header closeButton>
+                    <Modal.Header closeButton style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
                         <Modal.Title id="contained-modal-title-vcenter">
-                            Add Users for {selectedLead ? selectedLead.client?.name : 'Lead'} {/* Show the lead name */}
+                            <h5 className={rtl === 'true' ? 'mutual_class_color' : 'mutual_class_color'}>
+                                {rtl === 'true' ? `إضافة مستخدمين لـ ${selectedLead ? selectedLead.client?.name : 'القيادة'}` : `Add Users for ${selectedLead ? selectedLead.client?.name : 'Lead'}`}
+                            </h5>
                         </Modal.Title>
                     </Modal.Header>
-                    <Modal.Body>
+
+                    <Modal.Body className={rtl === 'true' ? 'text-right' : ''}>
                         <Form>
                             <Form.Group className="mb-3">
-                                <Form.Label>Select Users</Form.Label>
+                                <Form.Label style={{ color: '#fff' }}>
+                                    {rtl === 'true' ? 'اختر المستخدمين' : 'Select Users'}
+                                </Form.Label>
                                 <Select
-                                    options={pipelineUsers.map(user => ({ value: user._id, label: user.name }))} // Only show users from the same pipeline
+                                    options={pipelineUsers.map(user => ({
+                                        value: user._id,
+                                        label: rtl === 'true'
+                                            ? `${user.name} (${user.role})`
+                                            : `${user.name} (${user.role})`
+                                    }))} // Only show users from the same pipeline
                                     value={selectedLeadUsers} // Prepopulate selected users for the lead
                                     onChange={(options) => {
                                         setSelectedLeadUsers(options);
                                         setUserError('');
                                     }}
                                     isMulti // Enable multi-select
-                                    placeholder="Select users..."
+                                    placeholder={rtl === 'true' ? 'حدد المستخدمين...' : 'Select users...'}
+                                    classNamePrefix="react-select"
+                                    className='input_field_input_field'
+                                    styles={{ color: 'white' }}
                                 />
                                 {userError && <div className="text-danger">{userError}</div>}
                             </Form.Group>
                         </Form>
                     </Modal.Body>
-                    <Modal.Footer>
-                        <Button onClick={() => setUserModal(false)} className='all_close_btn_container'>Close</Button>
-                        <Button className='all_single_leads_button' onClick={AddUser}>
-                            Submit
+
+                    <Modal.Footer style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                        <Button className='all_common_btn_single_lead' onClick={AddUser}>
+                            {rtl === 'true' ? 'إرسال' : 'Submit'}
+                        </Button>
+                        <Button onClick={() => setUserModal(false)} className='all_close_btn_container'>
+                            {rtl === 'true' ? 'إغلاق' : 'Close'}
                         </Button>
                     </Modal.Footer>
+
                 </Modal>
 
                 {/* Rejected Modal */}
@@ -1299,27 +1483,64 @@ const CeoDashboard = () => {
                     show={rejectedLeadModal}
                     onHide={() => setRejectedLeadModal(false)}
                 >
-                    <Modal.Header closeButton>
-                        <Modal.Title id="contained-modal-title-vcenter">
-                            Reject Lead
+                    <Modal.Header closeButton style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                        <Modal.Title id="contained-modal-title-vcenter" className='mutual_heading_class'>
+                            {rtl === 'true' ? 'رفض العميل المحتمل' : 'Reject Lead'}
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body className="text-center">
                         <TiDeleteOutline className="text-danger" style={{ fontSize: '4rem' }} />
-                        <p  >
-                            <span style={{ color: 'red', fontWeight: '600' }} > Are You Sure?</span>  <br /> <span style={{ color: '#3ec9d6' }} >You Want to Reject this Lead</span>
+                        <p>
+                            <span style={{ color: 'red', fontWeight: '600' }}>
+                                {rtl === 'true' ? 'هل أنت متأكد؟' : 'Are You Sure?'}
+                            </span>
+                            <br />
+                            <span style={{ color: '#fff' }}>
+                                {rtl === 'true' ? 'تريد رفض هذا العميل المحتمل' : 'You Want to Reject this Lead'}
+                            </span>
                         </p>
-
                         <Form.Group className="mb-3" controlId="exampleForm.ControlTextarea1">
-                            <Form.Control as="textarea" rows={3} placeholder='Reason For Rejection' name='reject_reason' value={rejectLead} onChange={(e) => setRejectLead(e.target.value)} />
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                placeholder={rtl === 'true' ? 'سبب الرفض' : 'Reason For Rejection'}
+                                name="reject_reason"
+                                value={rejectLead}
+                                onChange={(e) => setRejectLead(e.target.value)}
+                                className="input_field_input_field"
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left', // Adjust text alignment
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr', // Adjust input direction
+                                }}
+                            />
                         </Form.Group>
-                        {rejectReasonErrorMessage && rejectReasonErrorMessage && <Alert variant="danger">{rejectReasonErrorMessage}</Alert>}
-
+                        {rejectReasonErrorMessage && (
+                            <Alert variant="danger" style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                                {rejectReasonErrorMessage}
+                            </Alert>
+                        )}
                     </Modal.Body>
-                    <Modal.Footer>
-                        <Button className='all_close_btn_container' onClick={() => setRejectedLeadModal(false)}>Close</Button>
-                        <Button className='all_single_leads_button' onClick={RejectedLead} >Reject Lead</Button>
+                    <Modal.Footer style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                        <Button
+                            className='all_close_btn_container'
+                            onClick={() => setRejectedLeadModal(false)}
+                            style={{
+                                textAlign: rtl === 'true' ? 'right' : 'left', // Align text based on direction
+                            }}
+                        >
+                            {rtl === 'true' ? 'إغلاق' : 'Close'}
+                        </Button>
+                        <Button
+                            className='all_common_btn_single_lead'
+                            onClick={RejectedLead}
+                            style={{
+                                textAlign: rtl === 'true' ? 'right' : 'left',
+                            }}
+                        >
+                            {rtl === 'true' ? 'رفض العميل المحتمل' : 'Reject Lead'}
+                        </Button>
                     </Modal.Footer>
+
                 </Modal>
 
                 <Modal
@@ -1329,10 +1550,10 @@ const CeoDashboard = () => {
                     show={phoneNumberSuccess}
                     onHide={() => setPhoneumberSuccess(false)}
                 >
-                    <Modal.Body style={{ backgroundColor: '#EFEFEF', borderRadius: '14px' }} >
+                    <Modal.Body style={{ borderRadius: '14px' }} >
                         <div >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className='mb-2'>
-                                <h4>Lead Already Exist</h4>
+                                <h4 className='mutual_heading_class' >Lead Already Exist</h4>
                                 {
                                     apiData && apiData.isRejected ?
                                         <Image src={rejected_image} alt='rejected_image' style={{ width: '100px', height: '100px', borderRadius: '50%' }} />
@@ -1344,63 +1565,69 @@ const CeoDashboard = () => {
                                     <>
                                         <Row>
                                             <Col md={6} lg={6}>
-                                                <Card className='lead_exist_status'>
-                                                    <strong className='text-center mb-2' >Client Details</strong>
-                                                    <p>
+                                                <Card className='lead_exist_status modal_body_bg_color'>
+                                                    <strong className='text-center mb-2 mutual_class_color' >Client Details</strong>
+                                                    <p className='mutual_heading_class' >
                                                         {`Name : ${apiData.companyName ? apiData.companyName : apiData.client.name}`}
                                                     </p>
 
-                                                    <p>
+                                                    <p className='mutual_heading_class'>
                                                         {`Emirates ID : ${apiData.client.e_id ? apiData.client.e_id : 'No Emirates ID'}`}
                                                     </p>
 
-                                                    <p>
+                                                    <p className='mutual_heading_class'>
                                                         {`Email : ${apiData.client.email ? apiData.client.email : 'No Email'}`}
                                                     </p>
                                                 </Card>
                                             </Col>
 
                                             <Col md={6} lg={6}>
-                                                <Card className='lead_exist_status'>
-                                                    <strong className='text-center mb-2' >Lead Details</strong>
-                                                    <p>
+                                                <Card className='lead_exist_status modal_body_bg_color'>
+                                                    <strong className='text-center mb-2 mutual_class_color' >Lead Details</strong>
+                                                    <p className='mutual_heading_class'>
                                                         {`Product :  ${apiData.products.name}`}
                                                     </p>
 
-                                                    <p>
+                                                    <p className='mutual_heading_class'>
                                                         {`PipeLine :  ${apiData.pipeline.name}`}
                                                     </p>
 
-                                                    <p>
+                                                    <p className='mutual_heading_class'>
                                                         {`Product Stage :  ${apiData.productStage.name}`}
                                                     </p>
 
-                                                    <p>
+                                                    <p className='mutual_heading_class'>
                                                         {`Lead Type :  ${apiData.leadType.name}`}
                                                     </p>
 
-                                                    <p>
+                                                    <p className='mutual_heading_class'>
                                                         {`Source :  ${apiData.source.name}`}
                                                     </p>
                                                 </Card>
                                             </Col>
                                         </Row>
-
-                                        <p className='mt-3' >
-                                            {`Lead Details :  ${apiData.description}`}
-                                        </p>
                                     </>
                                 )
                             }
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px' }} >
-                                <Button className='all_close_btn_container' onClick={() => setPhoneumberSuccess(false)}>Close</Button>
-                                {
-                                    apiData && (
-                                        <Link className='view_lead_btn_lead_search' to={`/single-leads/${apiData.id}`}>View Lead</Link>
-                                    )
-                                }
-                            </div>
+                            <Modal.Footer style={{ border: 'none' }} >
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px' }} >
+                                    <Button
+                                        className="all_close_btn_container"
+                                        onClick={() => {
+                                            setPhoneumberSuccess(false);
+                                            setPhoneNumber(''); // Clear the phone number state as well
+                                        }}
+                                    >
+                                        Close
+                                    </Button>
+                                    {
+                                        apiData && (
+                                            <Link className='view_lead_btn_lead_search' to={`/single-leads/${apiData.id}`}>View Lead</Link>
+                                        )
+                                    }
+                                </div>
+                            </Modal.Footer>
                         </div>
                     </Modal.Body>
                 </Modal>
@@ -1425,6 +1652,7 @@ const CeoDashboard = () => {
                     setModal2Open={setModal2Open}
                     modal2Open={modal2Open}
                     fetchLeadsData={fetchLeads}
+                    leads={leads}
                 />
 
                 <EditLead
@@ -1432,6 +1660,7 @@ const CeoDashboard = () => {
                     setModalShow={setModalShow}
                     leadId={leadId}
                     fetchLeadsData={fetchLeads}
+                    rtl={rtl}
                 />
 
                 <MoveLeads
@@ -1439,6 +1668,7 @@ const CeoDashboard = () => {
                     setMoveLeadModal={setMoveLeadModal}
                     leadId={leadId}
                     fetchLeadsData={fetchLeads}
+                    rtl={rtl}
                 />
 
                 <TransferLeads
@@ -1446,13 +1676,14 @@ const CeoDashboard = () => {
                     fetchLeadsData={fetchLeads}
                     setTransferModal={setTransferModal}
                     transferModal={transferModal}
+                    rtl={rtl}
                 />
 
-                <ConvertLead leadId={leadId} setLeadToContract={setLeadToContract} leadtocontract={leadtocontract} contractModal={contractModal} setContractModal={setContractModal} />
+                <ConvertLead rtl={rtl} leadId={leadId} setLeadToContract={setLeadToContract} leadtocontract={leadtocontract} contractModal={contractModal} setContractModal={setContractModal} leads={leads} />
 
-                <DashboardLabels leadId={leadId} fetchLeadsData={fetchLeads} labelsDashboardModal={labelsDashboardModal} setLabelsDashBoardModal={setLabelsDashBoardModal} />
+                <DashboardLabels rtl={rtl} leadId={leadId} fetchLeadsData={fetchLeads} labelsDashboardModal={labelsDashboardModal} setLabelsDashBoardModal={setLabelsDashBoardModal} />
 
-                <WhatsappNotification leadId={leadId} whtsappModal={whtsappModal} setWhatsAppModal={setWhatsAppModal} clientId={clientId} />
+                <WhatsappNotification rtl={rtl} leadId={leadId} whtsappModal={whtsappModal} setWhatsAppModal={setWhatsAppModal} clientId={clientId} />
             </Container>
         </div>
     );

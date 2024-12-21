@@ -13,7 +13,7 @@ const SuperAdminDashboard = () => {
             <Row>
                 <Col xs={24} sm={24} md={12} lg={4} >
                     <div>
-                        <Sidebar />
+                        {/* <Sidebar /> */}
                     </div>
                 </Col>
                 <Col xs={24} sm={24} md={12} lg={6}>

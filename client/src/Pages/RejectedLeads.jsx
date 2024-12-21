@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../Components/navbar/Navbar';
 import { Container, Row, Col, Table, Form, Pagination, Modal, Button, Card, Image } from 'react-bootstrap';
 import Sidebar from '../Components/sidebar/Sidebar';
 import { useSelector } from 'react-redux';
@@ -16,6 +15,7 @@ const RejectedLeads = () => {
     const productNames = useSelector(state => state.loginSlice.products);
     const product = useSelector((state) => state.loginSlice.user?.products);
     const branch = useSelector((state) => state.loginSlice.user?.branch);
+    const [rtl, setRtl] = useState(null);
     const [rejectedLeads, setRejectedLeads] = useState([]);
     const [rejectedLeadReason, setRejectedLeadReason] = useState(false);
     const [selectedRejectReason, setSelectedRejectReason] = useState('');
@@ -26,7 +26,7 @@ const RejectedLeads = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedBranch, setSelectedBranch] = useState('All');
     const [selectedProduct, setSelectedProduct] = useState('All');
-    const leadsPerPage = 12;
+    const leadsPerPage = 14;
     const pagesToShow = 5;
 
     const productPipelineMap = {
@@ -36,30 +36,29 @@ const RejectedLeads = () => {
     };
 
     // Fetch Rejected Leads
+    const fetchRejectedLeads = async () => {
+        try {
+            const response = await axios.get(`/api/leads/rejected-leads`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            setRejectedLeads(response.data.leadDetails || []);
+        } catch (error) {
+            console.error('Error fetching rejected leads:', error);
+        }
+    };
     useEffect(() => {
-        const fetchRejectedLeads = async () => {
-            try {
-                const response = await axios.get(`/api/leads/rejected-leads`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                setRejectedLeads(response.data.leadDetails || []);
-            } catch (error) {
-                console.error('Error fetching rejected leads:', error);
-            }
-        };
-
         fetchRejectedLeads();
     }, [token]);
 
     // Filter leads based on selected branch, pipeline name, and search terms
-    const filteredLeads = rejectedLeads.filter(lead =>
+    const filteredLeads = rejectedLeads?.filter(lead =>
         (selectedBranch === 'All' || lead.branchName === selectedBranch) &&
         (selectedProduct === 'All' || lead.productName === selectedProduct) &&
-        lead.clientName.toLowerCase().includes(searchClientName.toLowerCase()) &&
-        lead.pipelineName.toLowerCase().includes(searchPipelineName.toLowerCase()) &&
-        lead.phone.toLowerCase().includes(searchPhoneNumber.toLowerCase()) &&
+        lead.clientName?.toLowerCase().includes(searchClientName?.toLowerCase()) &&
+        lead.pipelineName?.toLowerCase().includes(searchPipelineName?.toLowerCase()) &&
+        lead.phone?.toLowerCase().includes(searchPhoneNumber?.toLowerCase()) &&
         (lead.companyName?.toLowerCase() || '').includes(searchCompanyName.toLowerCase())
     );
 
@@ -95,23 +94,67 @@ const RejectedLeads = () => {
         setRejectedLeadReason(true);
     };
 
+    // Get RTL state from localStorage on initial load
+    useEffect(() => {
+        const savedRtl = localStorage.getItem('rtl');
+        setRtl(savedRtl);
+    }, [token]);
+
+    // Choose language based on RTL setting
+    const translations = {
+        en: {
+            rejectedLeads: "Rejected Leads",
+            clientName: "Client Name",
+            companyName: "Company Name",
+            phone: "Phone",
+            pipelineName: "Pipeline Name",
+            productStage: "Product Stage",
+            branchName: "Branch Name",
+            action: "Action",
+            all: "All",
+            noPipelineAvailable: "No Pipeline Available",
+            selectPipeline: "Select Pipeline",
+            searchByClientName: "Search by Client Name",
+            searchByCompanyName: "Search by Company Name",
+            searchByPhoneNumber: "Search by Phone Number",
+        },
+        ar: {
+            rejectedLeads: "العملاء المرفوضون",
+            clientName: "اسم العميل",
+            companyName: "اسم الشركة",
+            phone: "الهاتف",
+            pipelineName: "اسم الأنابيب",
+            productStage: "مرحلة المنتج",
+            branchName: "اسم الفرع",
+            action: "إجراء",
+            all: "الكل",
+            noPipelineAvailable: "لا توجد خطوط أنابيب متاحة",
+            selectPipeline: "اختر الأنبوب",
+            searchByClientName: "البحث حسب اسم العميل",
+            searchByCompanyName: "البحث حسب اسم الشركة",
+            searchByPhoneNumber: "البحث حسب رقم الهاتف",
+        }
+    };
+    const language = rtl === 'true' ? translations.ar : translations.en;
     return (
         <div>
-            <Container fluid>
+            <Container fluid style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
                 <Row>
                     <Col xs={12} md={12} lg={2}>
-                        <Sidebar />
+                        {/* <Sidebar /> */}
                     </Col>
 
                     <Col xs={12} md={12} lg={10}>
-                        <Card className='leads_main_cards'>
-                            <Image src={rejected_image} className='rejected_image' alt='Rejected Image' style={{ width: '140px', height: '140px', borderRadius: '50%' }} />
-                            <h2 className="text-center mt-3" style={{ color: 'black' }}>
-                                Rejected Leads ({totalLeads} {totalLeads === 1 ? 'Lead' : 'Leads'})
-                            </h2>
+                        <Card className='leads_main_cards mt-3' style={{ padding: '0px 20px 10px 20px' }}  >
+                            <div style={{ position: 'relative' }} >
+                                <h2 className="text-center mutual_heading_class mt-3">
+                                    {language.rejectedLeads} ({rejectedLeads.length} {rejectedLeads.length === 1 ? 'Lead' : 'Leads'})
+                                </h2>
+                                <Image src={rejected_image} alt='Rejected Image' style={{ width: '120px', height: '120px', borderRadius: '50%', position: 'absolute', [rtl === 'true' ? 'left' : 'right']: '0px', top: 0 }} />
+                            </div>
 
                             {/* Branch and Product Filter Buttons */}
-                            <div className="filter-buttons mb-3 mt-3" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                            <div className="filter-buttons" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                                 <Button
                                     variant="outline-primary"
                                     onClick={() => {
@@ -120,12 +163,12 @@ const RejectedLeads = () => {
                                     }}
                                     active={selectedBranch === 'All' && selectedProduct === 'All'}
                                     style={{
-                                        backgroundColor: selectedBranch === 'All' && selectedProduct === 'All' ? '#ffa000' : 'black',
+                                        backgroundColor: selectedBranch === 'All' && selectedProduct === 'All' ? '#d7aa47' : '#6c757da2',
                                         color: 'white',
                                         border: 'none',
                                     }}
                                 >
-                                    All
+                                    {language.all}
                                 </Button>
                                 {branchNames.map((branch) => (
                                     <Button
@@ -134,7 +177,7 @@ const RejectedLeads = () => {
                                         onClick={() => setSelectedBranch(branch.name)}
                                         active={selectedBranch === branch.name}
                                         style={{
-                                            backgroundColor: selectedBranch === branch.name ? '#ffa000' : 'black',
+                                            backgroundColor: selectedBranch === branch.name ? '#d7aa47' : '#6c757da2',
                                             color: 'white',
                                             border: 'none',
                                         }}
@@ -144,7 +187,7 @@ const RejectedLeads = () => {
                                 ))}
                             </div>
                             {!product && (
-                                <div style={{ display: 'flex', gap: '5px' }}>
+                                <div style={{ display: 'flex', gap: '5px' }} className='mt-3' >
                                     {productNames.map((product) => (
                                         <Button
                                             key={product._id}
@@ -152,7 +195,7 @@ const RejectedLeads = () => {
                                             onClick={() => setSelectedProduct(product.name)}
                                             active={selectedProduct === product.name}
                                             style={{
-                                                backgroundColor: selectedProduct === product.name ? '#ffa000' : 'black',
+                                                backgroundColor: selectedProduct === product.name ? '#d7aa47' : '#6c757da2',
                                                 color: 'white',
                                                 border: 'none',
                                             }}
@@ -170,9 +213,10 @@ const RejectedLeads = () => {
                                         <Form.Group controlId="searchClientName">
                                             <Form.Control
                                                 type="text"
-                                                placeholder="Search by Client Name"
+                                                placeholder={language.searchByClientName}
                                                 value={searchClientName}
                                                 onChange={e => setSearchClientName(e.target.value)}
+                                                className='input_field_input_field'
                                             />
                                         </Form.Group>
                                     </Col>
@@ -180,9 +224,10 @@ const RejectedLeads = () => {
                                         <Form.Group controlId="searchCompanyName">
                                             <Form.Control
                                                 type="text"
-                                                placeholder="Search by Company Name"
+                                                placeholder={language.searchByCompanyName}
                                                 value={searchCompanyName}
                                                 onChange={e => setSearchCompanyName(e.target.value)}
+                                                className='input_field_input_field'
                                             />
                                         </Form.Group>
                                     </Col>
@@ -190,9 +235,10 @@ const RejectedLeads = () => {
                                         <Form.Group controlId="searchClientPhone">
                                             <Form.Control
                                                 type="text"
-                                                placeholder="Search by Phone Number"
+                                                placeholder={language.searchByPhoneNumber}
                                                 value={searchPhoneNumber}
                                                 onChange={e => setSearchPhoneNumber(e.target.value)}
+                                                className='input_field_input_field'
                                             />
                                         </Form.Group>
                                     </Col>
@@ -203,6 +249,7 @@ const RejectedLeads = () => {
                                                     value={searchPipelineName}
                                                     onChange={e => setSearchPipelineName(e.target.value)}
                                                     disabled={selectedBranch === 'Ajman'} // Disable if "Ajman" is selected
+                                                    className='input_field_input_field'
                                                 >
                                                     <option value="">Select Pipeline</option>
                                                     {(selectedProduct !== 'All' && productPipelineMap[selectedProduct]) ? (
@@ -220,31 +267,62 @@ const RejectedLeads = () => {
                             </Form>
 
                             {/* Leads Table */}
-                            <Table striped bordered hover className='mt-3 table_main_container' size='md'>
-                                <thead>
-                                    <tr className="teble_tr_class" style={{ backgroundColor: '#e9ecef', color: '#343a40', borderBottom: '2px solid #dee2e6', transition: 'background-color 0.3s ease' }}>
-                                        <th className="cell-width">Client Name</th>
-                                        <th className="cell-width">Company Name</th>
-                                        <th className="cell-width">Phone</th>
-                                        {/* <th className="cell-width">Product Name</th> */}
-                                        <th className="cell-width">Pipeline Name</th>
-                                        <th className="cell-width">Product Stage</th>
-                                        <th className="cell-width">Branch Name</th>
-                                        <th className="cell-width">Action</th>
+                            <Table striped bordered hover responsive className='mt-1 table_main_container' size='md' variant='dark'>
+                                <thead style={{ backgroundColor: '#d7aa47' }}>
+                                    <tr className="teble_tr_class" style={{
+                                        backgroundColor: '#d7aa47',
+                                        color: '#343a40',
+                                        border: '1px solid #d7aa47',
+                                        transition: 'background-color 0.3s ease',
+                                    }}
+                                    >
+                                        <th style={{ backgroundColor: '#d7aa47', color: "white", textAlign: 'center' }}>{language.clientName}</th>
+                                        <th style={{ backgroundColor: '#d7aa47', color: "white", textAlign: 'center' }}>{language.companyName}</th>
+                                        <th style={{ backgroundColor: '#d7aa47', color: "white", textAlign: 'center' }}>{language.phone}</th>
+                                        <th style={{ backgroundColor: '#d7aa47', color: "white", textAlign: 'center' }}>{language.pipelineName}</th>
+                                        <th style={{ backgroundColor: '#d7aa47', color: "white", textAlign: 'center' }}>{language.productStage}</th>
+                                        <th style={{ backgroundColor: '#d7aa47', color: "white", textAlign: 'center' }}>{language.branchName}</th>
+                                        <th style={{ backgroundColor: '#d7aa47', color: "white", textAlign: 'center' }}>{language.action}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {currentLeads.length > 0 ? (
                                         currentLeads.map((lead) => (
-                                            <tr key={lead.id}>
-                                                <td className="cell-width">{lead.clientName}</td>
-                                                <td className="cell-width">{lead.companyName ? lead.companyName : 'N/A'}</td>
-                                                <td className="cell-width">{lead.phone}</td>
-                                                {/* <td className="cell-width">{lead.productName}</td> */}
-                                                <td className="cell-width">{lead.pipelineName}</td>
-                                                <td className="cell-width">{lead.productStage}</td>
-                                                <td className="cell-width">{lead.branchName}</td>
-                                                <td className="cell-width">
+                                            <tr key={lead.id} className='table_td_class'>
+                                                <td className="cell-width table_td_class">
+                                                    <div className="name-container">
+                                                        {lead.clientName
+                                                            ? lead.clientName.split(' ').slice(0, 2).join(' ') +
+                                                            (lead.clientName.split(' ').length > 2 ? '...' : '')
+                                                            : 'N/A'}
+                                                        {lead.clientName && (
+                                                            <span className="tooltip">{lead.clientName}</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+
+                                                <td className="cell-width table_td_class">
+                                                    <div className="name-container">
+                                                        {lead.companyName
+                                                            ? lead.companyName.split(' ').slice(0, 2).join(' ') +
+                                                            (lead.companyName.split(' ').length > 2 ? '...' : '')
+                                                            : 'N/A'}
+                                                        {lead.companyName && (
+                                                            <span className="tooltip">{lead.companyName}</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td
+                                                    className="cell-width table_td_class"
+                                                    style={{ direction: rtl === 'true' ? 'ltr' : 'ltr' }}  // Always keep phone in left-to-right
+                                                >
+                                                    {lead.phone}
+                                                </td>
+                                                {/* <td className="cell-width table_td_class">{lead.productName}</td> */}
+                                                <td className="cell-width table_td_class">{lead.pipelineName}</td>
+                                                <td className="cell-width table_td_class">{lead.productStage}</td>
+                                                <td className="cell-width table_td_class">{lead.branchName}</td>
+                                                <td className="cell-width table_td_class">
                                                     <Link to={`/single-leads/${lead.id}`} >
                                                         <GrView style={{ color: '#ffa000', fontSize: '20px', cursor: 'pointer' }} />
                                                     </Link>
@@ -254,7 +332,7 @@ const RejectedLeads = () => {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="6" className="text-center">No leads found</td>
+                                            <td colSpan="6" className="text-center table_td_class">No leads found</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -276,15 +354,47 @@ const RejectedLeads = () => {
                             </div>
 
                             {/* Modal for rejected lead reason */}
-                            <Modal show={rejectedLeadReason} onHide={() => setRejectedLeadReason(false)} size='md' centered >
-                                <Modal.Header closeButton>
-                                    <Modal.Title>Rejected Lead Reason</Modal.Title>
+                            <Modal
+                                show={rejectedLeadReason}
+                                onHide={() => setRejectedLeadReason(false)}
+                                size="md"
+                                centered
+                            >
+                                <Modal.Header
+                                    closeButton
+                                    style={{
+                                        border: 'none',
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Modal.Title className="mutual_class_color">
+                                        {rtl === 'true' ? 'سبب رفض العميل' : 'Rejected Lead Reason'}
+                                    </Modal.Title>
                                 </Modal.Header>
-                                <Modal.Body>{selectedRejectReason}</Modal.Body>
-                                <Modal.Footer>
-                                    <Button className='all_close_btn_container' onClick={() => setRejectedLeadReason(false)}>Close</Button>
+
+                                <Modal.Body
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <span className='mutual_class_color'>{selectedRejectReason ? selectedRejectReason : (rtl === 'true' ? "لا يوجد سبب" : "No Reason Available!")}</span>
+                                </Modal.Body>
+
+                                <Modal.Footer
+                                    style={{
+                                        border: 'none',
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Button className="all_close_btn_container" onClick={() => setRejectedLeadReason(false)}>
+                                        {rtl === 'true' ? 'إغلاق' : 'Close'}
+                                    </Button>
                                 </Modal.Footer>
                             </Modal>
+
                         </Card>
                     </Col>
                 </Row>

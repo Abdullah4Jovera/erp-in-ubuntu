@@ -18,7 +18,8 @@ const debounce = (func, delay) => {
     };
 };
 
-const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
+const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
+    console.log(leads, 'allleads')
     // Redux User Data
     const branchesSlice = useSelector(state => state.loginSlice.branches);
     const leadTypeSlice = useSelector(state => state.loginSlice.leadType);
@@ -51,6 +52,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
     const [productStage, setProductStage] = useState([])
     const [leadType, setLeadType] = useState('')
     const [source, setSource] = useState('')
+    console.log(leadType, 'leadType', source)
     const [leadDetails, setLeadDetails] = useState('')
     const [thirdparty, setThirdParty] = useState('')
     const [isValid, setIsValid] = useState(false);
@@ -81,7 +83,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
     const [currentProduct, setCurrentProduct] = useState('')
     const [currentPipeLine, setCurrentPipeline] = useState('')
     const [currentProductStage, setCurrentProductStage] = useState('')
-    console.log(currentBranch,currentProduct,currentPipeLine,currentProductStage,'currentProductStage')
+    console.log(currentBranch, currentProduct, currentPipeLine, currentProductStage, 'currentProductStage')
 
     // Auth Token
     const token = useSelector(state => state.loginSlice.user?.token);
@@ -103,9 +105,9 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
     };
 
     useEffect(() => {
-        if (branch === '6719fdded3de53c9fb53fb79') {
+        if (branch === '673b34924b966621c041caac') {
             // Set filtered pipelines to show only "Ajman Branch"
-            setFilteredPipelines([{ _id: '6719fda75035bf8bd708d024', name: 'Ajman Branch' }]);
+            setFilteredPipelines([{ _id: '673b190186706b218f6f3262', name: 'Ajman Branch' }]);
         } else {
             // Handle other branches
             if (product) {
@@ -167,7 +169,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
             const response = await axios.get(`/api/productstages/${selectedProduct}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setProductStage(Array.isArray(response.data) ? response.data : []); // Ensure it's an array
+            setProductStage(response.data);
         } catch (error) {
             console.error('Error fetching product stages:', error);
         }
@@ -280,7 +282,6 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                     },
                 }
             );
-
             const { leadDetails, phonebookEntry } = response.data;
             setLeadDetails(leadDetails);
             setPhonebookEntry(phonebookEntry);
@@ -302,27 +303,9 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                             setIsValidPhone(false);
                             return; // Stop further execution if user is not authorized
                         }
-
-                        // Show an alert if the number is not blocked but no lead details were found
-                        // alert(`
-                        //     No lead data found for this phone number. 
-                        //     Please see the following phone book data:
-
-                        //     Number: ${phonebookEntry.number}
-                        //     Status: ${phonebookEntry.status}
-                        //     Call Status: ${phonebookEntry.calstatus}
-
-                        //     User: ${phonebookEntry.user.name} (${phonebookEntry.user.email})
-                        //     Pipeline: ${phonebookEntry.pipeline.name}
-                        //     Uploaded by: ${phonebookEntry.uploaded_by.name}
-
-                        //     Visibility: ${phonebookEntry.visibility.map(user => `${user.name} (${user.email})`).join(', ')}
-                        // `);
                     }
                 }
-                // else {
-                //     alert("No lead data or phone book entry found for this phone number.");
-                // }
+
                 setIsValidPhone(false);
                 return; // Stop further execution if no lead details are found
             }
@@ -391,9 +374,6 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
             setIsValidPhone(false); // Set phone as invalid if there's an error
         }
     };
-
-
-
 
     // Function to handle input change and trigger API call when the phone is complete
     const
@@ -734,10 +714,10 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                 product_stage: selectedProductStage, // The selected product stage
                 pipeline_id: pipelineId, // The selected pipeline ID
                 type: "Move", // Example type (you can customize this if necessary)
-                currentBranch:currentBranch,
-                currentProduct:currentProduct,
-                currentPipeline:currentPipeLine,
-                currentProductStage:currentProductStage
+                currentBranch: currentBranch,
+                currentProduct: currentProduct,
+                currentPipeline: currentPipeLine,
+                currentProductStage: currentProductStage
             };
 
             const sendRequest = await axios.post(
@@ -778,10 +758,10 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                 product_stage: selectedProductStage, // The selected product stage
                 pipeline_id: pipelineId, // The selected pipeline ID
                 type: "Transfer", // Example type (you can customize this if necessary)
-                currentBranch:currentBranch,
-                currentProduct:currentProduct,
-                currentPipeline:currentPipeLine,
-                currentProductStage:currentProductStage
+                currentBranch: currentBranch,
+                currentProduct: currentProduct,
+                currentPipeline: currentPipeLine,
+                currentProductStage: currentProductStage
             };
 
             const sendRequest = await axios.post(
@@ -880,8 +860,8 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                 }}
 
             >
-                <Modal.Header closeButton>
-                    <Modal.Title>Create Lead</Modal.Title>
+                <Modal.Header closeButton style={{ border: 'none' }} >
+                    <Modal.Title className='mutual_heading_class'>Create Lead</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Form>
@@ -889,19 +869,20 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                             {/* Client Phone */}
                             <Col md={1}>
                                 <Form.Group className="mb-3" controlId="clientPhone">
-                                    <Form.Label>Code</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Code</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="+971"
                                         value="+971"
                                         disabled
+                                        className='input_field_input_field'
                                     />
                                 </Form.Group>
                             </Col>
 
                             <Col md={3}>
                                 <Form.Group className="mb-3" controlId="clientPhone">
-                                    <Form.Label>Client Phone</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Client Phone</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="Enter Number"
@@ -909,6 +890,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                         value={contactNumber.replace(/\s/g, '')} // Remove spaces from the display
                                         onChange={handlePhoneInputChange}
                                         isInvalid={!!errors.clientPhone}
+                                        className='input_field_input_field'
 
                                     />
                                     {errorMessages.contactNumber && (
@@ -921,7 +903,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
                             {/* WhatsApp Number */}
                             <Col md={4}>
-                                <Form.Label>WhatsApp Number</Form.Label>
+                                <Form.Label className='mutual_heading_class'>WhatsApp Number</Form.Label>
                                 <Form.Control
                                     type="text"
                                     placeholder="Enter Whatsapp Number"
@@ -930,18 +912,20 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                     onChange={handlewhatsppPhoneInputChange}
                                     isInvalid={!!errors.clientPhone}
                                     disabled={isClientNameDisabled}
+                                    className='input_field_input_field'
                                 />
                             </Col>
 
                             {/* Emirates ID */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="clientEID">
-                                    <Form.Label>Emirates ID</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Emirates ID</Form.Label>
                                     <InputMask
                                         mask="999-9999-9999999-9"
                                         value={eid}
                                         onChange={handleEidInputChange}
                                         disabled={isClientNameDisabled}
+                                        className='input_field_input_field'
                                     >
                                         {(inputProps) => (
                                             <Form.Control
@@ -963,7 +947,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                             {/* Client Name */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="clientName">
-                                    <Form.Label>Client Name</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Client Name</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="Enter Name"
@@ -973,6 +957,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                         onPaste={handleClientNameHandler}
                                         isInvalid={!!errors.clientName}
                                         disabled={isClientNameDisabled} // Disable based on state
+                                        className='input_field_input_field'
                                     />
                                     {errorMessages.clientName && <div className="text-danger"><p style={{ fontSize: '12px' }}>{errorMessages.clientName} </p></div>}
                                 </Form.Group>
@@ -981,7 +966,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                             {/* Company Name */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="company_Name">
-                                    <Form.Label>Company Name</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Company Name</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="Enter Company Name"
@@ -989,6 +974,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                         value={companyName}
                                         onChange={handleCompanyInputChange}
                                         disabled={isClientNameDisabled} // Disable based on state
+                                        className='input_field_input_field'
                                     />
                                 </Form.Group>
                             </Col>
@@ -996,7 +982,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                             {/* Client Email */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="clientEmail">
-                                    <Form.Label>Client Email</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Client Email</Form.Label>
                                     <Form.Control
                                         type="email"
                                         placeholder="Enter Email"
@@ -1004,6 +990,8 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                         value={clientEmail}
                                         onChange={handleEmailInputChange}
                                         isInvalid={!!errors.clientEmail}
+                                        disabled={isClientNameDisabled} // Disable based on state
+                                        className='input_field_input_field'
                                     />
                                 </Form.Group>
                             </Col>
@@ -1014,13 +1002,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                             {!productUserSlice && (
                                 <Col md={4}>
                                     <Form.Group controlId="product">
-                                        <Form.Label>Product</Form.Label>
+                                        <Form.Label className='mutual_heading_class'>Product</Form.Label>
                                         <Form.Select
                                             aria-label="Select Product"
                                             name="product"
                                             value={product}
                                             onChange={handleProductInputChange}
                                             disabled={isClientNameDisabled} // Disable based on state
+                                            className='input_field_input_field'
                                         >
                                             <option value="">Select Product</option>
                                             {productNamesSlice.map(p => (
@@ -1037,7 +1026,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                             {branchUserSlice === null && (
                                 <Col md={4}>
                                     <Form.Group className="mb-3" controlId="branch">
-                                        <Form.Label>Branch</Form.Label>
+                                        <Form.Label className='mutual_heading_class'>Branch</Form.Label>
                                         <Form.Select
                                             aria-label="Select Branch"
                                             name="branch"
@@ -1045,6 +1034,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                             onChange={handleBranchname}
                                             isInvalid={!!errors.branch}
                                             disabled={isClientNameDisabled} // Disable based on state
+                                            className='input_field_input_field'
                                         >
                                             <option value="">Select Branch</option>
                                             {branchesSlice.map((branch, index) => (
@@ -1069,13 +1059,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                             {/* Pipeline Select Dropdown */}
                             {pipelineUserSlice?.length === 0 && (
                                 <Col md={4}>
-                                    <Form.Label>Pipeline</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Pipeline</Form.Label>
                                     <Form.Select
                                         aria-label="Select Pipeline"
                                         name="pipeline"
                                         value={pipelineId}
                                         onChange={handlePipelineInputChange}
                                         disabled={isClientNameDisabled} // Disable based on state
+                                        className='input_field_input_field'
                                     >
                                         <option value="">Select Pipeline</option>
                                         {filteredPipelines.map(pipeline => (
@@ -1091,7 +1082,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="product_stage">
-                                    <Form.Label>Product Stages</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Product Stages</Form.Label>
                                     <Form.Select
                                         aria-label="Select Product Stage"
                                         name="product_stage"
@@ -1099,6 +1090,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                         onChange={handleInputChangeProductstage}
                                         isInvalid={!!errors.product_stage}
                                         disabled={isClientNameDisabled} // Disable based on state
+                                        className='input_field_input_field'
                                     >
                                         <option value="">Select Product Stage</option>
                                         {productStage?.map(stage => (
@@ -1116,7 +1108,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="lead_type">
-                                    <Form.Label>Lead Type</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Lead Type</Form.Label>
                                     <Form.Select
                                         aria-label="Select Lead Type"
                                         name="lead_type"
@@ -1124,6 +1116,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                         onChange={handleInputChangeLeadType}
                                         isInvalid={!!errors.lead_type}
                                         disabled={isClientNameDisabled} // Disable based on state
+                                        className='input_field_input_field'
                                     >
                                         <option value="">Select Lead Type</option>
                                         {leadTypeSlice.map((type, index) => (
@@ -1141,7 +1134,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="source">
-                                    <Form.Label>Source</Form.Label>
+                                    <Form.Label className='mutual_heading_class'>Source</Form.Label>
                                     <Form.Select
                                         aria-label="Select Source"
                                         name="source"
@@ -1149,6 +1142,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                         onChange={handleSourceInputChange}
                                         isInvalid={!!errors.source}
                                         disabled={isClientNameDisabled} // Disable based on state
+                                        className='input_field_input_field'
                                     >
                                         <option value="">Select Source</option>
                                         {sources.map((source, index) => (
@@ -1166,31 +1160,18 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                         </Row>
 
                         <Row>
-                            <Col md={4}>
-                                <Form.Group className="mb-3" controlId="description">
-                                    <Form.Label>Lead Details</Form.Label>
-                                    <Form.Control
-                                        as="textarea"
-                                        rows={3}
-                                        name="description"
-                                        value={leadDetails}
-                                        onChange={handleLeadDetailsInputChange}
-                                        isInvalid={!!errors.description}
-                                        disabled={isClientNameDisabled}
-                                    />
-                                </Form.Group>
-                            </Col>
-
-                            {leadType.name === "others" && source.name === "Third Party" && (
+                            {leadType === "673b190186706b218f6f3295" && source === "673b190186706b218f6f32b8" && (
                                 <Col md={4}>
                                     <Form.Group className="mb-3" controlId="thirdparty">
-                                        <Form.Label>Third Party Name</Form.Label>
+                                        <Form.Label className='mutual_heading_class'>Third Party Name</Form.Label>
                                         <Form.Control
                                             as="textarea"
                                             rows={1}
                                             name="thirdparty"
                                             value={thirdparty}
                                             onChange={handlethirdpartyInputChange}
+                                            className='input_field_input_field'
+                                            classNamePrefix="react-select"
                                         />
                                     </Form.Group>
                                 </Col>
@@ -1199,7 +1180,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                             {(userRole === 'TS Agent' || userRole === 'TS Team Leader') && (
                                 <Col md={4} >
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Select Users</Form.Label>
+                                        <Form.Label className='mutual_heading_class'>Select Users</Form.Label>
                                         <Select
                                             options={userOptions} // Pass the filtered user options
                                             value={selectedUsers} // Value for the selected users
@@ -1208,38 +1189,47 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                             }}
                                             isMulti // Allow multiple user selection
                                             placeholder="Select users..."
+                                            className='input_field_input_field'
                                         />
                                     </Form.Group>
                                 </Col>
                             )}
+
+                            <Col md={4}>
+                                <Form.Group className="mb-3" controlId="description">
+                                    <Form.Label className='mutual_heading_class'>Lead Details</Form.Label>
+                                    <Form.Control
+                                        as="textarea"
+                                        rows={3}
+                                        name="description"
+                                        value={leadDetails}
+                                        onChange={handleLeadDetailsInputChange}
+                                        isInvalid={!!errors.description}
+                                        disabled={isClientNameDisabled}
+                                        className='input_field_input_field'
+                                    />
+                                </Form.Group>
+                            </Col>
                         </Row>
                     </Form>
 
                     {errorMessage && <div className="alert alert-danger">{errorMessage.message}</div>}
 
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none' }}>
                     <Button className='all_close_btn_container'
                         onClick={() => {
                             setModal2Open(false);
                             resetFormFields(); // Clear the fields when closing the modal
                             setIsClientNameDisabled(false)
-                        }}
-
-                    >
+                        }}>
                         Close
                     </Button>
-                    {/* {
-                        apiData && apiData.isRejected ?
-                            <Button className='all_single_leads_button' onClick={handleSaveChanges} disabled={disableField}>
-                                Update
-                            </Button>
-                            : */}
 
-                    <Button className='all_single_leads_button' onClick={handleSubmit} disabled={disableField} >
+                    <Button className='all_common_btn_single_lead' onClick={handleSubmit} disabled={disableField} >
                         Submit
                     </Button>
-                    {/* } */}
+
                 </Modal.Footer>
             </Modal>
 
@@ -1273,32 +1263,32 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                 show={movePipeline}
                 onHide={() => setMovePipeline(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
+                <Modal.Header closeButton style={{ border: 'none' }} >
+                    <Modal.Title id="contained-modal-title-vcenter" className='mutual_heading_class'>
                         Lead Already Exists
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {apiData && apiData ? (
                         <>
-                            <p>
+                            <p className='mutual_heading_class'>
                                 A lead already exists for the client <strong>{apiData && apiData.client.name}</strong> with the following details:
                             </p>
-                            <ul>
+                            <ul className='mutual_heading_class'>
                                 <li>Product: <strong>{apiData && apiData.products.name}</strong></li>
-                                <li>Branch: <strong>{apiData && apiData.branch.name}</strong></li>
+                                <li>Branch: <strong>{apiData?.branch?.name && apiData?.branch?.name}</strong></li>
                                 <li>Pipeline: <strong>{apiData && apiData.pipeline.name}</strong></li>
                                 <li>Stage: <strong>{apiData && apiData.productStage.name}</strong></li>
                             </ul>
-                            <p>
+                            <p className='mutual_heading_class'>
                                 If you wish to work with this lead, please submit a Move or Transfer Request to the <strong>{apiData && apiData.products.name}</strong>. HOD/Manager.
                             </p>
                         </>
                     ) : (
-                        <p>Loading lead data...</p>
+                        <p className='mutual_heading_class'>Loading lead data...</p>
                     )}
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none' }}>
                     {/* <Button className='all_close_btn_container' onClick={() => setMovePipeline(false)} >Close</Button> */}
                     <Button className='all_single_leads_button' onClick={() => MoveLead(apiData && apiData.id)} >Move Request </Button>
                     <Button className='all_single_leads_button' onClick={() => TransferCase(apiData && apiData.id)} >Transfer Request </Button>
@@ -1313,8 +1303,8 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                 show={moveModalSuccessMessage}
                 onHide={() => setMoveModalSuccessMessage(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
+                <Modal.Header closeButton style={{ border: 'none' }} >
+                    <Modal.Title id="contained-modal-title-vcenter" className='mutual_heading_class'>
                         Move Request
                     </Modal.Title>
                 </Modal.Header>
@@ -1324,13 +1314,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                     <Row>
                         <Col md={6}>
                             <Form.Group className="mb-2" controlId="product">
-                                <Form.Label>Product</Form.Label>
+                                <Form.Label className='mutual_heading_class'>Product</Form.Label>
                                 <Form.Select
                                     aria-label="Select Product"
                                     name="product"
                                     value={product}
                                     onChange={handleProductInputChange}
-                                    disabled
+                                    disabled={true}
+                                    className={`input_field_input_field ${product ? 'enabled' : 'disabled-select'}`}
                                 >
                                     <option value="">Select Product</option>
                                     {productNamesSlice.map(p => (
@@ -1345,13 +1336,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
                         <Col md={6}>
                             <Form.Group className="mb-2" controlId="branch">
-                                <Form.Label>Branch</Form.Label>
+                                <Form.Label className='mutual_heading_class'>Branch</Form.Label>
                                 <Form.Select
                                     aria-label="Select Branch"
                                     name="branch"
                                     value={branch}
                                     onChange={handleBranchname}
                                     isInvalid={!!errors.branch}
+                                    className='input_field_input_field'
                                 >
                                     <option value="">Select Branch</option>
                                     {branchesSlice.map((branch, index) => (
@@ -1368,12 +1360,13 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                         </Col>
 
                         <Col md={6} className="mb-2">
-                            <Form.Label>Pipeline</Form.Label>
+                            <Form.Label className='mutual_heading_class'>Pipeline</Form.Label>
                             <Form.Select
                                 aria-label="Select Pipeline"
                                 name="pipeline"
                                 value={pipelineId}
                                 onChange={handlePipelineInputChange}
+                                className='input_field_input_field'
                             >
                                 <option value="">Select Pipeline</option>
                                 {filteredPipelines.map(pipeline => (
@@ -1388,13 +1381,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
                         <Col md={6}>
                             <Form.Group className="mb-3" controlId="product_stage">
-                                <Form.Label>Product Stages</Form.Label>
+                                <Form.Label className='mutual_heading_class'>Product Stages</Form.Label>
                                 <Form.Select
                                     aria-label="Select Product Stage"
                                     name="product_stage"
                                     value={selectedProductStage}
                                     onChange={handleInputChangeProductstage}
                                     isInvalid={!!errors.product_stage}
+                                    className='input_field_input_field'
                                 >
                                     <option value="">Select Product Stage</option>
                                     {productStage.map(stage => (
@@ -1412,7 +1406,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                     </Row>
 
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none' }}>
                     <Button className='all_close_btn_container' onClick={() => {
                         resetFormFields();
                         setIsClientNameDisabled(false)
@@ -1437,8 +1431,8 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                 show={transferModalSuccessMessage}
                 onHide={() => setTransferModalSuccessMessage(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
+                <Modal.Header closeButton style={{ border: 'none' }} >
+                    <Modal.Title id="contained-modal-title-vcenter" className='mutual_heading_class' >
                         Transfer Request
                     </Modal.Title>
                 </Modal.Header>
@@ -1448,12 +1442,13 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                     <Row>
                         <Col md={6}>
                             <Form.Group className="mb-2" controlId="product">
-                                <Form.Label>Product</Form.Label>
+                                <Form.Label className='mutual_heading_class'>Product</Form.Label>
                                 <Form.Select
                                     aria-label="Select Product"
                                     name="product"
                                     value={product}
                                     onChange={handleTransferChange}
+                                    className='input_field_input_field'
                                 >
                                     <option value="">Select Product</option>
                                     {productNamesSlice.map(p => (
@@ -1468,7 +1463,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
                         <Col md={6}>
                             <Form.Group className="mb-2" controlId="branch">
-                                <Form.Label>Branch</Form.Label>
+                                <Form.Label className='mutual_heading_class'>Branch</Form.Label>
                                 <Form.Select
                                     aria-label="Select Branch"
                                     name="branch"
@@ -1476,6 +1471,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                     onChange={handleBranchname}
                                     isInvalid={!!errors.branch}
                                     disabled={productEnableTransfer}
+                                    className={`input_field_input_field ${productEnableTransfer ? 'disabled-select' : ''}`}
                                 >
                                     <option value="">Select Branch</option>
                                     {branchesSlice.map((branch, index) => (
@@ -1493,13 +1489,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
 
                         <Col md={6} className="mb-2">
-                            <Form.Label>Pipeline</Form.Label>
+                            <Form.Label className='mutual_heading_class'>Pipeline</Form.Label>
                             <Form.Select
                                 aria-label="Select Pipeline"
                                 name="pipeline"
                                 value={pipelineId}
                                 onChange={handlePipelineInputChange}
                                 disabled={productEnableTransfer}
+                                className={`input_field_input_field ${productEnableTransfer ? 'disabled-select' : ''}`}
                             >
                                 <option value="">Select Pipeline</option>
                                 {filteredPipelines.map(pipeline => (
@@ -1514,7 +1511,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
                         <Col md={6}>
                             <Form.Group className="mb-3" controlId="product_stage">
-                                <Form.Label>Product Stages</Form.Label>
+                                <Form.Label className='mutual_heading_class'>Product Stages</Form.Label>
                                 <Form.Select
                                     aria-label="Select Product Stage"
                                     name="product_stage"
@@ -1522,6 +1519,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                     onChange={handleInputChangeProductstage}
                                     isInvalid={!!errors.product_stage}
                                     disabled={productEnableTransfer}
+                                    className={`input_field_input_field ${productEnableTransfer ? 'disabled-select' : ''}`}
                                 >
                                     <option value="">Select Product Stage</option>
                                     {productStage.map(stage => (
@@ -1538,7 +1536,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                         </Col>
                     </Row>
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none' }} >
                     <Button className='all_close_btn_container' onClick={() => {
                         resetFormFields();
                         setIsClientNameDisabled(false)
@@ -1565,11 +1563,11 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
             >
                 <Modal.Body className="text-center">
                     <TiDeleteOutline className="text-danger" style={{ fontSize: '4rem' }} />
-                    <p>
+                    <p className='mutual_heading_class' >
                         This Number is Exist in Rejected Lead. If You Want to Update Click on Yes
                     </p>
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none' }} >
                     <Button
                         className='all_close_btn_container'
                         onClick={() => {
@@ -1593,8 +1591,8 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                 show={restoreModal}
                 onHide={() => setRestorModal(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
+                <Modal.Header closeButton style={{ border: 'none' }} >
+                    <Modal.Title id="contained-modal-title-vcenter" className='mutual_heading_class' >
                         Update Rejected Lead
                     </Modal.Title>
                 </Modal.Header>
@@ -1603,13 +1601,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                     {!productUserSlice && (
                         <Col md={12}>
                             <Form.Group controlId="product">
-                                <Form.Label>Product</Form.Label>
+                                <Form.Label className='mutual_heading_class'>Product</Form.Label>
                                 <Form.Select
                                     aria-label="Select Product"
                                     name="product"
                                     value={product}
                                     onChange={handleProductInputChange}
                                     disabled={isClientNameDisabled} // Disable based on state
+                                    className="input_field_input_field"
                                 >
                                     <option value="">Select Product</option>
                                     {productNamesSlice.map(p => (
@@ -1625,8 +1624,8 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
                     {branchUserSlice === null && (
                         <Col md={12}>
-                            <Form.Group className="mb-3" controlId="branch">
-                                <Form.Label>Branch</Form.Label>
+                            <Form.Group className="mt-3" controlId="branch">
+                                <Form.Label className='mutual_heading_class'>Branch</Form.Label>
                                 <Form.Select
                                     aria-label="Select Branch"
                                     name="branch"
@@ -1634,6 +1633,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                     onChange={handleBranchname}
                                     isInvalid={!!errors.branch}
                                     disabled={isClientNameDisabled} // Disable based on state
+                                    className="input_field_input_field"
                                 >
                                     <option value="">Select Branch</option>
                                     {branchesSlice.map((branch, index) => (
@@ -1658,13 +1658,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                     {/* Pipeline Select Dropdown */}
                     {pipelineUserSlice?.length === 0 && (
                         <Col md={12}>
-                            <Form.Label>Pipeline</Form.Label>
+                            <Form.Label className='mutual_heading_class mt-3'>Pipeline</Form.Label>
                             <Form.Select
                                 aria-label="Select Pipeline"
                                 name="pipeline"
                                 value={pipelineId}
                                 onChange={handlePipelineInputChange}
                                 disabled={isClientNameDisabled} // Disable based on state
+                                className="input_field_input_field"
                             >
                                 <option value="">Select Pipeline</option>
                                 {filteredPipelines.map(pipeline => (
@@ -1679,8 +1680,8 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
 
 
                     <Col md={12}>
-                        <Form.Group className="mb-3" controlId="product_stage">
-                            <Form.Label>Product Stages</Form.Label>
+                        <Form.Group className="mt-3" controlId="product_stage">
+                            <Form.Label className='mutual_heading_class'>Product Stages</Form.Label>
                             <Form.Select
                                 aria-label="Select Product Stage"
                                 name="product_stage"
@@ -1688,6 +1689,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                                 onChange={handleInputChangeProductstage}
                                 isInvalid={!!errors.product_stage}
                                 disabled={isClientNameDisabled} // Disable based on state
+                                className="input_field_input_field"
                             >
                                 <option value="">Select Product Stage</option>
                                 {productStage.map(stage => (
@@ -1703,20 +1705,20 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                         </Form.Group>
                     </Col>
                     <div className="mt-3">
-                        <label htmlFor="description">Description:</label>
+                        <label htmlFor="description" className='mutual_heading_class'>Description:</label>
                         <textarea
                             id="description"
                             rows="4"
-                            className="form-control"
+                            className="form-control input_field_input_field"
                             value={Restoredescription}
                             onChange={(e) => setRestoreDescription(e.target.value)}
                             placeholder="Enter description here..."
                         />
                     </div>
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button onClick={() => setRestorModal(false)}>Close</Button>
-                    <Button onClick={() => handleRestore()}>Restore</Button>
+                <Modal.Footer style={{ border: 'none' }} >
+                    <Button className='all_close_btn_container' onClick={() => setRestorModal(false)}>Close</Button>
+                    <Button className='all_single_leads_button' onClick={() => handleRestore()}>Restore</Button>
 
                 </Modal.Footer>
             </Modal>
@@ -1728,13 +1730,13 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                 show={showConfirmModal}
                 onHide={() => setShowConfirmModal(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
+                <Modal.Header closeButton style={{ border: 'none' }} >
+                    <Modal.Title id="contained-modal-title-vcenter" className='mutual_heading_class'>
                         Confirm To Restore Lead
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p>
+                    <p className='mutual_heading_class'>
                         This Lead is Rejected with same Product and Pipeline on Data {new Date(restoreData.updatedAt).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
@@ -1745,7 +1747,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                         })} Do You want to Restore it again ??
                     </p>
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none' }}>
                     <Button onClick={() => setShowConfirmModal(false)}>No</Button>
                     <Button onClick={() => { performRestore(); setShowConfirmModal(false); }}>Yes</Button>
                 </Modal.Footer>
@@ -1762,12 +1764,12 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
                 <Modal.Body className='text-center' >
                     {/* <ImBlocked style={{ fontSize: '80px', color: 'red' }} /> */}
                     <Image src={blovkimage} className='' alt='Blocked Image' style={{ width: '120px', height: '120px', borderRadius: '50%' }} />
-                    <p className='mt-1'>
+                    <p className='mt-1 mutual_heading_class'>
                         {`This number is blocked by Etisalat. If you'd like to create a lead, please click `}
                         <strong>YES</strong>
                     </p>
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none' }} >
                     <Button
                         className='all_close_btn_container'
                         onClick={() => {
@@ -1800,16 +1802,16 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData }) => {
             >
                 <Modal.Body className='text-center' >
                     <ImBlocked style={{ fontSize: '80px', color: 'red' }} />
-                    <p className='mt-3'>
+                    <p className='mt-3 mutual_heading_class'>
                         {`You are not Authorized to create the lead because this number is assigned to `}
-                        <strong>{phonebookEntry?.user.name}</strong>
+                        <strong style={{ color: '#d7aa47' }} >{phonebookEntry?.user.name}</strong>
                         {`. You can contact them at `}
-                        <strong>{phonebookEntry?.user.email}</strong>
+                        <strong style={{ color: '#d7aa47' }}>{phonebookEntry?.user.email}</strong>
                         {` for further assistance regarding `}
-                        <strong>{phonebookEntry?.number}</strong>.
+                        <strong style={{ color: '#d7aa47' }}>{phonebookEntry?.number}</strong>.
                     </p>
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none' }} >
                     <Button
                         className='all_close_btn_container'
                         onClick={() => {

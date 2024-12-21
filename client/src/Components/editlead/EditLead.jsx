@@ -7,7 +7,7 @@ import axios from 'axios';
 import { Row, Col } from 'react-bootstrap'; // Importing Row and Col from react-bootstrap
 import InputMask from "react-input-mask";
 
-const EditLead = ({ modalShow, setModalShow, leadId, fetchLeadsData, fetchSingleLead }) => {
+const EditLead = ({ modalShow, setModalShow, leadId, fetchLeadsData, fetchSingleLead, rtl }) => {
     const [leadData, setLeadData] = useState({
         clientPhone: '',
         clientName: '',
@@ -101,7 +101,7 @@ const EditLead = ({ modalShow, setModalShow, leadId, fetchLeadsData, fetchSingle
                             Authorization: `Bearer ${token}`,
                         },
                     });
-                    setProductStages(Array.isArray(response.data) ? response.data : []); // Ensure it's an array
+                    setProductStages(response.data);
                 } catch (error) {
                     console.log(error, 'Error fetching product stages');
                 }
@@ -205,7 +205,7 @@ const EditLead = ({ modalShow, setModalShow, leadId, fetchLeadsData, fetchSingle
                 },
             });
             setModalShow(false);
-            fetchLeadsData(getProductID,getBranchID);
+            fetchLeadsData(getProductID, getBranchID);
             fetchSingleLead();
         } catch (error) {
             console.log(error, 'Error saving lead data');
@@ -221,226 +221,145 @@ const EditLead = ({ modalShow, setModalShow, leadId, fetchLeadsData, fetchSingle
             onHide={() => setModalShow(false)}
 
         >
-            <Modal.Body style={{ padding: '40px' }}>
-                <h4 className='text-center mb-3' >Edit Lead</h4>
+            <Modal.Body
+                style={{
+                    padding: '40px',
+                    textAlign: rtl === 'true' ? 'right' : 'left', // Align text dynamically
+                    direction: rtl === 'true' ? 'rtl' : 'ltr' // Set text direction dynamically
+                }}
+            >
+                <h4
+                    className="text-center mb-3 mutual_heading_class"
+                    style={{ textAlign: rtl === 'true' ? 'right' : 'center' }} // Center or align to right for RTL
+                >
+                    {rtl === 'true' ? 'تعديل العميل' : 'Edit Lead'}
+                </h4>
                 <Form>
                     <Row>
-                        {/* Client Phone */}
-                        {/* <Col md={6} className="mb-3">
-                            <Form.Group controlId="clientPhone">
-                                <Form.Label>Client Phone</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="Enter Number"
-                                    name="clientPhone"
-                                    value={leadData.clientPhone}
-                                    onChange={handleInputChange}
-                                />
-                            </Form.Group>
-                        </Col> */}
-
                         {/* Client Name */}
                         <Col md={6} className="mb-3">
                             <Form.Group controlId="clientName">
-                                <Form.Label>Client Name</Form.Label>
+                                <Form.Label className="mutual_heading_class">
+                                    {rtl === 'true' ? 'اسم العميل' : 'Client Name'}
+                                </Form.Label>
                                 <Form.Control
                                     type="text"
-                                    placeholder="Enter Name"
+                                    placeholder={rtl === 'true' ? 'ادخل الاسم' : 'Enter Name'}
                                     name="clientName"
                                     value={leadData.clientName}
                                     onChange={handleInputChange}
+                                    className="input_field_input_field"
                                 />
                             </Form.Group>
                         </Col>
 
+                        {/* Client Email */}
                         <Col md={6} className="mb-3">
                             <Form.Group controlId="clientEmail">
-                                <Form.Label>Client Email</Form.Label>
+                                <Form.Label className="mutual_heading_class">
+                                    {rtl === 'true' ? 'البريد الإلكتروني للعميل' : 'Client Email'}
+                                </Form.Label>
                                 <Form.Control
                                     type="text"
-                                    placeholder="Enter Email"
+                                    placeholder={rtl === 'true' ? 'ادخل البريد الإلكتروني' : 'Enter Email'}
                                     name="clientEmail"
                                     value={leadData.clientEmail}
                                     onChange={handleInputChange}
+                                    className="input_field_input_field"
                                 />
                             </Form.Group>
                         </Col>
                     </Row>
 
                     <Row>
-                        {/* Client Email */}
-                        {/* <Col md={6} className="mb-3">
-                            <Form.Group controlId="clientEmail">
-                                <Form.Label>Client Email</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="Enter Email"
-                                    name="clientEmail"
-                                    value={leadData.clientEmail}
-                                    onChange={handleInputChange}
-                                />
-                            </Form.Group>
-                        </Col> */}
-
-                        {/* Branch */}
-                        {/* <Col md={6} className="mb-3">
-                            <Form.Group controlId="branch">
-                                <Form.Label>Branch</Form.Label>
-                                <Form.Select value={leadData.branch?._id || ''} onChange={handleBranchChange}>
-                                    <option value="">Select Branch</option>
-                                    {branchesSlice.map((branch) => (
-                                        <option key={branch._id} value={branch._id}>{branch.name}</option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col> */}
-
+                        {/* Emirates ID */}
                         <Col md={6} className="mb-3">
                             <Form.Group controlId="cliente_id">
-                                <Form.Label>Emirates ID</Form.Label>
+                                <Form.Label className="mutual_heading_class">
+                                    {rtl === 'true' ? 'الهوية الإماراتية' : 'Emirates ID'}
+                                </Form.Label>
                                 <InputMask
                                     mask="999-9999-9999999-9"
                                     value={leadData.cliente_id}
                                     onChange={handleInputChange}
-                                    name="cliente_id" // Keep this name to match your state
+                                    name="cliente_id"
+                                    className="input_field_input_field"
                                 >
                                     {(inputProps) => (
                                         <Form.Control
                                             {...inputProps}
                                             type="text"
-                                            placeholder="784-1234-1234567-1"
-                                            // Ensure this name matches your leadData state
-                                            name="cliente_id" // Use "cliente_id" to match state
+                                            placeholder={rtl === 'true' ? '784-1234-1234567-1' : '784-1234-1234567-1'}
+                                            name="cliente_id"
                                         />
                                     )}
                                 </InputMask>
                             </Form.Group>
                         </Col>
+
+                        {/* Company Name */}
                         <Col md={6} className="mb-3">
                             <Form.Group controlId="company_Name">
-                                <Form.Label>Company Name</Form.Label>
+                                <Form.Label className="mutual_heading_class">
+                                    {rtl === 'true' ? 'اسم الشركة' : 'Company Name'}
+                                </Form.Label>
                                 <Form.Control
                                     type="text"
-                                    placeholder="Enter Name"
+                                    placeholder={rtl === 'true' ? 'ادخل اسم الشركة' : 'Enter Name'}
                                     name="company_Name"
                                     value={leadData.company_Name}
                                     onChange={handleInputChange}
+                                    className="input_field_input_field"
                                 />
                             </Form.Group>
                         </Col>
-
-
                     </Row>
 
                     <Row>
-                        {/* Lead Type */}
-                        {/* <Col md={6} className="mb-3">
-                            <Form.Group controlId="leadType">
-                                <Form.Label>Lead Type</Form.Label>
-                                <Form.Select value={leadData.lead_type?._id || ''} onChange={handleLeadTypeChange}>
-                                    <option value="">Select Lead Type</option>
-                                    {leadTypeSlice.map((leadType) => (
-                                        <option key={leadType._id} value={leadType._id}>{leadType.name}</option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col> */}
-
+                        {/* Lead Details */}
                         <Col md={6} className="mb-3">
                             <Form.Group controlId="description">
-                                <Form.Label>Lead Details</Form.Label>
+                                <Form.Label className="mutual_heading_class">
+                                    {rtl === 'true' ? 'تفاصيل العميل' : 'Lead Details'}
+                                </Form.Label>
                                 <Form.Control
                                     as="textarea"
                                     rows={10}
-                                    placeholder="Enter Description"
+                                    placeholder={rtl === 'true' ? 'ادخل الوصف' : 'Enter Description'}
                                     name="description"
                                     value={leadData.description}
                                     onChange={handleInputChange}
+                                    className="input_field_input_field"
                                 />
                             </Form.Group>
-
-
                         </Col>
-
-                        {/* Pipeline */}
-                        {/* <Col md={6} className="mb-3">
-                            <Form.Group controlId="pipeline">
-                                <Form.Label>Pipeline</Form.Label>
-                                <Form.Select value={leadData.pipeline_id?._id || ''} onChange={handlePipelineChange}>
-                                    <option value="">Select Pipeline</option>
-                                    {pipelineSlice.map((pipeline) => (
-                                        <option key={pipeline._id} value={pipeline._id}>{pipeline.name}</option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col> */}
                     </Row>
 
-                    <Row>
-                        {/* Product */}
-                        {/* <Col md={6} className="mb-3">
-                            <Form.Group controlId="product">
-                                <Form.Label>Product</Form.Label>
-                                <Form.Select value={leadData.products?._id || ''} onChange={handleProductChange}>
-                                    <option value="">Select Product</option>
-                                    {productsName.map((product) => (
-                                        <option key={product._id} value={product._id}>{product.name}</option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col> */}
-
-                        {/* Source */}
-                        {/* <Col md={6} className="mb-3">
-                            <Form.Group controlId="source">
-                                <Form.Label>Source</Form.Label>
-                                <Form.Select value={leadData.source?._id || ''} onChange={handleSourceChange}>
-                                    <option value="">Select Source</option>
-                                    {sources.map((source) => (
-                                        <option key={source._id} value={source._id}>{source.name}</option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col> */}
-                    </Row>
-
-                    <Row>
-                        {/* Product Stage */}
-                        {/* <Col md={6} className="mb-3">
-                            <Form.Group controlId="productStage">
-                                <Form.Label>Lead Stage</Form.Label>
-                                <Form.Select value={leadData.product_stage?._id || ''} onChange={handleProductStagesChange}>
-                                    <option value="">Select Product Stage</option>
-                                    {productStages.map((stage) => (
-                                        <option key={stage._id} value={stage._id}>{stage.name}</option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col> */}
-
-                        {/* Description */}
-                        {/* <Col md={6} className="mb-3">
-                            <Form.Group controlId="description">
-                                <Form.Label>Description</Form.Label>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={3}
-                                    placeholder="Enter Description"
-                                    name="description"
-                                    value={leadData.description}
-                                    onChange={handleInputChange}
-                                />
-                            </Form.Group>
-                        </Col> */}
-                    </Row>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end', gap: '10px' }} >
-                        <Button className='all_close_btn_container' onClick={() => setModalShow(false)}>Close</Button>
-                        <Button className='all_single_leads_button' onClick={handleSaveChanges}>
-                            Update Lead
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: rtl === 'true' ? 'flex-start' : 'flex-end', // Align left if RTL is true
+                            alignItems: 'center', // Align buttons vertically at the center
+                            gap: '10px',
+                            flexDirection: rtl === 'true' ? 'row-reverse' : 'row' // Reverse the order of buttons in RTL
+                        }}
+                    >
+                        <Button
+                            className="all_close_btn_container"
+                            onClick={() => setModalShow(false)}
+                        >
+                            {rtl === 'true' ? 'إغلاق' : 'Close'}
+                        </Button>
+                        <Button
+                            className="all_common_btn_single_lead"
+                            onClick={handleSaveChanges}
+                        >
+                            {rtl === 'true' ? 'تحديث العميل' : 'Update Lead'}
                         </Button>
                     </div>
                 </Form>
             </Modal.Body>
+
         </Modal>
     );
 };

@@ -17,7 +17,6 @@ const AllUsers = () => {
     const [pipelines, setPipelines] = useState([]);
     const [branches, setBranches] = useState([]);
     const [roles, setRoles] = useState([]); // New state for roles
-    const [products, setProducts] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [deleteModal, setdeleteModal] = useState(false)
@@ -28,6 +27,10 @@ const AllUsers = () => {
     const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false)
     const [resetPasswordError, setResetPasswordError] = useState('')
     const [resignModal, setResignModal] = useState(false)
+    const [products, setProducts] = useState([])
+    console.log(products,'productnames')
+
+    const [replacementUserId, setReplacementUserId] = useState(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -56,6 +59,15 @@ const AllUsers = () => {
     const [product, setProduct] = useState(null);
     const [image, setImage] = useState(null);
 
+    const fetchProducts = async () => {
+        try {
+            const response = await axios.get(`/api/products/get-all-products-admin`)
+            setProducts(response.data)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
     // Fetch all users
     const fetchUsers = async () => {
         try {
@@ -67,6 +79,7 @@ const AllUsers = () => {
     };
     useEffect(() => {
         fetchUsers();
+        fetchProducts()
     }, []);
 
     // Fetch pipelines, branches, products, and roles
@@ -89,14 +102,14 @@ const AllUsers = () => {
             }
         };
 
-        const fetchProducts = async () => {
-            try {
-                const response = await axios.get(`/api/products/get-all-products`);
-                setProducts(response.data);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-            }
-        };
+        // const fetchProducts = async () => {
+        //     try {
+        //         const response = await axios.get(`/api/products/get-all-products`);
+        //         setProducts(response.data);
+        //     } catch (error) {
+        //         console.error('Error fetching products:', error);
+        //     }
+        // };
 
         const fetchRoles = async () => {
             try {
@@ -124,6 +137,7 @@ const AllUsers = () => {
 
     // Open modal and populate form data with the selected user's data
     const handleEditClick = (user) => {
+        console.log(user, 'edituser')
         setSelectedUser(user);
         setFormData({
             name: user.name || '',
@@ -185,7 +199,7 @@ const AllUsers = () => {
     // Delete User API
     const handleDeleteClick = async (id) => {
         try {
-            await axios.put(`/api/users//delete-user/${id}`,{}, {
+            await axios.put(`/api/users//delete-user/${id}`, {}, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -389,23 +403,35 @@ const AllUsers = () => {
         }));
     };
 
+    // Open resign modal
     const openResignModal = (id) => {
-        setUserId(id)
-        setResignModal(true)
-    }
-
+        setUserId(id);
+        setReplacementUserId(null); // Reset selection
+        setResignModal(true);
+    };
     const ResignHandler = async () => {
         try {
-            await axios.patch(`/api/users/resign-user/${userId}`, {}, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            })
-            setResignModal(false)
+            const payload = replacementUserId ? { replacementUserId } : {};
+            const response = await axios.patch(
+                `/api/users/resign-user/${userId}`,
+                payload
+            );
+
+            console.log(response.data.message);
+            // Handle success (e.g., show a toast or update the UI)
         } catch (error) {
-            console.log(error, 'error')
+            console.error('Error resigning user:', error.response?.data?.message || error.message);
+            // Handle error (e.g., show an error toast)
+        } finally {
+            setResignModal(false);
         }
-    }
+    };
+
+    // Format users for React-Select
+    const userOptions = users.map((user) => ({
+        value: user._id,
+        label: user.name,
+    }));
 
     // Filter users based on selected branch and product
     const filteredUsers = users.filter((user) => {
@@ -420,7 +446,7 @@ const AllUsers = () => {
             <Container fluid >
                 <Row>
                     <Col xs={12} md={12} lg={2} >
-                        <Sidebar />
+                        {/* <Sidebar /> */}
                     </Col>
 
                     <Col xs={12} md={12} lg={10}>
@@ -458,7 +484,7 @@ const AllUsers = () => {
 
                                 {/* Product Selection Buttons */}
                             </div>
-                            
+
                             <div style={{ display: 'flex', gap: '5px' }} className='mt-2' >
                                 {productNames.map(product => (
                                     <Button
@@ -898,9 +924,15 @@ const AllUsers = () => {
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p>
-                        Are You Sure you want to make it Resign ?
-                    </p>
+                    <p>Are you sure you want to resign this user?</p>
+                    <Select
+                        options={userOptions}
+                        onChange={(selectedOption) =>
+                            setReplacementUserId(selectedOption?.value || null)
+                        }
+                        placeholder="Select Replacement User (optional)"
+                        isClearable
+                    />
                 </Modal.Body>
                 <Modal.Footer>
                     <Button onClick={() => setResignModal(false)}>No</Button>

@@ -8,7 +8,7 @@ const dealActivityLogSchema = new Schema({
         ref: 'User',
         required: true
     },
-    deal_id: {
+    deal_id: { 
         type: Schema.Types.ObjectId,
         ref: 'Deal',
         required: true

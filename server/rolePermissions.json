@@ -39,7 +39,8 @@
     "move_lead",
     "update_product_stage",
     "lead_labels",
-    "edit_lead"
+    "edit_lead",
+    "label_management"
   ],
   "Manager": [
     "crm_dashboard",
@@ -55,7 +56,21 @@
     "remove_user_lead",
     "lead_labels",
     "unassigned_lead",
-    "label_management"
+    "label_management",
+    "edit_lead",
+    "convert_lead",
+    "file_upload",
+    "file_delete",
+    "file_download",
+    "show_phonebook",
+    "file_upload_for_phonebook",
+    "read_contract",
+    "edit_contract",
+    "edit_deal",
+    "move_deal",
+    "add_user_in_deal",
+    "file_upload_in_deal",
+    "file_download_from_deal"
   ],
   "Team Leader": [
     "check_lead",
@@ -66,7 +81,13 @@
     "lead_labels",
     "update_product_stage",
     "move_lead",
-    "view_lead"
+    "view_lead",
+    "create_lead",
+    "add_user_lead",
+    "file_upload",
+    "file_download",
+    "show_phonebook",
+    "file_upload_for_phonebook"
   ],
   "HOD": [
     "convert_lead",
@@ -97,7 +118,8 @@
     "file_upload_in_deal",
     "file_download_from_deal",
     "file_delete_from_deal",
-    "label_management"
+    "label_management",
+    "add_user_in_deal"
   ],
   "TS Agent": [
     "show_phonebook",
@@ -112,9 +134,7 @@
     "update_product_stage",
     "edit_lead",
     "lead_labels",
-    "remove_user_lead",
     "transfer_lead",
-    "reject_lead",
     "move_lead"
   ],
   "Sales": [
@@ -125,17 +145,21 @@
     "crm_dashboard",
     "edit_lead",
     "lead_labels",
-    "move_lead",
     "add_user_lead",
-    "show_phonebook"
+    "show_phonebook",
+    "file_download"
   ],
   "Marketing": [
-    "crm_dashboard"
+    "crm_dashboard",
+    "create_lead",
+    "view_lead"
   ],
   "Coordinator": [
     "crm_dashboard",
     "file_upload",
-    "file_download"
+    "file_download",
+    "view_lead",
+    "update_product_stage"
   ],
   "MD": [
     "create_lead",
@@ -149,8 +173,24 @@
     "remove_user_lead",
     "convert_lead",
     "crm_dashboard",
-    "add_user",
-    "delete_user"
+    "lead_labels",
+    "unassigned_lead",
+    "file_upload",
+    "file_delete",
+    "file_download",
+    "show_phonebook",
+    "file_upload_for_phonebook",
+    "read_contract",
+    "edit_contract",
+    "create_deal",
+    "edit_deal",
+    "move_deal",
+    "reject_deal",
+    "add_user_in_deal",
+    "delete_user_from_deal",
+    "file_download_from_deal",
+    "file_upload_in_deal",
+    "label_management"
   ],
   "Developer": [
     "create_user",
@@ -187,7 +227,9 @@
     "file_download_from_deal",
     "app_management",
     "file_delete_from_deal",
-    "lead_labels"
+    "lead_labels",
+    "label_management",
+    "unassigned_lead"
   ],
   "CEO": [
     "create_lead",
@@ -208,7 +250,49 @@
     "file_upload",
     "file_delete",
     "file_download",
-    "file_upload_for_phonebook"
+    "file_upload_for_phonebook",
+    "file_delete_from_deal",
+    "file_download_from_deal",
+    "file_upload_in_deal",
+    "delete_user_from_deal",
+    "add_user_in_deal",
+    "reject_deal",
+    "move_deal",
+    "edit_deal",
+    "create_deal",
+    "delete_contract",
+    "edit_contract",
+    "read_contract",
+    "show_phonebook"
   ],
-  "No Role": []
+  "None Operational": [],
+  "HOM": [
+    "view_lead",
+    "create_lead",
+    "edit_lead",
+    "lead_labels",
+    "update_product_stage",
+    "move_lead",
+    "unassigned_lead",
+    "reject_lead",
+    "transfer_lead",
+    "add_user_lead",
+    "remove_user_lead",
+    "convert_lead",
+    "crm_dashboard",
+    "add_user",
+    "delete_user",
+    "file_upload",
+    "file_delete",
+    "show_phonebook",
+    "file_upload_for_phonebook",
+    "read_contract",
+    "edit_contract",
+    "delete_contract",
+    "create_deal",
+    "edit_deal",
+    "move_deal",
+    "reject_deal",
+    "add_user_in_deal"
+  ]
 }

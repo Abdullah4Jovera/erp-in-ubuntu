@@ -4,8 +4,10 @@ const Schema = mongoose.Schema;
 
 const LeadSchema = new Schema({ 
   client: { type: Schema.Types.ObjectId, ref: 'Client' },
-  created_by: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  ref_user: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+  created_by: { type: Schema.Types.ObjectId, ref: 'User'},
+  ref_hod: { type: Schema.Types.ObjectId, ref: 'User', required: false, defult:null },
+  ref_hom: { type: Schema.Types.ObjectId, ref: 'User', required: false, defult:null },
+  ref_manager: { type: Schema.Types.ObjectId, ref: 'User', required: false, defult:null },
   selected_users: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   pipeline_id: { type: Schema.Types.ObjectId, ref: 'Pipeline' },
   stage: { type: mongoose.Schema.Types.ObjectId, ref: 'LeadStage'},
@@ -27,7 +29,7 @@ const LeadSchema = new Schema({
   is_converted: { type: Boolean, default: false }, 
   is_reject: { type: Boolean, default: false },
   is_transfer: { type: Boolean, default: false }, 
-  is_blocklist_number: { type: Boolean, default: false },
+  is_blocklist_number: { type: Boolean, default: false }, 
   date: { type: Date, default: Date.now },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }, 
@@ -38,6 +40,18 @@ const LeadSchema = new Schema({
   reject_reason: { type: String },
   phonebookcomments: [{ type: Schema.Types.ObjectId, ref: 'Comment'}],
 
+  transfer_from: {
+    pipeline: { type: Schema.Types.ObjectId, ref: 'Pipeline' },
+    branch: { type: Schema.Types.ObjectId, ref: 'Branch' },
+    product_stage: { type: Schema.Types.ObjectId, ref: 'ProductStage' },
+    products: { type: Schema.Types.ObjectId, ref: 'Product' },
+  },
+  // transfer_to: {
+  //   pipeline: { type: Schema.Types.ObjectId, ref: 'Pipeline' },
+  //   branch: { type: Schema.Types.ObjectId, ref: 'Branch' },
+  //   product_stage: { type: Schema.Types.ObjectId, ref: 'ProductStage' },
+  //   products: { type: Schema.Types.ObjectId, ref: 'Product' },
+  // },
 
 });
 

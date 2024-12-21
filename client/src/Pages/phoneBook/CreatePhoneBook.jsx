@@ -55,13 +55,18 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
     const [errorMessage, setErrorMessage] = useState('')
     const [isClientNameDisabled, setIsClientNameDisabled] = useState(false);
     const [productEnableTransfer, setProductEnableTransfer] = useState(true)
-
+    const [rtl, setRtl] = useState(null);
 
     // Auth Token
     const token = useSelector(state => state.loginSlice.user?.token);
 
     const getProductID = localStorage.getItem('selectedProductId')
     const getBranchID = localStorage.getItem('selectedBranchId')
+
+    useEffect(() => {
+        const savedRtl = localStorage.getItem('rtl');
+        setRtl(savedRtl); // Update state with the 'rtl' value from localStorage
+    }, [rtl]);
 
     useEffect(() => {
         // If branchUserSlice is not null, set the branch state to its value
@@ -77,9 +82,9 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
     };
 
     useEffect(() => {
-        if (branch === '6719fdded3de53c9fb53fb79') {
+        if (branch === '673b34924b966621c041caac') {
             // Set filtered pipelines to show only "Ajman Branch"
-            setFilteredPipelines([{ _id: '6719fda75035bf8bd708d024', name: 'Ajman Branch' }]);
+            setFilteredPipelines([{ _id: '673b190186706b218f6f3262', name: 'Ajman Branch' }]);
         } else {
             // Handle other branches
             if (product) {
@@ -142,7 +147,7 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
             const response = await axios.get(`/api/productstages/${selectedProduct}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setProductStage(Array.isArray(response.data) ? response.data : []); // Ensure it's an array
+            setProductStage(response.data);
         } catch (error) {
             console.error('Error fetching product stages:', error);
         }
@@ -626,29 +631,44 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                 }}
 
             >
-                <Modal.Header closeButton>
-                    <Modal.Title>Create Lead</Modal.Title>
+                <Modal.Header closeButton style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                    <Modal.Title
+                        className='mutual_heading_class'
+                        style={{ textAlign: rtl === 'true' ? 'right' : 'left' }} // Adjust title alignment based on RTL
+                    >
+                        {rtl === 'true' ? 'إنشاء عميل' : 'Create Lead'} {/* Localize the title */}
+                    </Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body style={{
+                    // padding: '40px',
+                    textAlign: rtl === 'true' ? 'right' : 'left', // Align text dynamically
+                    direction: rtl === 'true' ? 'rtl' : 'ltr' // Set text direction dynamically
+                }}>
                     <Form>
                         <Row>
                             {/* Client Phone */}
 
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="clientPhone">
-                                    <Form.Label>Client Phone</Form.Label>
+                                    <Form.Label
+                                        className='mutual_heading_class'
+                                        // style={{ direction: rtl === 'true' ? 'rtl' : 'rtl' }}
+                                    >
+                                        {rtl === 'true' ? 'هاتف العميل' : 'Client Phone'} {/* Localized label text */}
+                                    </Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="Enter Number"
                                         name="clientPhone"
-                                        value={phoneBookNumber} // Remove spaces from the display
+                                        value={phoneBookNumber}
                                         onChange={handlePhoneInputChange}
                                         isInvalid={!!errors.clientPhone}
+                                        className='input_field_input_field'
                                         disabled
-
+                                        style={{ direction: rtl === 'true' ? 'ltr' : 'ltr' }}
                                     />
                                     {errorMessages.contactNumber && (
-                                        <div className="text-danger">
+                                        <div className="text-danger" >
                                             <p style={{ fontSize: '12px' }}>{errorMessages.contactNumber}</p>
                                         </div>
                                     )}
@@ -657,10 +677,16 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
 
                             {/* WhatsApp Number */}
                             <Col md={4}>
-                                <Form.Label>WhatsApp Number</Form.Label>
+                                <Form.Label
+                                    className='mutual_heading_class'
+                                    style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                >
+                                    {rtl === 'true' ? 'رقم الواتس آب' : 'WhatsApp Number'} {/* Localized label text */}
+                                </Form.Label>
                                 <Form.Control
                                     type="text"
-                                    placeholder="Enter Whatsapp Number"
+                                    placeholder={rtl === 'true' ? 'أدخل رقم الواتس آب' : 'Enter WhatsApp Number'} 
+                                    className='input_field_input_field'
                                     name="clientPhone"
                                     value={whatsappContact?.replace(/\s/g, '')} // Remove spaces from the display
                                     onChange={handlewhatsppPhoneInputChange}
@@ -672,7 +698,12 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                             {/* Emirates ID */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="clientEID">
-                                    <Form.Label>Emirates ID</Form.Label>
+                                    <Form.Label
+                                        className='mutual_heading_class'
+                                        style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                    >
+                                        {rtl === 'true' ? 'هوية الإمارات' : 'Emirates ID'} {/* Localized label text */}
+                                    </Form.Label>
                                     <InputMask
                                         mask="999-9999-9999999-9"
                                         value={eid}
@@ -686,7 +717,7 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                                                 placeholder="784-1234-1234567-1"
                                                 name="clientEID"
                                                 isInvalid={!!errors.clientEID}
-
+                                                className='input_field_input_field'
                                             />
                                         )}
                                     </InputMask>
@@ -698,10 +729,16 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                             {/* Client Name */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="clientName">
-                                    <Form.Label>Client Name</Form.Label>
+                                    <Form.Label
+                                        className='mutual_heading_class'
+                                        style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                    >
+                                        {rtl === 'true' ? 'اسم العميل' : 'Client Name'} {/* Localized label text */}
+                                    </Form.Label>
                                     <Form.Control
                                         type="text"
-                                        placeholder="Enter Name"
+                                        placeholder={rtl === 'true' ? 'أدخل الاسم' : 'Enter Name'}
+                                        className='input_field_input_field'
                                         name="clientName"
                                         value={clientName}
                                         onChange={handleClientNameHandler}
@@ -716,10 +753,16 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                             {/* Company Name */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="company_Name">
-                                    <Form.Label>Company Name</Form.Label>
+                                    <Form.Label
+                                        className='mutual_heading_class'
+                                        style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                    >
+                                        {rtl === 'true' ? 'اسم الشركة' : 'Company Name'} {/* Localized label text */}
+                                    </Form.Label>
                                     <Form.Control
                                         type="text"
-                                        placeholder="Enter Company Name"
+                                        placeholder={rtl === 'true' ? 'أدخل اسم الشركة' : 'Enter Company Name'} // Dynamic placeholder based on RTL
+                                        className='input_field_input_field'
                                         name="company_Name"
                                         value={companyName}
                                         onChange={handleCompanyInputChange}
@@ -731,10 +774,16 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                             {/* Client Email */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="clientEmail">
-                                    <Form.Label>Client Email</Form.Label>
+                                    <Form.Label
+                                        className='mutual_heading_class'
+                                        style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                    >
+                                        {rtl === 'true' ? 'البريد الإلكتروني للعميل' : 'Client Email'} {/* Localized label text */}
+                                    </Form.Label>
                                     <Form.Control
                                         type="email"
-                                        placeholder="Enter Email"
+                                        placeholder={rtl === 'true' ? 'أدخل البريد الإلكتروني' : 'Enter Email'}
+                                        className='input_field_input_field'
                                         name="clientEmail"
                                         value={clientEmail}
                                         onChange={handleEmailInputChange}
@@ -745,21 +794,26 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                             </Col>
                         </Row>
 
-
                         <Row>
                             {/* Product Select Dropdown */}
                             {!productUserSlice && (
                                 <Col md={4}>
                                     <Form.Group controlId="product">
-                                        <Form.Label>Product</Form.Label>
+                                        <Form.Label
+                                            className='mutual_heading_class'
+                                            style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                        >
+                                            {rtl === 'true' ? 'المنتج' : 'Product'} {/* Localized label text */}
+                                        </Form.Label>
                                         <Form.Select
                                             aria-label="Select Product"
+                                            className='input_field_input_field'
                                             name="product"
                                             value={product}
                                             onChange={handleProductInputChange}
                                             disabled={isClientNameDisabled} // Disable based on state
                                         >
-                                            <option value="">Select Product</option>
+                                            <option value="">   {rtl === 'true' ? 'اختر المنتج' : 'Select Product'}</option>
                                             {productNamesSlice.map(p => (
                                                 <option key={p._id} value={p._id}>
                                                     {p.name}
@@ -774,16 +828,22 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                             {branchUserSlice === null && (
                                 <Col md={4}>
                                     <Form.Group className="mb-3" controlId="branch">
-                                        <Form.Label>Branch</Form.Label>
+                                        <Form.Label
+                                            className='mutual_heading_class'
+                                            style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                        >
+                                            {rtl === 'true' ? 'الفرع' : 'Branch'} {/* Localized label text */}
+                                        </Form.Label>
                                         <Form.Select
                                             aria-label="Select Branch"
+                                            className='input_field_input_field'
                                             name="branch"
                                             value={branch}
                                             onChange={handleBranchname}
                                             isInvalid={!!errors.branch}
                                             disabled={isClientNameDisabled} // Disable based on state
                                         >
-                                            <option value="">Select Branch</option>
+                                            <option value="">   {rtl === 'true' ? 'اختر الفرع' : 'Select Branch'}</option>
                                             {branchesSlice.map((branch, index) => (
                                                 <option key={index} value={branch._id}>
                                                     {branch.name}
@@ -805,15 +865,21 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                             {/* Pipeline Select Dropdown */}
                             {pipelineUserSlice?.length === 0 && (
                                 <Col md={4}>
-                                    <Form.Label>Pipeline</Form.Label>
+                                    <Form.Label
+                                        className='mutual_heading_class'
+                                        style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                    >
+                                        {rtl === 'true' ? 'مسار العمل' : 'Pipeline'} {/* Localized label text */}
+                                    </Form.Label>
                                     <Form.Select
                                         aria-label="Select Pipeline"
+                                        className='input_field_input_field'
                                         name="pipeline"
                                         value={pipelineId}
                                         onChange={handlePipelineInputChange}
                                         disabled={isClientNameDisabled} // Disable based on state
                                     >
-                                        <option value="">Select Pipeline</option>
+                                        <option value=""> {rtl === 'true' ? 'اختر خط الأنابيب' : 'Select Pipeline'}</option>
                                         {filteredPipelines.map(pipeline => (
                                             <option key={pipeline._id} value={pipeline._id}>
                                                 {pipeline.name}
@@ -826,16 +892,22 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
 
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="product_stage">
-                                    <Form.Label>Product Stages</Form.Label>
+                                    <Form.Label
+                                        className='mutual_heading_class'
+                                        style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                    >
+                                        {rtl === 'true' ? 'مراحل المنتج' : 'Product Stages'} {/* Localized label text */}
+                                    </Form.Label>
                                     <Form.Select
                                         aria-label="Select Product Stage"
+                                        className='input_field_input_field'
                                         name="product_stage"
                                         value={selectedProductStage}
                                         onChange={handleInputChangeProductstage}
                                         isInvalid={!!errors.product_stage}
                                         disabled={isClientNameDisabled} // Disable based on state
                                     >
-                                        <option value="">Select Product Stage</option>
+                                        <option value=""> {rtl === 'true' ? 'اختر مرحلة المنتج' : 'Select Product Stage'}</option>
                                         {productStage.map(stage => (
                                             <option key={stage._id} value={stage._id}>
                                                 {stage.name}
@@ -851,7 +923,12 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
 
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="description">
-                                    <Form.Label>Lead Details</Form.Label>
+                                    <Form.Label
+                                        className='mutual_heading_class'
+                                        style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                    >
+                                        {rtl === 'true' ? 'تفاصيل العميل' : 'Lead Details'} {/* Localized label text */}
+                                    </Form.Label>
                                     <Form.Control
                                         as="textarea"
                                         rows={1}
@@ -860,6 +937,7 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                                         onChange={handleLeadDetailsInputChange}
                                         isInvalid={!!errors.description}
                                         disabled={isClientNameDisabled}
+                                        className='input_field_input_field'
                                     />
                                 </Form.Group>
                             </Col>
@@ -870,7 +948,12 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                             <Col md={4} >
                                 {(userRole === 'TS Agent' || userRole === 'TS Team Leader') && (
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Select Users</Form.Label>
+                                        <Form.Label
+                                            className='mutual_heading_class'
+                                            style={{ textAlign: rtl === 'true' ? 'right' : 'left', display: 'block' }}
+                                        >
+                                            {rtl === 'true' ? 'اختيار المستخدمين' : 'Select Users'} {/* Localized label text */}
+                                        </Form.Label>
                                         <Select
                                             options={userOptions} // Pass the filtered user options
                                             value={selectedUsers} // Value for the selected users
@@ -879,6 +962,8 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                                             }}
                                             isMulti // Allow multiple user selection
                                             placeholder="Select users..."
+                                            className='input_field_input_field'
+                                            classNamePrefix="react-select"
                                         />
                                     </Form.Group>
                                 )}
@@ -889,29 +974,39 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                     {errorMessage && <div className="alert alert-danger">{errorMessage.message}</div>}
 
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button className='all_close_btn_container'
+                <Modal.Footer style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                    <Button
+                        className='all_close_btn_container'
                         onClick={() => {
                             setPhoneBookModal(false);
                             resetFormFields(); // Clear the fields when closing the modal
-                            setIsClientNameDisabled(false)
+                            setIsClientNameDisabled(false);
                         }}
-
+                        style={{ marginLeft: rtl === 'true' ? '0' : 'auto', marginRight: rtl === 'true' ? 'auto' : '0' }}
                     >
-                        Close
+                        {rtl === 'true' ? 'إغلاق' : 'Close'} {/* Localize button text */}
                     </Button>
+
                     {
                         apiData && apiData.isRejected ?
-                            <Button className='all_single_leads_button' onClick={handleSaveChanges} disabled={disableField}>
-                                Update
+                            <Button
+                                className='all_single_leads_button'
+                                onClick={handleSaveChanges}
+                                disabled={disableField}
+                            >
+                                {rtl === 'true' ? 'تحديث' : 'Update'} {/* Localize button text */}
                             </Button>
                             :
-
-                            <Button className='all_single_leads_button' onClick={handleSubmit} disabled={disableField} >
-                                Submit
+                            <Button
+                                className='all_common_btn_single_lead'
+                                onClick={handleSubmit}
+                                disabled={disableField}
+                            >
+                                {rtl === 'true' ? 'إرسال' : 'Submit'} {/* Localize button text */}
                             </Button>
                     }
                 </Modal.Footer>
+
             </Modal>
 
         </>

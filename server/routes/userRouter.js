@@ -39,29 +39,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 
-router.get('/get-users-with-unactive-products', async (req, res) => {
+router.get('/get-users-non-operational', async (req, res) => {
   try {
-    const users = await User.find({ delstatus: false })
-      .populate({
-        path: 'products',
-        match: { status: 'UnActive' }, // Filter to include only products with status "UnActive"
-        select: 'name status' // Select specific fields if needed
-      })
-      .exec();
-
-    // Filter out users without products or where the product has been filtered out (not UnActive)
-    const usersWithUnactiveProducts = users.filter(user => user.products && user.products.status === 'UnActive');
-
-    const imagePrefix = 'http://192.168.2.137:4000/images/';
-
-    // Prepend image path prefix
-    usersWithUnactiveProducts.forEach(user => {
-      if (user.image) {
-        user.image = `${imagePrefix}${user.image}`;
-      }
-    });
-
-    res.status(200).json(usersWithUnactiveProducts);
+    const users = await User.find({ delstatus: false , role: 'None Operational' }).populate('products') 
+    res.status(200).json(users);
   } catch (error) {
     console.error('Error fetching users with UnActive products:', error);
     res.status(500).json({ message: 'Error fetching users with UnActive products' });
@@ -70,33 +51,72 @@ router.get('/get-users-with-unactive-products', async (req, res) => {
 
 
 
-router.patch('/resign-user/:id',  async (req, res) => {
+router.patch('/resign-user/:id', async (req, res) => {
   try {
     const userId = req.params.id;
+    const { replacementUserId } = req.body; // Replacement user ID
+
+    // Find the user who is resigning
     const user = await User.findById(userId);
-    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Automatically mark user as resigned
+    // Mark the user as resigned
     user.resigned = true;
     await user.save();
 
-    // Remove the resigned user from selected_users in all leads
-    await leadModel.updateMany(
-      { selected_users: userId },
-      { $pull: { selected_users: userId } }
-    );
+    if (replacementUserId) {
+      // Validate the replacement user
+      const replacementUser = await User.findById(replacementUserId);
+      if (!replacementUser) {
+        return res.status(404).json({ message: 'Replacement user not found' });
+      }
 
-    res.status(200).json({ 
-      message: 'User has been marked as resigned and removed from selected users in leads' 
-    });
+      // Replace the resigned user with the replacement user in all leads
+      const result = await leadModel.updateMany(
+        { selected_users: userId },
+        { $set: { 'selected_users.$': replacementUserId } } // Directly replace the matched user in the array
+      );
+
+      if (result.modifiedCount > 0) {
+        return res.status(200).json({
+          message: 'User marked as resigned and replaced in selected users in leads.',
+          resignedUser: userId,
+          replacementUser: replacementUserId,
+        });
+      } else {
+        return res.status(400).json({
+          message: 'No leads were updated. Please check if the user is part of selected users in any lead.',
+        });
+      }
+    } else {
+      // Remove the resigned user from the selected_users array in all leads
+      const result = await leadModel.updateMany(
+        { selected_users: userId },
+        { $pull: { selected_users: userId } }
+      );
+
+      if (result.modifiedCount > 0) {
+        return res.status(200).json({
+          message: 'User marked as resigned and removed from selected users in leads.',
+          resignedUser: userId,
+        });
+      } else {
+        return res.status(400).json({
+          message: 'No leads were updated. Please check if the user is part of selected users in any lead.',
+        });
+      }
+    }
   } catch (error) {
     console.error('Error marking user as resigned:', error);
     res.status(500).json({ message: 'Error marking user as resigned' });
   }
 });
+
+
+
+
 
 
 router.patch('/block-user/:id', isAuth, hasPermission(['app_management']), async (req, res) => {
@@ -223,7 +243,12 @@ router.get('/get-users-by-branch/:branchId/:productId', async (req, res) => {
     }
 
     // Construct the query based on branch, role, and product
-    const query = { branch: branchId, role: 'Sales', products: productId };
+    const query = { 
+      branch: branchId, 
+      role: { $in: ['Sales', 'Team Leader'] }, 
+      products: productId 
+  };
+  
 
     // Find users by branch, role "Sales", and product filter
     const users = await User.find(query)
@@ -330,7 +355,7 @@ router.get('/get-users', async (req, res) => {
     const users = await User.find(query)
       .select('-password') // Exclude the password field
       .populate('pipeline') // Populate the pipeline field
-      .populate('branch') // Populate the pipeline field
+      .populate('branch name') // Populate the pipeline field
       .populate('products') // Populate the pipeline field
       .exec();
 
@@ -402,8 +427,6 @@ router.post('/create-user', upload.single('image'),isAuth,hasRole(['Super Admin'
 });
 
 // POST route for user login
-
-
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -466,9 +489,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
 ///update User
-
 router.put('/update-user/:id', upload.single('image'),isAuth,hasRole(['Super Admin', 'Developer']), async (req, res) => {
   try {
     const { id } = req.params;

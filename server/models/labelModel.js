@@ -11,8 +11,8 @@ const LabelSchema = new mongoose.Schema({
         // required: true,
     },
     pipeline_id: 
-        // {type: String}
-        { type: Schema.Types.ObjectId, ref: 'Pipeline',  }
+        {type: String}
+        // { type: Schema.Types.ObjectId, ref: 'Pipeline',  }
         
     ,
     created_by: {

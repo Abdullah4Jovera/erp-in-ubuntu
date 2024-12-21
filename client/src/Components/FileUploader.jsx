@@ -10,7 +10,7 @@ import { RiDeleteBinLine } from "react-icons/ri";
 import { IoMdAdd } from "react-icons/io";
 import { TiDeleteOutline } from "react-icons/ti";
 
-const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
+const FileUploader = ({ id, singleLead, fetchSingleLead, rtl }) => {
     const token = useSelector(state => state.loginSlice.user?.token);
     const permissions = useSelector(state => state.loginSlice.user?.permissions)
     const [discussionText, setDiscussionText] = useState('');
@@ -24,7 +24,6 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
     const [selectedFileType, setSelectedFileType] = useState('');
     const [selectedFileUrl, setSelectedFileUrl] = useState('');
     const [fileModal, setFileModal] = useState(false)
-    const { discussions = [] } = singleLead;
     const { files = [] } = singleLead;
     const canAddUserLead = permissions?.includes('add_user_lead');
     const canAddFileLead = permissions?.includes('file_upload');
@@ -44,49 +43,9 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
         setSelectedFileType('');
     };
 
-    const handleInputChange = (e) => {
-        setDiscussionText(e.target.value);
-        if (e.target.value.trim()) setError('');
-    };
-
     const handleRemoveImage = (index) => {
         setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
     };
-
-    // const handleImageChange = async (event) => {
-    //     const files = Array.from(event.target.files);
-    //     setSelectedFiles(files);
-
-    //     if (files.length > 0) {
-    //         await uploadFile(files);
-    //     }
-    // };
-
-    // const uploadFile = async (files) => {
-    //     if (files.length === 0) {
-    //         setImageErr('Please select files to upload.');
-    //         return;
-    //     }
-
-    //     const formData = new FormData();
-    //     files.forEach(file => {
-    //         formData.append('files', file);
-    //     });
-
-    //     try {
-    //         await axios.post(`/api/leads/upload-files/${id}`, formData, {
-    //             headers: {
-    //                 Authorization: `Bearer ${token}`,
-    //                 'Content-Type': 'multipart/form-data',
-    //             },
-    //         });
-    //         setSelectedFiles([]);
-    //         fetchSingleLead();
-    //     } catch (error) {
-    //         console.error('Upload error:', error);
-    //         setImageErr('An error occurred during the upload. Please try again.');
-    //     }
-    // };
 
     const handleUpload = async () => {
         if (selectedFiles.length === 0) {
@@ -146,10 +105,11 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
 
     return (
         <>
-
-            <Card className="border-0 shadow card_discussion mt-2 mutual_background_class" style={{ padding: '20px', borderRadius: '10px' }}>
+            <Card className="shadow card_discussion mt-2 mb-3 mutual_background_class" style={{ padding: '20px', borderRadius: '10px' }}>
                 <div className='discussion_files'>
-                    <h5 className='mutual_class_color'>Files</h5>
+                    <h5 className='mutual_class_color'>
+                        {rtl === 'true' ? 'الملفات' : 'Files'}
+                    </h5>
                     {
                         singleLead.is_reject && canAddFileLead
                             ? null
@@ -162,130 +122,8 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
                             )
                     }
                 </div>
-                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                    {/* <Form>
-                        <Form.Group className="">
-                            <Form.Label>Choose images or PDFs</Form.Label>
-                            <div
-                                className="image-upload"
-                                style={{
-                                    border: '2px dashed #d7aa47',
-                                    borderRadius: '12px',
-                                    padding: '10px',
-                                    textAlign: 'center',
-                                    cursor: 'pointer',
-                                    transition: 'border-color 0.3s, box-shadow 0.3s',
-                                    height: '35px',
-                                    backgroundColor: '#fef9e7',
-                                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                                }}
-                                onDragOver={(e) => {
-                                    e.preventDefault();
-                                    e.currentTarget.style.borderColor = '#a67b21';
-                                }}
-                                onDragLeave={(e) => {
-                                    e.preventDefault();
-                                    e.currentTarget.style.borderColor = '#d7aa47';
-                                }}
-                            >
-                                <input
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    onChange={handleImageChange}
-                                    style={{ display: 'none' }}
-                                    id="file-upload"
-                                    multiple
-                                />
-                                <label htmlFor="file-upload" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <FaCloudUploadAlt size={50} color="#d7aa47" style={{ marginBottom: '8px' }} />
-                                    <p style={{
-                                        fontSize: '14px',
-                                        color: '#5e5e5e',
-                                        margin: 0,
-                                        fontWeight: '500'
-                                    }}>
-                                        Drag and drop or click to upload
-                                    </p>
-                                </label>
-                            </div>
-
-                        </Form.Group>
-                    </Form> */}
-
-                    {/* {selectedFiles.length > 0 && (
-                        <div className="mt-4">
-                            <h6>Preview:</h6>
-                            <div className="d-flex flex-wrap">
-                                {selectedFiles.map((file, index) => (
-                                    <div key={index} className="position-relative me-2 mb-2">
-                                        {file.type === 'application/pdf' ? (
-                                            <div onClick={() => handleFileClick(file, 'pdf')} style={{ cursor: 'pointer' }}>
-                                                <BiSolidFilePdf size={50} className="pdf_icon_fallback" style={{ color: '#ef222b' }} />
-                                                <Image
-                                                    src={default_image}
-                                                    alt="PDF Preview"
-                                                    style={{
-                                                        width: '100px',
-                                                        height: '100px',
-                                                        objectFit: 'cover',
-                                                        borderRadius: '10px',
-                                                        border: '1px solid #d7aa47',
-                                                    }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div onClick={() => handleFileClick(file, 'image')} style={{ cursor: 'pointer' }}>
-                                                <Image
-                                                    src={URL.createObjectURL(file)}
-                                                    alt="Preview"
-                                                    style={{
-                                                        width: '100px',
-                                                        height: '100px',
-                                                        objectFit: 'cover',
-                                                        borderRadius: '10px',
-                                                        border: '1px solid #d7aa47',
-                                                    }}
-                                                />
-                                            </div>
-                                        )}
-                                        <Button
-                                            variant="danger"
-                                            size="sm"
-                                            onClick={() => handleRemoveImage(index)}
-                                            style={{
-                                                position: 'absolute',
-                                                top: '0',
-                                                left: '0',
-                                                borderRadius: '50%',
-                                                padding: '0.2rem 0.5rem',
-                                            }}
-                                        >
-                                            &times;
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )} */}
-                </div>
-
                 {imageErr && <div style={{ color: 'red', marginTop: '5px' }}>{imageErr}</div>}
                 <Table bordered responsive striped hover className="lead_user_class">
-                    {/* <thead>
-                        <tr>
-                            <th style={{ width: '70%' }}>File</th>
-                            {
-                                singleLead.is_reject && canRemoveFileLead
-                                    ? null
-                                    : (
-                                        canRemoveFileLead && (
-                                            <th className="text-center" style={{ width: '30%' }}>Action</th>
-                                        )
-                                    )
-                            }
-
-                        </tr>
-                    </thead> */}
                     <tbody>
                         {files.map((file, index) => {
                             const fileType = file.file_name.endsWith('.pdf')
@@ -296,7 +134,7 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
 
                             return (
                                 <tr key={index} style={{ height: '40px' }}>
-                                    <td onClick={() => handleFileClick(file, fileType)} style={{ verticalAlign: 'middle' }}>
+                                    <td onClick={() => handleFileClick(file, fileType)} style={{ verticalAlign: 'middle', backgroundColor: '#2d3134' }}>
                                         {fileType === 'image' ? (
                                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                 <Image
@@ -305,15 +143,15 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
                                                     className="image_control_discussion"
                                                     style={{ objectFit: 'cover', cursor: 'pointer' }}
                                                 />
-                                                <span style={{ fontWeight: '600', fontSize: '12px' }}>  {file.file_name.slice(0, 10)}</span>
+                                                <span className='mutual_class_color' style={{ fontWeight: '600', fontSize: '14px' }}>  {file.file_name.slice(0, 20)}</span>
                                             </div>
                                         ) : fileType === 'pdf' ? (
                                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                 <BiSolidFilePdf size={30} style={{ color: '#ef222b', cursor: 'pointer' }} />
-                                                <span style={{ fontWeight: '600', fontSize: '12px' }}>  {file.file_name.slice(0, 10)}</span>
+                                                <span className='mutual_class_color' style={{ fontWeight: '600', fontSize: '14px' }}>  {file.file_name.slice(0, 20)}</span>
                                             </div>
                                         ) : (
-                                            'Unknown File Type'
+                                           <p className='mutual_class_color' > {rtl === 'true' ? 'نوع ملف غير معروف' : 'Unknown File Type'} </p> 
                                         )}
                                     </td>
 
@@ -322,7 +160,7 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
                                             ? null
                                             : (
                                                 canRemoveFileLead && (
-                                                    <td style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                                                    <td style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', backgroundColor: '#2d3134' }}>
                                                         <div className="lead_users_delete_btn">
                                                             <RiDeleteBinLine onClick={() => OpenDeleteModal(file._id)} style={{ color: 'white', fontSize: '14px', cursor: 'pointer' }} />
                                                         </div>
@@ -330,65 +168,53 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
                                                 )
                                             )
                                     }
-
-
                                 </tr>
                             );
                         })}
                     </tbody>
                 </Table>
-
-                {/* <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }} className="mt-3">
-                    {files.map((file, index) => {
-                        const fileType = file.file_name.endsWith('.pdf') ? 'pdf' : file.file_name.match(/\.(jpeg|jpg|png|gif)$/) ? 'image' : '';
-                        return (
-                            <div key={index} onClick={() => handleFileClick(file, fileType)} style={{ cursor: 'pointer' }}>
-                                {fileType === 'image' ? (
-                                    <Image src={`${file.file_path}`} alt={file.file_name} className="image_control_discussion_files" />
-                                ) : fileType === 'pdf' ? (
-                                    <div className="pdf_icon_container">
-                                        <BiSolidFilePdf size={50} className="pdf_icon_fallback" style={{ color: '#ef222b' }} />
-                                    </div>
-                                ) : null}
-                            </div>
-                        );
-                    })}
-                </div> */}
             </Card>
 
 
             {/* Modal for Image or PDF */}
             <Modal show={showModal} onHide={handleCloseModal} centered size="xl">
-                <Modal.Header closeButton>
-                    <Modal.Title>File Preview</Modal.Title>
+                <Modal.Header closeButton style={{ border: 'none' }}>
+                    <Modal.Title className='mutual_heading_class'>
+                        {rtl === 'true' ? 'معاينة الملف' : 'File Preview'}
+                    </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {selectedFileType === 'image' ? (
                         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <Image src={`${selectedFileUrl && selectedFileUrl}`} alt="Selected File" style={{ width: '100%', maxWidth: '800px', height: 'auto', maxHeight: '600px' }} />
+                            <Image
+                                src={`${selectedFileUrl && selectedFileUrl}`}
+                                alt={rtl === 'true' ? 'الملف المحدد' : 'Selected File'}
+                                style={{ width: '100%', maxWidth: '800px', height: 'auto', maxHeight: '600px' }}
+                            />
                         </div>
                     ) : selectedFileType === 'pdf' ? (
                         <iframe
                             src={`${selectedFileUrl && selectedFileUrl}`}
-                            title="PDF Preview"
+                            title={rtl === 'true' ? 'معاينة PDF' : 'PDF Preview'}
                             width="100%"
                             height="500px"
                             style={{ border: 'none' }}
                         />
                     ) : (
-                        <div>No preview available</div>
+                        <p className='mutual_class_color' >{rtl === 'true' ? 'لا توجد معاينة متاحة' : 'No preview available'}</p>
                     )}
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer style={{ border: 'none' }}>
+                    <Button className='all_close_btn_container' onClick={handleCloseModal}>
+                        {rtl === 'true' ? 'إغلاق' : 'Close'}
+                    </Button>
                     {selectedFileType === 'image' && (
-                        <Button className='all_single_leads_button' onClick={() => window.open(selectedFileUrl, '_blank')}>
-                            Open in New Tab
+                        <Button className='all_common_btn_single_lead' onClick={() => window.open(selectedFileUrl, '_blank')}>
+                            {rtl === 'true' ? 'افتح في علامة تبويب جديدة' : 'Open in New Tab'}
                         </Button>
                     )}
-                    <Button className='all_close_btn_container' onClick={handleCloseModal}>
-                        Close
-                    </Button>
                 </Modal.Footer>
+
             </Modal>
 
             <Modal
@@ -401,7 +227,9 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
                 <Modal.Body>
                     <Form>
                         <Form.Group>
-                            <Form.Label>Choose images or PDFs</Form.Label>
+                            <Form.Label className='mutual_heading_class'>
+                                {rtl === 'true' ? 'اختر الصور أو ملفات PDF' : 'Choose images or PDFs'}
+                            </Form.Label>
                             <div
                                 className="image-upload"
                                 style={{
@@ -449,26 +277,37 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
                                             fontWeight: '500',
                                         }}
                                     >
-                                        Drag and drop or click to upload
+                                        {rtl === 'true'
+                                            ? 'قم بالسحب والإفلات أو انقر للتحميل'
+                                            : 'Drag and drop or click to upload'}
                                     </p>
                                 </label>
                             </div>
                             {imageErr && <p style={{ color: 'red', marginTop: '10px' }}>{imageErr}</p>}
                         </Form.Group>
                     </Form>
-                    {/* selected Files */}
+                    {/* Selected Files */}
                     {selectedFiles.length > 0 && (
                         <div className="mt-4">
-                            <h6>Preview:</h6>
+                            <h6 className='mutual_heading_class'>
+                                {rtl === 'true' ? 'المعاينة:' : 'Preview:'}
+                            </h6>
                             <div className="d-flex flex-wrap">
                                 {selectedFiles.map((file, index) => (
                                     <div key={index} className="position-relative me-2 mb-2">
                                         {file.type === 'application/pdf' ? (
-                                            <div onClick={() => handleFileClick(file, 'pdf')} style={{ cursor: 'pointer' }}>
-                                                <BiSolidFilePdf size={30} className="pdf_icon_fallback" style={{ color: '#ef222b' }} />
+                                            <div
+                                                onClick={() => handleFileClick(file, 'pdf')}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <BiSolidFilePdf
+                                                    size={30}
+                                                    className="pdf_icon_fallback"
+                                                    style={{ color: '#ef222b' }}
+                                                />
                                                 <Image
                                                     src={default_image}
-                                                    alt="PDF Preview"
+                                                    alt={rtl === 'true' ? 'معاينة PDF' : 'PDF Preview'}
                                                     style={{
                                                         width: '50px',
                                                         height: '50px',
@@ -479,10 +318,13 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
                                                 />
                                             </div>
                                         ) : (
-                                            <div onClick={() => handleFileClick(file, 'image')} style={{ cursor: 'pointer' }}>
+                                            <div
+                                                onClick={() => handleFileClick(file, 'image')}
+                                                style={{ cursor: 'pointer' }}
+                                            >
                                                 <Image
                                                     src={URL.createObjectURL(file)}
-                                                    alt="Preview"
+                                                    alt={rtl === 'true' ? 'المعاينة' : 'Preview'}
                                                     style={{
                                                         width: '50px',
                                                         height: '50px',
@@ -513,12 +355,19 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
                         </div>
                     )}
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button className='all_single_leads_button' onClick={handleUpload} disabled={selectedFiles.length === 0}>
-                        Upload
+                <Modal.Footer style={{ border: 'none' }}>
+                    <Button
+                        className='all_common_btn_single_lead'
+                        onClick={handleUpload}
+                        disabled={selectedFiles.length === 0}
+                    >
+                        {rtl === 'true' ? 'تحميل' : 'Upload'}
                     </Button>
-                    <Button className='all_close_btn_container' onClick={() => setShowImageUploader(false)}>
-                        Close
+                    <Button
+                        className='all_close_btn_container'
+                        onClick={() => setShowImageUploader(false)}
+                    >
+                        {rtl === 'true' ? 'إغلاق' : 'Close'}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -531,19 +380,29 @@ const FileUploader = ({ id, singleLead, fetchSingleLead }) => {
                 show={deleteModal}
                 onHide={() => setDeleteModal(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
-                        Delete User
+                <Modal.Header closeButton style={{ border: 'none' }}>
+                    <Modal.Title
+                        id="contained-modal-title-vcenter"
+                        className="mutual_heading_class"
+                    >
+                        {rtl === 'true' ? 'حذف المستخدم' : 'Delete User'}
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="text-center">
                     <TiDeleteOutline className="text-danger" style={{ fontSize: '4rem' }} />
-                    <p>Are you sure you want to delete this File?</p>
+                    <p className="mutual_heading_class">
+                        {rtl === 'true' ? 'هل أنت متأكد أنك تريد حذف هذا الملف؟' : 'Are you sure you want to delete this File?'}
+                    </p>
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button onClick={() => setDeleteModal(false)} className='all_close_btn_container'>Close</Button>
-                    <Button className='all_single_leads_button' onClick={handleDelete}>Delete</Button>
+                <Modal.Footer style={{ border: 'none' }}>
+                    <Button onClick={() => setDeleteModal(false)} className="all_close_btn_container">
+                        {rtl === 'true' ? 'إغلاق' : 'Close'}
+                    </Button>
+                    <Button className="all_common_btn_single_lead" onClick={handleDelete}>
+                        {rtl === 'true' ? 'حذف' : 'Delete'}
+                    </Button>
                 </Modal.Footer>
+
             </Modal>
         </>
     );

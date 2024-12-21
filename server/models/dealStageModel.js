@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 
 const dealStageSchema = new mongoose.Schema({
     name: {
@@ -8,14 +7,19 @@ const dealStageSchema = new mongoose.Schema({
         trim: true
     },
     created_by: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+        // type: mongoose.Schema.Types.ObjectId,
+        // ref: 'User', // Assuming 'User' model exists and is referenced here
+        type: String,
+        // required: true
     },
     order: {
         type: String,
         default: 0,
         required: true
+    },
+    delStatus: {
+        type: Boolean,
+        default: false
     },
     created_at: {
         type: Date,
@@ -25,10 +29,6 @@ const dealStageSchema = new mongoose.Schema({
     updated_at: {
         type: Date,
         default: Date.now
-    },
-    delStatus: {
-        type: Boolean,
-        default: false, 
     }
 });
 

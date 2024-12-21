@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Branch = require('../models/branchModel');
-mongoose.connect('mongodb://localhost:27017/erp3', { 
+mongoose.connect('mongodb://localhost:27017/crm', { 
   useNewUrlParser: true,
   useUnifiedTopology: true
 })

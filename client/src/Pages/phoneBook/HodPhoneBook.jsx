@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { AiOutlineEye } from "react-icons/ai";
-import { Table, Modal, Button, Form, Dropdown, Container, Row, Col, Card, ListGroup, Image } from 'react-bootstrap';
+import { Table, Modal, Button, Form, Container, Row, Col, Card, ListGroup, Image } from 'react-bootstrap';
 import Select from 'react-select';
 import { MdAdd } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
@@ -9,12 +8,13 @@ import { FiEdit2 } from "react-icons/fi";
 import defaultimage from '../../Assets/default_image.jpg';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import Navbar from '../../Components/navbar/Navbar';
 import { useSelector } from 'react-redux';
 import Sidebar from '../../Components/sidebar/Sidebar';
 import { IoOpenOutline } from "react-icons/io5";
 import './phoneBookstyle.css'
 import CreatePhoneBook from './CreatePhoneBook';
+import { BsThreeDotsVertical } from "react-icons/bs";
+import { Dropdown, Menu } from 'antd';
 
 const HodPhoneBook = () => {
     const token = useSelector(state => state.loginSlice.user?.token);
@@ -33,7 +33,6 @@ const HodPhoneBook = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [selectedCalStatus, setSelectedCalStatus] = useState(null);
     const [filteredPhonebookData, setFilteredPhonebookData] = useState([]);
-    const [showAddCommentModal, setShowAddCommentModal] = useState(false);
     const [currentComment, setCurrentComment] = useState('');
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [dropdownEntry, setDropdownEntry] = useState(null);
@@ -54,22 +53,35 @@ const HodPhoneBook = () => {
     const [message, setMessage] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [showCommentsModal, setShowCommentsModal] = useState(false);
-    const entriesPerPage = 12;
+    const entriesPerPage = 13;
     const totalPages = Math.ceil(filteredPhonebookData.length / entriesPerPage);
+    const [rtl, setRtl] = useState(null);
+    const [currentIdForComments, setCurrentIdForComments] = useState(null);
+    const [calStatus, setCalStatus] = useState('');
     const navigate = useNavigate();
+    const isSubmitDisabled = !(selectedAgent && csvFile);
 
     const allowedRoles = [
         'HOD',
         'Team Leader',
         'Manager',
-        'Coordinator'
+        'Coordinator',
+        'CEO'
     ];
 
     const calStatusOptions = [
-        { value: 'Interested', label: 'Interested' },
-        { value: 'Rejected', label: 'Rejected' },
-        { value: 'No Answer', label: 'No Answer' }, // Ensure this matches your data
-        { value: 'Not Interested', label: 'Not Interested' }, // Ensure this matches your data
+        {
+            value: 'Req to call',
+            label: rtl === 'true' ? 'طلب الاتصال' : 'Req to call'  // Localized label for 'Req to call'
+        },
+        {
+            value: 'No Answer',
+            label: rtl === 'true' ? 'مرفوض' : 'No Answer'  // Localized label for 'Rejected'
+        },
+        {
+            value: 'Not Interested',
+            label: rtl === 'true' ? 'مرفوض' : 'Not Interested'  // Localized label for 'Rejected'
+        },
     ];
 
     const getHodPhoneBookData = async () => {
@@ -82,17 +94,35 @@ const HodPhoneBook = () => {
                     },
                 }
             );
-            const filteredData = response.data.filter(entry => entry.calstatus !== 'Convert to Lead');
-            const sortedData = filteredData.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-            setHodData(sortedData);
-            setFilteredPhonebookData(sortedData);
-            getAllUsers(token);
 
+            // Filter out entries with 'Convert to Lead' without altering the order
+            const filteredData = response.data.filter(
+                (entry) => entry.calstatus !== 'Convert to Lead'
+            );
+
+            // Preserve the current order of `setFilteredPhonebookData` if it exists, otherwise set filtered data
+            setFilteredPhonebookData((prevData) => {
+                if (prevData.length > 0) {
+                    // Map existing order with updated data to avoid reordering
+                    return prevData.map((prevEntry) =>
+                        filteredData.find((entry) => entry._id === prevEntry._id) || prevEntry
+                    );
+                } else {
+                    return filteredData;
+                }
+            });
+
+            // For HOD-specific data, use filtered data directly
+            setHodData(filteredData);
+
+            // Fetch all users if necessary
+            getAllUsers(token);
         } catch (error) {
-            console.log('Error fetching HOD Phone Book data:', error);
+            console.error('Error fetching HOD Phone Book data:', error);
             setError('No Phone Book Data Available.');
         }
     };
+
 
     const getAllUsers = async () => {
         try {
@@ -104,9 +134,7 @@ const HodPhoneBook = () => {
                     },
                 }
             );
-
             const users = response.data;
-
             // Filter and map for users with role 'Ts Agent' or 'Sales'
             const userOptions = users
                 .filter(user => user.role === 'TS Agent' || user.role === 'Sales')
@@ -114,7 +142,6 @@ const HodPhoneBook = () => {
                     value: user._id,
                     label: user.name,
                 }));
-
             // Filter and map for users with roles 'Ts Team Leader', 'Team Leader', or 'Coordinator'
             const userRoleOptions = users
                 .filter(
@@ -127,7 +154,6 @@ const HodPhoneBook = () => {
                     value: user._id,
                     label: user.name,
                 }));
-
             // Update state with filtered user options
             setAllUsers(userOptions);
             setUserRoleOptions(userRoleOptions); // New state for team leaders/coordinators
@@ -136,7 +162,6 @@ const HodPhoneBook = () => {
             console.error('Error fetching all users:', error);
         }
     };
-
 
     useEffect(() => {
 
@@ -164,114 +189,62 @@ const HodPhoneBook = () => {
         setFilteredPhonebookData(results);
     }, [searchQuery, hodData, selectedUser, selectedCalStatus, startDate, endDate]);
 
-    const handleViewComments = (comments) => {
-        setCommentsToView(comments);
-        setShowViewCommentModal(true);
-    };
+    useEffect(() => {
+        const savedRtl = localStorage.getItem('rtl');
+        setRtl(savedRtl); // Update state with the 'rtl' value from localStorage
+    }, [rtl]);
 
-    const handleViewCommentsClick = (entry) => {
-        handleViewComments(entry.comments);
-    };
-
-    const clearSelectedUser = () => {
-        setSelectedUser(null);
-    };
-
-    // Add Comment API
-    // const handleSaveComment = async () => {
-    //     if (selectedEntry && currentComment.trim()) {
-    //         try {
-    //             if (token) {
-    //                 await axios.post(
-    //                     `/api/phonebook/add-comment`,
-    //                     {
-    //                         phonebookId: selectedEntry._id,
-    //                         comment: currentComment
-    //                     },
-    //                     {
-    //                         headers: {
-    //                             'Authorization': `Bearer ${token}`,
-    //                             'Content-Type': 'application/json'
-    //                         }
-    //                     }
-    //                 );
-
-    //                 // Update local state
-    //                 const updatedData = hodData.map(entry =>
-    //                     entry._id === selectedEntry._id
-    //                         ? { ...entry, comments: [...(entry.comments || []), { remarks: currentComment, createdAt: new Date() }] }
-    //                         : entry
-    //                 );
-
-    //                 const sortedUpdatedData = updatedData.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    //                 setHodData(sortedUpdatedData);
-    //                 setFilteredPhonebookData(sortedUpdatedData);
-    //             } else {
-    //                 navigate('/');
-    //             }
-    //         } catch (error) {
-    //             console.error('Error saving comment:', error);
-    //         }
-    //     }
-    //     setCurrentComment('');
-    //     setSelectedEntry(null);
-    //     setShowAddCommentModal(false);
-    // };
-
-    const handleAddCommentClick = (entry) => {
-        setSelectedEntry(entry);
-        setCurrentComment('');
-        setShowAddCommentModal(true);
-    };
-
-    const updateCallStatus = async (status) => {
-        if (dropdownEntry) {
-            try {
-                if (token) {
-                    await axios.put(
-                        `/api/phonebook/update-calstatus/${dropdownEntry._id}`,
-                        {
-                            calstatus: status
-                        },
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }
-                    );
-
-                    const updatedData = hodData.map((entry) =>
-                        entry._id === dropdownEntry._id ? { ...entry, calstatus: status } : entry
-                    );
-                    // Re-sort updated data by updatedAt
-                    const sortedUpdatedData = updatedData.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                    setHodData(sortedUpdatedData);
-                    setFilteredPhonebookData(sortedUpdatedData);
-                } else {
-                    navigate('/');
-                }
-            } catch (error) {
-                console.error('Error updating call status:', error);
-            }
-        }
-
-        setDropdownEntry(null); // Hide dropdown after selecting status
-        setShowConvertModal(false); // Hide confirmation modal after updating
-    };
-
-    const handleCallStatusChange = (status) => {
+    const handleCallStatusChange = async (id, status) => {
         if (status === 'Convert to Lead') {
             setPendingStatusChange(status);
             setShowConvertModal(true);
         } else {
-            updateCallStatus(status);
+            try {
+                const response = await updateCallStatusAPI(id, status); // Call the API with status and id
+                if (response.success) {
+                    // Update the table data locally to reflect the new status
+                    setFilteredPhonebookData((prevData) =>
+                        prevData.map((entry) =>
+                            entry._id === id ? { ...entry, calstatus: status } : entry
+                        )
+                    );
+                } else {
+                    console.error('Error updating status:', response.message);
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+            }
         }
     };
 
-    const handleConfirmConversion = () => {
-        updateCallStatus(pendingStatusChange);
+    const updateCallStatusAPI = async (id, status) => {
+        try {
+            // Make the API call to update the call status
+            const response = await fetch(`/api/phonebook/update-calstatus/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ calstatus: status }),
+            });
+
+            // Fetch updated phonebook data
+            await getHodPhoneBookData(token);
+
+            // Check if the status is "Not Interested"
+            if (status === 'Not Interested') {
+                setCurrentIdForComments(id); // Store the unique ID
+                setShowCommentsModal(true); // Open the modal
+            }
+            setCalStatus(status);
+            return response.json();
+        } catch (error) {
+            console.error('API Call Error:', error);
+            throw error;
+        }
     };
+
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
@@ -304,7 +277,7 @@ const HodPhoneBook = () => {
             });
 
             // Use the selected agent for userId
-            formData.append('userId', selectedAgent.value); // Assuming single agent selection
+            formData.append('userId', selectedAgent?.value); // Assuming single agent selection
 
             // Append additional fields
             formData.append('pipelineId', piprlineID); // Ensure pipelineID is defined
@@ -367,7 +340,7 @@ const HodPhoneBook = () => {
     };
 
     // Save comment API call and update state
-    const handleSaveComment = async () => {
+    const handleSaveComment = async (id) => {
         if (selectedEntry && currentComment.trim()) {
             try {
                 if (token) {
@@ -388,15 +361,17 @@ const HodPhoneBook = () => {
                     // Update local state with the new comment
                     const updatedData = hodData.map(entry =>
                         entry._id === selectedEntry._id
-                            ? { ...entry, comments: [...(entry.comments || []), { remarks: currentComment, createdAt: new Date() }] }
+                            ? {
+                                ...entry,
+                                comments: [...(entry.comments || []), { remarks: currentComment, createdAt: new Date() }]
+                            }
                             : entry
                     );
 
-                    const sortedUpdatedData = updatedData.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                    getHodPhoneBookData();
-                    setHodData(sortedUpdatedData);
-                    setFilteredPhonebookData(sortedUpdatedData);
-                    setShowCommentsModal(false)
+                    // Update the state without sorting
+                    setHodData(updatedData);
+                    setFilteredPhonebookData(updatedData);
+                    setShowCommentsModal(false);
                 } else {
                     navigate('/');
                 }
@@ -407,182 +382,292 @@ const HodPhoneBook = () => {
         setCurrentComment(''); // Clear the comment field
     };
 
+    const renderMenu = (id) => {
+        const filteredOptions = calStatusOptions.filter(option => option.value !== calStatus);
+    
+        return (
+            <>
+                <Menu
+                    style={{
+                        padding: '10px 20px',
+                        inset: '0px 0px auto auto',
+                        display: 'flex',
+                        gap: '5px',
+                        flexDirection: 'column',
+                        backgroundColor: '#fff',
+                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                    }}
+                >
+                    {filteredOptions.map(option => (
+                        <Menu.Item
+                            key={option.value}
+                            onClick={() => {
+                                updateCallStatusAPI(id, option.value); // Update the status via API
+                            }}
+                        >
+                            {option.label}
+                        </Menu.Item>
+                    ))}
+                </Menu>
+            </>
+        );
+    };
+
     return (
         <>
-            <Container fluid>
+            <Container fluid style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
                 <Row>
                     <Col xs={12} md={12} lg={2}>
-                        <Sidebar />
+                        {/* <Sidebar /> */}
                     </Col>
 
                     <Col xs={12} md={12} lg={10}>
-                        <Card className='leads_main_cards'>
+                        <Card className='leads_main_cards mt-4' >
                             <div className="phonebook-container">
 
-                                <div style={{ display: 'flex', justifyContent: 'end', gap: '15px', alignItems: 'end', marginBottom: '20px' }}>
-                                    <Button className='button_one' onClick={() => setShowImportModal(true)}>Import CSV</Button>
-                                    {/* <Button className='button_two' onClick={() => navigate('/generatereport')} >Call History</Button> */}
-                                </div>
+                                {role !== 'CEO' && (
+                                    <div style={{ display: 'flex', justifyContent: 'end', gap: '15px', alignItems: 'end', marginBottom: '20px' }}>
+                                        <Button className='button_one' onClick={() => setShowImportModal(true)}>
+                                            {rtl === 'true' ? 'استيراد ملف CSV' : 'Import CSV'}
+                                        </Button>
+                                    </div>
+                                )}
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '15px', alignItems: 'center' }}>
-                                    <Form.Group controlId="searchBarNumber" className='w-100'>
+                                    {/* Search by Number */}
+                                    <Form.Group controlId="searchBarNumber" className="w-100">
                                         <Form.Control
                                             type="text"
-                                            placeholder="Search by Number"
+                                            placeholder={rtl === 'true' ? 'بحث برقم' : 'Search by Number'} // Localized placeholder
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className='searchfield'
+                                            className="searchfield input_field_input_field"
+                                            style={{
+                                                textAlign: rtl === 'true' ? 'right' : 'left', // Adjust text alignment
+                                                direction: rtl === 'true' ? 'rtl' : 'ltr', // Adjust direction
+                                            }}
                                         />
                                     </Form.Group>
 
-                                    <Form.Group controlId="selectUser" className='w-100'>
+                                    {/* Select User */}
+                                    <Form.Group controlId="selectUser" className="w-100">
                                         <Select
                                             options={allUsers}
                                             value={selectedUser}
                                             onChange={setSelectedUser}
-                                            placeholder="Select User"
+                                            placeholder={rtl === 'true' ? 'اختر مستخدم' : 'Select User'} // Localized placeholder
                                             isClearable
-                                            className='searchfield'
+                                            className="searchfield input_field_input_field"
+                                            classNamePrefix="react-select"
+                                            styles={{
+                                                input: (base) => ({
+                                                    ...base,
+                                                    textAlign: rtl === 'true' ? 'right' : 'left', // Adjust text alignment
+                                                    direction: rtl === 'true' ? 'rtl' : 'ltr', // Adjust direction
+                                                }),
+                                            }}
                                         />
                                     </Form.Group>
 
-                                    <Form.Group controlId="selectCalStatus" className='w-100'>
+                                    {/* Select Call Status */}
+                                    <Form.Group controlId="selectCalStatus" className="w-100">
                                         <Select
                                             options={calStatusOptions}
                                             value={selectedCalStatus}
                                             onChange={setSelectedCalStatus}
-                                            placeholder="Select Call Status"
+                                            placeholder={rtl === 'true' ? 'اختر حالة المكالمة' : 'Select Call Status'} // Localized placeholder
                                             isClearable
-                                            className='searchfield'
+                                            className="searchfield input_field_input_field"
+                                            classNamePrefix="react-select"
+                                            styles={{
+                                                input: (base) => ({
+                                                    ...base,
+                                                    textAlign: rtl === 'true' ? 'right' : 'left', // Adjust text alignment
+                                                    direction: rtl === 'true' ? 'rtl' : 'ltr', // Adjust direction
+                                                }),
+                                            }}
                                         />
                                     </Form.Group>
 
-                                    <div className='w-100' style={{ display: 'flex', gap: '15px' }} >
+                                    {/* Date Pickers */}
+                                    <div className="w-100" style={{ display: 'flex', gap: '15px' }}>
                                         <DatePicker
                                             selected={startDate}
-                                            onChange={date => setStartDate(date)}
-                                            placeholderText="Start Date"
+                                            onChange={(date) => setStartDate(date)}
+                                            placeholderText={rtl === 'true' ? 'تاريخ البدء' : 'Start Date'} // Localized placeholder
                                             dateFormat="yyyy/MM/dd"
-                                            className="form-control searchfield"
+                                            className="form-control searchfield input_field_input_field"
+                                            style={{
+                                                textAlign: rtl === 'true' ? 'right' : 'left', // Adjust text alignment
+                                                direction: rtl === 'true' ? 'rtl' : 'ltr', // Adjust direction
+                                            }}
                                         />
                                         <DatePicker
                                             selected={endDate}
-                                            onChange={date => setEndDate(date)}
-                                            placeholderText="End Date"
+                                            onChange={(date) => setEndDate(date)}
+                                            placeholderText={rtl === 'true' ? 'تاريخ الانتهاء' : 'End Date'} // Localized placeholder
                                             dateFormat="yyyy/MM/dd"
-                                            className="form-control searchfield"
+                                            className="form-control searchfield input_field_input_field"
+                                            style={{
+                                                textAlign: rtl === 'true' ? 'right' : 'left', // Adjust text alignment
+                                                direction: rtl === 'true' ? 'rtl' : 'ltr', // Adjust direction
+                                            }}
                                         />
                                     </div>
                                 </div>
-
 
                                 <div>
                                     {error ? (
                                         <p style={{ color: 'red' }}>{error}</p>
                                     ) : hasAccess ? (
                                         filteredPhonebookData.length > 0 ? (
-
-                                            <Table hover bordered responsive className='mt-3 table_main_container' size='md'>
-                                                <thead style={{ backgroundColor: '#f8f9fd' }}>
+                                            <Table hover bordered responsive striped className="mt-1 table_main_container" size="md" variant='dark' >
+                                                <thead style={{ backgroundColor: '#d7aa47' }}>
                                                     <tr
                                                         className="teble_tr_class"
                                                         style={{
-                                                            backgroundColor: '#e9ecef',
+                                                            backgroundColor: '#000',
                                                             color: '#343a40',
-                                                            borderBottom: '2px solid #dee2e6',
+                                                            borderBottom: '1px solid #d7aa47',
                                                             transition: 'background-color 0.3s ease',
                                                         }}
                                                     >
-                                                        <th className="equal-width" style={{ backgroundColor: '#f8f9fd' }}>Uploaded by</th>
-                                                        <th className="equal-width" style={{ backgroundColor: '#f8f9fd' }}>User</th>
-                                                        <th className="equal-width" style={{ backgroundColor: '#f8f9fd' }}>Pipeline</th>
-                                                        <th className="equal-width" style={{ backgroundColor: '#f8f9fd' }}>Phone</th>
-                                                        <th className="equal-width" style={{ backgroundColor: '#f8f9fd' }}>Call Status</th>
-                                                        <th className="equal-width" style={{ backgroundColor: '#f8f9fd' }}>Action</th>
+                                                        <th className="equal-width" style={{ backgroundColor: '#d7aa47', color: 'white' }}>
+                                                            {rtl === 'true' ? 'تم التحميل بواسطة' : 'Uploaded by'}
+                                                        </th>
+                                                        <th className="equal-width" style={{ backgroundColor: '#d7aa47', color: 'white' }}>
+                                                            {rtl === 'true' ? 'المستخدم' : 'User'}
+                                                        </th>
+                                                        <th className="equal-width" style={{ backgroundColor: '#d7aa47', color: 'white' }}>
+                                                            {rtl === 'true' ? 'الأنبوب' : 'Pipeline'}
+                                                        </th>
+                                                        <th className="equal-width" style={{ backgroundColor: '#d7aa47', color: 'white' }}>
+                                                            {rtl === 'true' ? 'الهاتف' : 'Phone'}
+                                                        </th>
+                                                        <th className="equal-width" style={{ backgroundColor: '#d7aa47', color: 'white' }}>
+                                                            {rtl === 'true' ? 'الحالة' : 'Status'}
+                                                        </th>
+                                                        <th className="equal-width" style={{ backgroundColor: '#d7aa47', color: 'white' }}>
+                                                            {rtl === 'true' ? 'حالة المكالمة' : 'Call Status'}
+                                                        </th>
+                                                        <th className="equal-width" style={{ backgroundColor: '#d7aa47', color: 'white' }}>
+                                                            {rtl === 'true' ? 'الإجراء' : 'Action'}
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {currentEntries.map((entry, index) => (
                                                         <tr key={index}>
-                                                            <td className='table_td_class'>{entry.uploaded_by?.name ? entry.uploaded_by?.name : 'N/A'}</td>
-                                                            <td className='table_td_class'>{entry.user.name}</td>
-                                                            <td className='table_td_class'>{entry.pipeline.name}</td>
-                                                            <td className='table_td_class'>{entry.number}</td>
-                                                            <td className='table_td_class'>{entry.calstatus}</td>
-                                                            <td style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px' }}>
-                                                                {dropdownEntry && dropdownEntry._id === entry._id ? (
-                                                                    <Dropdown>
-                                                                        <Dropdown.Toggle className="dropdown_menu" id="dropdown-basic">
-                                                                            {entry.calstatus || 'Select Status'}
-                                                                        </Dropdown.Toggle>
-                                                                        <Dropdown.Menu>
-                                                                            <Dropdown.Item onClick={() => handleCallStatusChange('Req to call')}>Req to call</Dropdown.Item>
-                                                                            <Dropdown.Item onClick={() => handleCallStatusChange('Interested')}>Interested</Dropdown.Item>
-                                                                            <Dropdown.Item onClick={() => handleCallStatusChange('Rejected')}>Rejected</Dropdown.Item>
-                                                                        </Dropdown.Menu>
-                                                                    </Dropdown>
-                                                                ) : (
-                                                                    <div className='editAction'>
-                                                                        <FiEdit2
-                                                                            onClick={() => setDropdownEntry(entry)}
-                                                                            style={{ fontSize: '12px', cursor: 'pointer', color: 'white' }}
-                                                                        />
-                                                                        <div className="tooltip">Edit Status</div>
-                                                                    </div>
-                                                                )}
-                                                                {/* <div className='addAction'>
-                                                                    <MdAdd
-                                                                        onClick={() => handleAddCommentClick(entry)}
-                                                                        style={{ fontSize: '15px', cursor: 'pointer', color: 'white' }}
-                                                                    />
-                                                                    <div className="tooltip">Add Comments</div>
-                                                                </div> */}
-                                                                <div className='addAction'>
+                                                            <td className="table_td_class">
+                                                                <div className="name-container">
+                                                                    {entry.uploaded_by.name.split(' ').slice(0, 2).join(' ')}
+                                                                    {entry.uploaded_by.name.split(' ').length > 15 && '...'}
+                                                                    <span className="tooltip">{entry.uploaded_by.name}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td style={{ textAlign: 'center' }} className="table_td_class">
+                                                                <div className="name-container">
+                                                                    {entry.user?.name
+                                                                        ? entry.user.name.split(' ').slice(0, 15).join(' ') +
+                                                                        (entry.user.name.split(' ').length > 15 ? '...' : '')
+                                                                        : 'N/A'}
+                                                                    {entry.user?.name && <span className="tooltip">{entry.user.name}</span>}
+                                                                </div>
+                                                            </td>
+                                                            <td className="table_td_class">{entry.pipeline.name}</td>
+                                                            <td className="table_td_class" style={{ textAlign: 'center', direction: rtl === 'true' ? 'ltr' : 'ltr' }}>{entry.number}</td>
+                                                            <td className="table_td_class">
+                                                                {(() => {
+                                                                    const date = new Date(entry.createdAt);
+                                                                    const today = new Date();
+                                                                    const yesterday = new Date();
+                                                                    yesterday.setDate(today.getDate() - 1);
+
+                                                                    today.setHours(0, 0, 0, 0);
+                                                                    yesterday.setHours(0, 0, 0, 0);
+                                                                    date.setHours(0, 0, 0, 0);
+
+                                                                    if (date.getTime() === today.getTime()) {
+                                                                        return 'Today';
+                                                                    } else if (date.getTime() === yesterday.getTime()) {
+                                                                        return 'Yesterday';
+                                                                    } else {
+                                                                        return date.toLocaleDateString('en-US', { weekday: 'long' });
+                                                                    }
+                                                                })()}
+                                                            </td>
+                                                            <td
+                                                                style={{
+                                                                    textAlign: 'center',
+                                                                    backgroundColor: '#000',
+                                                                    color:
+                                                                        entry.calstatus === 'Not Interested'
+                                                                            ? 'red'
+                                                                            : entry.calstatus === 'No Answer'
+                                                                                ? '#d7aa47'
+                                                                                : 'white',
+                                                                    border: '1px solid #d7aa47',
+                                                                }}
+                                                            >
+                                                                {entry.calstatus}
+                                                            </td>
+                                                            <td
+                                                                className="table_td_class"
+                                                                style={{
+                                                                    textAlign: 'center',
+                                                                    display: 'flex',
+                                                                    justifyContent: 'center',
+                                                                    alignItems: 'center',
+                                                                    gap: '15px',
+                                                                }}
+                                                            >
+                                                                <Dropdown overlay={renderMenu(entry._id,)} trigger={['click']}>
+                                                                    <BsThreeDotsVertical style={{ cursor: 'pointer', fontSize: '25px' }} />
+                                                                </Dropdown>
+                                                                <div className="addAction">
                                                                     <MdAdd
                                                                         style={{ fontSize: '15px', cursor: 'pointer', color: 'white' }}
                                                                         onClick={() => handleCommentsClick(entry)}
                                                                     />
-                                                                    <div className="tooltip">View/Add Comments</div>
+                                                                    <div className="tooltip"> {rtl === 'true' ? 'عرض/إضافة تعليقات' : 'View/Add Comments'}</div>
                                                                 </div>
-                                                                {/* <div className='viewAction'>
-                                                                    <AiOutlineEye
-                                                                        onClick={() => handleViewCommentsClick(entry)}
-                                                                        style={{ fontSize: '15px', cursor: 'pointer', color: 'white' }}
-                                                                    />
-                                                                    <div className="tooltip">View Comments</div>
-                                                                </div> */}
-                                                                <div className='viewAction'>
+                                                                <div className="viewAction">
                                                                     <IoOpenOutline
                                                                         onClick={() => HandleCreatePhoneBook(entry.number, entry._id)}
                                                                         style={{ fontSize: '15px', cursor: 'pointer', color: 'white' }}
                                                                     />
-                                                                    <div className="tooltip">Create Lead</div>
+                                                                    <div className="tooltip"> {rtl === 'true' ? 'إنشاء عميل' : 'Create Lead'}</div>
                                                                 </div>
                                                             </td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
                                             </Table>
-
                                         ) : (
-                                            <p className='text-center mt-5'>No Data Available</p>
+                                            <p className="text-center mt-5 mutual_heading_class">No Data Available</p>
                                         )
                                     ) : (
-                                        <p>You do not have access to this page.</p>
+                                        <p className='mutual_class_color' >{rtl === 'true' ? 'ليس لديك صلاحية للوصول إلى هذه الصفحة.' : 'You do not have access to this page.'}</p>
                                     )}
-
-
-                                    {/* Pagination controls */}
-                                    <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
-                                        <Button variant="secondary" onClick={handlePreviousPage} disabled={currentPage === 1}>
-                                            Previous
+                                    <div
+                                        className="pagination-controls"
+                                        style={{ display: 'flex', justifyContent: 'center' }}
+                                    >
+                                        <Button className="button_one" onClick={handlePreviousPage} disabled={currentPage === 1}>
+                                            {rtl === 'true' ? 'السابق' : 'Previous'}
                                         </Button>
-                                        <span style={{ padding: '0 15px', lineHeight: '38px' }}>
-                                            Page {currentPage} of {totalPages}
+
+                                        <span
+                                            className="mutual_heading_class"
+                                            style={{ padding: '0 15px', lineHeight: '38px' }}
+                                        >
+                                            {rtl === 'true' ? `الصفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
                                         </span>
-                                        <Button variant="secondary" onClick={handleNextPage} disabled={currentPage === totalPages}>
-                                            Next
+
+                                        <Button className="button_one" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                                            {rtl === 'true' ? 'التالي' : 'Next'}
                                         </Button>
+
                                     </div>
                                 </div>
 
@@ -624,95 +709,138 @@ const HodPhoneBook = () => {
                                             )}
                                         </ul>
                                     </Modal.Body>
-                                    {/* <Modal.Footer>
-                        <Button variant="secondary" onClick={() => setShowViewCommentModal(false)}>
-                            Close
-                        </Button>
-                    </Modal.Footer> */}
                                 </Modal>
 
+
                                 {/* Add Comment Modal */}
-                                <Modal show={showCommentsModal} onHide={() => setShowCommentsModal(false)} centered size="md">
-                                    <Modal.Header closeButton>
-                                        <Modal.Title>Comments</Modal.Title>
+                                <Modal
+                                    show={showCommentsModal}
+                                    onHide={() => setShowCommentsModal(false)}
+                                    centered
+                                    size="md"
+                                >
+                                    <Modal.Header
+                                        closeButton
+                                        style={{
+                                            border: 'none',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Modal.Title className="mutual_class_color">
+                                            {rtl === 'true' ? 'تعليقات' : 'Comments'}
+                                        </Modal.Title>
                                     </Modal.Header>
-                                    <Modal.Body>
-                                        <div className="comments-section" style={{
-                                            height: '100%',
-                                            maxHeight: '300px',
-                                            overflowY: 'scroll',
-                                            padding: '20px',
-                                            backgroundColor: '#f5f5f5',
-                                            borderRadius: '15px',
-                                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-                                            marginTop: '20px',
-                                            position: 'relative'
-                                        }}>
+                                    <Modal.Body
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <div
+                                            className="comments-section"
+                                            style={{
+                                                height: '100%',
+                                                maxHeight: '300px',
+                                                overflowY: 'scroll',
+                                                padding: '20px',
+                                                backgroundColor: '#f5f5f5',
+                                                borderRadius: '15px',
+                                                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                                                position: 'relative',
+                                            }}
+                                        >
                                             {commentsToView.length > 0 ? (
-                                                commentsToView.map((comment, index) => (
-                                                    <div key={index} className="comment-item" style={{
-                                                        display: 'flex',
-                                                        flexDirection: comment.user.name === 'CurrentUser' ? 'row-reverse' : 'row', // Align comments differently
-                                                        alignItems: 'flex-start',
-                                                        marginBottom: '20px',
-                                                        animation: 'fadeIn 0.5s ease-in-out'
-                                                    }}>
+                                                commentsToView.slice().reverse().map((comment, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="comment-item"
+                                                        style={{
+                                                            display:
+                                                                comment?.user?.name === 'CurrentUser' ? 'row-reverse' : 'row',
+                                                            alignItems: 'flex-start',
+                                                            marginBottom: '20px',
+                                                            animation: 'fadeIn 0.5s ease-in-out',
+                                                        }}
+                                                    >
                                                         {/* User Image */}
-                                                        <div className="user-image" style={{
-                                                            width: '45px',
-                                                            height: '45px',
-                                                            borderRadius: '50%',
-                                                            overflow: 'hidden',
-                                                            marginRight: '15px',
-                                                            marginLeft: comment.user.name === 'CurrentUser' ? '0' : '15px',
-                                                            marginRight: comment.user.name === 'CurrentUser' ? '15px' : '0',
-                                                            border: '2px solid #fff',  // Add a border around the image
-                                                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)' // Slight shadow to create depth
-                                                        }}>
+                                                        <div
+                                                            className="user-image"
+                                                            style={{
+                                                                width: '45px',
+                                                                height: '45px',
+                                                                borderRadius: '50%',
+                                                                overflow: 'hidden',
+                                                                marginRight:
+                                                                    comment?.user?.name === 'CurrentUser' ? '15px' : '0',
+                                                                marginLeft:
+                                                                    comment?.user?.name === 'CurrentUser' ? '0' : '15px',
+                                                                border: '2px solid #fff',
+                                                                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                                                            }}
+                                                        >
                                                             <Image
-                                                                src={comment.user?.image ? `/images/${comment.user?.image}` : defaultimage}
+                                                                src={
+                                                                    comment.user?.image
+                                                                        ? `/images/${comment.user?.image}`
+                                                                        : defaultimage
+                                                                }
                                                                 alt="User_image"
                                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                             />
                                                         </div>
 
                                                         {/* Comment Text */}
-                                                        <div className="comment-text" style={{
-                                                            backgroundColor: comment.user.name === 'CurrentUser' ? '#4CAF50' : '#fff', // Different colors for current user
-                                                            color: comment.user.name === 'CurrentUser' ? '#fff' : '#333', // Dark text for others, light for current user
-                                                            borderRadius: '15px',
-                                                            padding: '12px 18px',
-                                                            maxWidth: '75%',
-                                                            wordWrap: 'break-word',
-                                                            boxShadow: comment.user.name === 'CurrentUser' ? '0 2px 10px rgba(0, 128, 0, 0.2)' : '0 2px 10px rgba(0, 0, 0, 0.1)',
-                                                            position: 'relative',
-                                                            marginBottom: '8px',
-                                                            fontSize: '14px',
-                                                            lineHeight: '1.5',
-                                                        }}>
-                                                            <p style={{ margin: '0 0 8px', color: 'inherit' }}>{comment.remarks}</p>
+                                                        <div
+                                                            className="comment-text"
+                                                            style={{
+                                                                backgroundColor:
+                                                                    comment?.user?.name === 'CurrentUser' ? '#4CAF50' : '#fff',
+                                                                color:
+                                                                    comment?.user?.name === 'CurrentUser' ? '#fff' : '#333',
+                                                                borderRadius: '15px',
+                                                                padding: '12px 18px',
+                                                                maxWidth: '75%',
+                                                                wordWrap: 'break-word',
+                                                                boxShadow:
+                                                                    comment?.user?.name === 'CurrentUser'
+                                                                        ? '0 2px 10px rgba(0, 128, 0, 0.2)'
+                                                                        : '0 2px 10px rgba(0, 0, 0, 0.1)',
+                                                                position: 'relative',
+                                                                marginBottom: '8px',
+                                                                fontSize: '14px',
+                                                                lineHeight: '1.5',
+                                                            }}
+                                                        >
+                                                            <p style={{ margin: '0 0 8px', color: 'inherit' }}>
+                                                                {comment.remarks}
+                                                            </p>
 
                                                             {/* Comment Author & Time */}
-                                                            <div style={{
-                                                                fontSize: '12px',
-                                                                color: comment.user.name === 'CurrentUser' ? '#e0e0e0' : '#888',
-                                                                display: 'flex',
-                                                                justifyContent: 'space-between',
-                                                                flexDirection: 'column'
-                                                            }}>
+                                                            <div
+                                                                style={{
+                                                                    fontSize: '12px',
+                                                                    color:
+                                                                        comment?.user?.name === 'CurrentUser'
+                                                                            ? '#e0e0e0'
+                                                                            : '#888',
+                                                                    display: 'flex',
+                                                                    justifyContent: 'space-between',
+                                                                    flexDirection: 'column',
+                                                                }}
+                                                            >
                                                                 <div>
-                                                                    <strong>{comment.user.name}</strong>
+                                                                    <strong>{comment?.user?.name}</strong>
                                                                 </div>
 
                                                                 <div>
-                                                                    <p className='mb-0' style={{ fontSize: '12px' }}>
+                                                                    <p className="mb-0" style={{ fontSize: '12px' }}>
                                                                         {new Date(comment.createdAt).toLocaleDateString('en-US', {
                                                                             year: 'numeric',
                                                                             month: 'long',
                                                                             day: 'numeric',
                                                                             hour: '2-digit',
                                                                             minute: '2-digit',
-                                                                            hour12: true
+                                                                            hour12: true,
                                                                         })}
                                                                     </p>
                                                                 </div>
@@ -721,28 +849,43 @@ const HodPhoneBook = () => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <p style={{ fontSize: '14px', color: '#888' }}>No comments yet. Be the first to add one!</p>
+                                                <p style={{ fontSize: '14px', color: '#888' }}>
+                                                    {rtl === 'true'
+                                                        ? 'لا تعليقات بعد. كن الأول في إضافة تعليق!'
+                                                        : 'No comments yet. Be the first to add one!'}
+                                                </p>
                                             )}
                                         </div>
 
-
                                         {/* Text area for adding a new comment */}
-                                        <Form.Group controlId="commentTextarea" className="mt-3">
+                                        <Form.Group controlId="commentTextarea" className="mt-2">
                                             <Form.Control
                                                 as="textarea"
                                                 rows={1}
                                                 value={currentComment}
                                                 onChange={(e) => setCurrentComment(e.target.value)}
-                                                placeholder="Enter your comment here"
+                                                placeholder={
+                                                    rtl === 'true' ? 'أدخل تعليقك هنا' : 'Enter your comment here'
+                                                }
                                             />
                                         </Form.Group>
                                     </Modal.Body>
-                                    <Modal.Footer>
-                                        <Button className='all_single_leads_button' onClick={handleSaveComment}>
-                                            Save Comment
+                                    <Modal.Footer
+                                        style={{
+                                            border: 'none',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Button
+                                            className="all_common_btn_single_lead"
+                                            onClick={() => handleSaveComment(currentIdForComments)}
+                                        >
+                                            {rtl === 'true' ? 'حفظ التعليق' : 'Save Comment'}
                                         </Button>
                                     </Modal.Footer>
                                 </Modal>
+
+
 
                                 {/* Convert to Lead Confirmation Modal */}
                                 <Modal show={showConvertModal} onHide={() => setShowConvertModal(false)} centered>
@@ -750,14 +893,6 @@ const HodPhoneBook = () => {
                                         <Modal.Title>Confirm Conversion</Modal.Title>
                                     </Modal.Header>
                                     <Modal.Body>Are you sure you want to convert this status to Lead?</Modal.Body>
-                                    <Modal.Footer>
-                                        {/* <Button variant="secondary" onClick={() => setShowConvertModal(false)}>
-                            Cancel
-                        </Button> */}
-                                        <Button className='button_one' onClick={handleConfirmConversion}>
-                                            Confirm
-                                        </Button>
-                                    </Modal.Footer>
                                 </Modal>
 
                                 <Modal
@@ -766,14 +901,14 @@ const HodPhoneBook = () => {
                                     centered
                                     show={showImportModal} onHide={() => setShowImportModal(false)} style={{ borderRadius: '20px' }}
                                 >
-                                    <Modal.Header closeButton>
-                                        <Modal.Title>Import CSV</Modal.Title>
+                                    <Modal.Header closeButton style={{ border: 'none' }} >
+                                        <Modal.Title className='mutual_class_color' >Import CSV</Modal.Title>
                                     </Modal.Header>
                                     <Modal.Body>
                                         <Form>
 
                                             <Form.Group controlId="selectAgent" className="w-100">
-                                                <Form.Label>Select Agent</Form.Label>
+                                                <Form.Label className='mutual_class_color' >Select Agent</Form.Label>
                                                 <Select
                                                     options={allUsers} // Ensure allUsers is defined
                                                     placeholder="Select an agent"
@@ -785,7 +920,7 @@ const HodPhoneBook = () => {
 
                                             {!(role === "Team Leader" || role === "Coordinator") && (
                                                 <Form.Group controlId="selectUser" className="w-100">
-                                                    <Form.Label>Select Team Leader / Coordinator</Form.Label>
+                                                    <Form.Label className='mutual_class_color mt-2'>Select Team Leader / Coordinator</Form.Label>
                                                     <Select
                                                         options={userRoleOptions}
                                                         placeholder="Select a team leader or coordinator"
@@ -798,7 +933,7 @@ const HodPhoneBook = () => {
                                             )}
 
                                             <Form.Group controlId="csvFile">
-                                                <Form.Label>Upload CSV</Form.Label>
+                                                <Form.Label className='mutual_class_color mt-2'>Upload CSV</Form.Label>
                                                 <Form.Control
                                                     type="file"
                                                     accept=".csv"
@@ -809,9 +944,8 @@ const HodPhoneBook = () => {
 
                                         </Form>
                                     </Modal.Body>
-                                    <Modal.Footer>
-
-                                        <Button className='button_one' onClick={handleImportSubmit}>
+                                    <Modal.Footer style={{ border: 'none' }}>
+                                        <Button className='button_one' onClick={handleImportSubmit} disabled={isSubmitDisabled}>
                                             Upload
                                         </Button>
                                     </Modal.Footer>

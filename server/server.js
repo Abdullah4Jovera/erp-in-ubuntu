@@ -9,7 +9,6 @@ const { initializeSocket } = require('./socket');
 const cron = require('node-cron');
 // Load environment variables
 dotenv.config();
-
 // Import routers
 const leadRouter = require('./routes/leadRouter');
 const dealRouter = require('./routes/dealRouter');
@@ -38,21 +37,15 @@ const labelRouter = require('./routes/labelRouter');
 const requestRouter = require('./routes/requestRouter');
 const leadConfigRouter= require('./routes/leadConfigRouter')
 const contractStagesRouter= require('./routes/contractStageRouter')
-
-
-
-
+const databaseRouter= require('./routes/databaseRouter')
 const app = express();
 const port = process.env.PORT || 4000; // Use environment variable for port
 const server = http.createServer(app);
 const fetchAndStoreLeads = require('./leadFetcher');
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/erp3', {
-   
-})
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.error('Error connecting to MongoDB:', err));
-
+mongoose.connect('mongodb://localhost:27017/crm', { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Error connecting to MongoDB:', err));
 // Middleware
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -60,32 +53,26 @@ app.use(express.json());
 app.use('/lead_files', express.static(path.join(__dirname, 'lead_files')));
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use('/uploads', express.static(path.join(__dirname, './uploads')));
-
 // Socket.IO setup
 (async () => {
     const io = await initializeSocket(server); // Await the initialization
-
     // Socket events
     io.on('connection', (socket) => {
         console.log('A user connected');
-
         // Join a room based on lead ID
         socket.on('join_lead_room', (leadId) => {
             socket.join(`lead_${leadId}`);
             console.log(`User joined lead room: lead_${leadId}`);
         });
-
         // Join a room based on user ID
         const userId = socket.handshake.query.userId;
         socket.join(`user_${userId}`);
         console.log(`User connected with ID: ${userId}`);
-
         // Handle disconnect
         socket.on('disconnect', () => {
             console.log('User disconnected');
         });
     });
-
     // Initialize routers
     app.use('/api/clients', clientRouter);
     app.use('/api/leads', leadRouter);
@@ -96,7 +83,7 @@ app.use('/uploads', express.static(path.join(__dirname, './uploads')));
     app.use('/api/branch', branchRouter);
     app.use('/api/leadstages', leadstageRouter);
     app.use('/api/productstages', productstageRouter);
-    app.use('/api/products', productsRouter);
+    app.use('/api/products', productsRouter); 
     app.use('/api/leadtypes', leadtypesRouter);
     app.use('/api/deal-stages', dealstagesRouter);
     app.use('/api/contracts', contractRouter);
@@ -113,11 +100,8 @@ app.use('/uploads', express.static(path.join(__dirname, './uploads')));
     app.use('/api/request', requestRouter);
     app.use('/api/lead-config', leadConfigRouter);
     app.use('/api/contract-stages', contractStagesRouter);
-
-
-
+    app.use('/api/database', databaseRouter);
     app.use('/api/phonebook', phonebookRouter);
-
     cron.schedule('34 14 * * *', fetchAndStoreLeads);
     // Start the server
     server.listen(port, () => {
