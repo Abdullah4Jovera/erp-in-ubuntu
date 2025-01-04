@@ -652,7 +652,7 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                                 <Form.Group className="mb-3" controlId="clientPhone">
                                     <Form.Label
                                         className='mutual_heading_class'
-                                        // style={{ direction: rtl === 'true' ? 'rtl' : 'rtl' }}
+                                    // style={{ direction: rtl === 'true' ? 'rtl' : 'rtl' }}
                                     >
                                         {rtl === 'true' ? 'هاتف العميل' : 'Client Phone'} {/* Localized label text */}
                                     </Form.Label>
@@ -685,7 +685,7 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                                 </Form.Label>
                                 <Form.Control
                                     type="text"
-                                    placeholder={rtl === 'true' ? 'أدخل رقم الواتس آب' : 'Enter WhatsApp Number'} 
+                                    placeholder={rtl === 'true' ? 'أدخل رقم الواتس آب' : 'Enter WhatsApp Number'}
                                     className='input_field_input_field'
                                     name="clientPhone"
                                     value={whatsappContact?.replace(/\s/g, '')} // Remove spaces from the display
@@ -907,13 +907,20 @@ const CreatePhoneBook = ({ setPhoneBookModal, phoneBookModal, fetchData, getHodP
                                         isInvalid={!!errors.product_stage}
                                         disabled={isClientNameDisabled} // Disable based on state
                                     >
-                                        <option value=""> {rtl === 'true' ? 'اختر مرحلة المنتج' : 'Select Product Stage'}</option>
-                                        {productStage.map(stage => (
-                                            <option key={stage._id} value={stage._id}>
-                                                {stage.name}
-                                            </option>
-                                        ))}
+                                        <option value="">
+                                            {rtl === 'true' ? 'اختر مرحلة المنتج' : 'Select Product Stage'}
+                                        </option>
+                                        {Array.isArray(productStage) && productStage.length > 0 ? (
+                                            productStage.map(stage => (
+                                                <option key={stage._id} value={stage._id}>
+                                                    {stage.name}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option value="" disabled>No product stages available</option> // Fallback option if no stages are available
+                                        )}
                                     </Form.Select>
+
                                     <Form.Control.Feedback type="invalid">
                                         {errors.product_stage}
                                     </Form.Control.Feedback>

@@ -79,26 +79,35 @@ const Deal = () => {
         let currentMonthDealsCount = 0;
         let currentMonthCommissionAmount = 0;
 
-        dealsData.forEach(deal => {
-            // Increment total deals count
-            totalDealsCount++;
-
-            // Extract commission details from service_commission_id
-            const commissionDetails = deal.service_commission_id || {};
-
-            // Calculate total commission amount from relevant fields
-            const dealTotalCommission = commissionDetails.without_vat_commission || 0;
-            totalCommissionAmount += dealTotalCommission;
-
-            // Check if the deal is from the current month and year
-            const dealDate = new Date(deal.date);
-            if (dealDate.getMonth() === currentMonth && dealDate.getFullYear() === currentYear) {
-                currentMonthDealsCount++;
-
-                // Calculate current month commission amount
-                currentMonthCommissionAmount += dealTotalCommission;
-            }
-        });
+        if (Array.isArray(dealsData)) {
+            dealsData.forEach(deal => {
+                // Increment total deals count
+                totalDealsCount++;
+        
+                // Extract commission details from service_commission_id
+                const commissionDetails = deal.service_commission_id || {};
+        
+                // Calculate total commission amount from relevant fields
+                const dealTotalCommission = commissionDetails.without_vat_commission || 0;
+                totalCommissionAmount += dealTotalCommission;
+        
+                // Check if the deal is from the current month and year
+                const dealDate = new Date(deal.created_at); 
+                if (dealDate.getMonth() === currentMonth && dealDate.getFullYear() === currentYear) {
+                    currentMonthDealsCount++;
+        
+                    // Calculate current month commission amount
+                    currentMonthCommissionAmount += dealTotalCommission;
+                }
+            });
+        } else {
+            // If dealsData is not an array, initialize counts to 0 or handle the situation accordingly
+            totalDealsCount = 0;
+            totalCommissionAmount = 0;
+            currentMonthDealsCount = 0;
+            currentMonthCommissionAmount = 0;
+        }
+        
 
         // Update state or return calculated values
         setTotalDeals(totalDealsCount);
@@ -238,7 +247,7 @@ const Deal = () => {
         <>
             <ToastContainer
                 position="bottom-right"
-                autoClose={3000}
+                autoClose={2000}
                 hideProgressBar={false}
                 newestOnTop={true}
                 closeOnClick
@@ -278,7 +287,8 @@ const Deal = () => {
                                                     className="w-100"
                                                 >
                                                     <option value="">Filter by Pipeline</option>
-                                                    {allPipelines?.map((pipeline) => (
+                                                    {/* Check if allPipelines is an array before using .map() */}
+                                                    {Array.isArray(allPipelines) && allPipelines.map((pipeline) => (
                                                         <option key={pipeline._id} value={pipeline._id}>
                                                             {pipeline.name}
                                                         </option>
@@ -286,6 +296,7 @@ const Deal = () => {
                                                 </Form.Select>
                                             </Form.Group>
                                         </div>
+
 
                                         <div className='w-100' style={{ display: 'flex', gap: '5px' }}>
                                             <Form.Group controlId="startDate">
@@ -339,7 +350,8 @@ const Deal = () => {
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div className="d-flex flex-wrap">
-                                        {allBranches.map((branch) => (
+                                        {/* Check if allBranches is an array before using .map() */}
+                                        {Array.isArray(allBranches) && allBranches.map((branch) => (
                                             <Button
                                                 key={branch._id}
                                                 variant={selectedBranch === branch.name ? 'primary' : 'outline-primary'}
@@ -366,7 +378,8 @@ const Deal = () => {
                                     </div>
 
                                     <div className="d-flex flex-wrap">
-                                        {allProducts.map((product) => (
+                                        {/* Check if allProducts is an array before using .map() */}
+                                        {Array.isArray(allProducts) && allProducts.map((product) => (
                                             <Button
                                                 key={product._id}
                                                 variant={selectedProduct === product.name ? 'primary' : 'outline-primary'}
@@ -392,6 +405,7 @@ const Deal = () => {
                                         )}
                                     </div>
                                 </div>
+
 
                                 <DragDropContext onDragEnd={handleDragEnd}>
                                     <div style={{ display: 'flex', overflow: 'hidden' }}>

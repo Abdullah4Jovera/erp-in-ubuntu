@@ -201,12 +201,13 @@ const MoveLeads = ({ setMoveLeadModal, moveLeadModal, leadId, fetchLeadsData, fe
                             disabled
                         >
                             <option value="">Select Branch</option>
-                            {branchesSlice.map(branch => (
+                            {Array.isArray(branchesSlice) && branchesSlice.map(branch => (
                                 <option key={branch._id} value={branch._id}>
                                     {branch.name}
                                 </option>
                             ))}
                         </Form.Select>
+
 
                         {branch === '673b34924b966621c041caac' && (
                             <>

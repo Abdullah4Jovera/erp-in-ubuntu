@@ -30,7 +30,6 @@ import Session from '../Pages/Sessions'
 import SingleContract from '../Pages/SingleContract '
 import ContractStages from '../Components/SuperAdminPages/ContractStages'
 import CreateLabels from '../Pages/CreateLabels'
-import Dashboard from '../Pages/Dashboard'
 import TeamLeaderUnassigned from '../Pages/UnAssignTeamLeader'
 import SingleDeal from '../Components/singleDeal/SingleDeal'
 import ContractCommissionDetails from '../Components/singleContract/ContractCommissionDetails'
@@ -40,9 +39,11 @@ import Deal from '../Components/Deal'
 import DealStages from '../Pages/DealStages'
 import RejectedDeals from '../Components/singleDeal/RejectedDeals'
 import RejectedContract from '../Components/singleContract/RejectedContract'
-import CeoMainDashboard from '../Pages/CeoMainDashboard'
-import HodDashboard from '../Pages/HodDashboard'
+import CeoMainDashboard from '../Pages/ceoDashboard/CeoMainDashboard'
+import HodDashboard from '../Pages/hodDashboard/HodDashboard'
 import SidebarComponent from '../Components/sidebar/Sidebar'
+import Dashboard from '../Pages/salesDashboard/Dashboard'
+import HodDashboardDetails from '../Pages/hodDashboard/HodDashboardDetails'
 
 const ProtectedRoute = ({ element: Component, requiredPermission, ...rest }) => {
     const permissions = useSelector(state => state.loginSlice.user?.permissions);
@@ -103,6 +104,7 @@ const AppRoutes = () => {
                 <Route path="/commissionslist" element={<CommissionsList />} />
                 <Route path="/ceodashboard" element={<CeoMainDashboard />} />
                 <Route path="/hoddashboard" element={<HodDashboard />} />
+                <Route path="/hoddashboarddetails" element={<HodDashboardDetails />} />
             </Routes>
         </>
     );

@@ -17,6 +17,8 @@ import { SiNginxproxymanager } from "react-icons/si";
 import { MdManageAccounts } from "react-icons/md";
 import { BiCodeAlt } from "react-icons/bi";
 import { RxDashboard } from "react-icons/rx";
+import Calculator from '../../Pages/Calculator';
+
 
 const SidebarComponent = () => {
     const [showNotificationsModal, setShowNotificationsModal] = useState(false);
@@ -37,11 +39,26 @@ const SidebarComponent = () => {
     const [pendingCount, setPendingCount] = useState(0);
     const [notifications, setNotifications] = useState([]);
     const [requests, setRequests] = useState([]);
+    const [currentTime, setCurrentTime] = useState('');
+    const [openCalculator, setOpenCalculator] = useState(false);
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
     // const notificationSound = new Audio('/goat.mp3');
     // notificationSound.preload = 'auto'; 
+
+    // Update the clock every second
+    useEffect(() => {
+        const updateClock = () => {
+            const now = new Date();
+            setCurrentTime(now.toLocaleTimeString());
+        };
+
+        updateClock(); // Set the initial time
+        const clockInterval = setInterval(updateClock, 1000); // Update the time every second
+        return () => clearInterval(clockInterval);
+    }, []);
+
     useEffect(() => {
         if (userID) {
             const newSocket = io(``, {
@@ -251,11 +268,11 @@ const SidebarComponent = () => {
                                 {userName || 'User Name'}
                             </p>
                             <p style={{ margin: '5px 0', fontSize: '14px', color: '#bbb' }}>{userRole || 'Role'}</p>
-                            <p style={{ margin: '5px 0', fontSize: '12px', color: '#bbb' }}>{userEmail || 'Email'}</p>
+                            <p className='mb-0' style={{ margin: '5px 0', fontSize: '12px', color: '#bbb' }}>{userEmail || 'Email'}</p>
                         </>
                     )}
                 </div>
-
+                <p className='mb-0' style={{ fontSize: '20px', fontWeight: '500', color: '#d7aa47', textAlign: 'center' }}>{currentTime}</p>
                 <Menu>
                     <MenuItem>
                         <Button
@@ -280,7 +297,33 @@ const SidebarComponent = () => {
                             />
                             {rtl === 'true' ? 'الإشعارات' :
                                 userRole === 'CEO' ? 'Dashboard' :
-                                    userRole === 'HOD' ? 'HOD Dashboard' : 'Dashboard'}
+                                    userRole === 'HOD' ? 'Dashboard' : 'Dashboard'}
+                        </Button>
+                    </MenuItem>
+
+                    <MenuItem>
+                        <Button
+                            variant="link"
+                            style={{
+                                color: '#fff',
+                                padding: '0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                textDecoration: 'none',
+                                marginLeft: '6px'
+                            }}
+                            // onClick={() => navigate('/calculator')}
+                            onClick={() => setOpenCalculator(true)}
+                        >
+                            <RxDashboard
+                                style={{
+                                    marginRight: rtl === 'true' ? '0' : '10px',
+                                    marginLeft: rtl === 'true' ? '10px' : '0',
+                                    fontSize: '20px',
+                                    color: '#ffa000'
+                                }}
+                            />
+                            Calculator
                         </Button>
                     </MenuItem>
 
@@ -790,6 +833,8 @@ const SidebarComponent = () => {
 
                     </MenuItem>
 
+
+
                 </Menu>
 
                 {/* Move the RTL toggle button to the footer */}
@@ -888,6 +933,7 @@ const SidebarComponent = () => {
                     </Modal.Footer>
                 </Modal>
 
+                <Calculator openCalculator={openCalculator} setOpenCalculator={setOpenCalculator} />
             </ProSidebar>
         </div>
     );

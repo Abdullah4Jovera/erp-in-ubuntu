@@ -28,7 +28,6 @@ const AllUsers = () => {
     const [resetPasswordError, setResetPasswordError] = useState('')
     const [resignModal, setResignModal] = useState(false)
     const [products, setProducts] = useState([])
-    console.log(products,'productnames')
 
     const [replacementUserId, setReplacementUserId] = useState(null);
 
@@ -45,6 +44,7 @@ const AllUsers = () => {
         verified: false,
         products: '',
         phone: '',
+        target: '',
     });
     const token = useSelector(state => state.loginSlice.user?.token);
 
@@ -53,6 +53,7 @@ const AllUsers = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [phone, setPhone] = useState('');
+    const [target, setTarget] = useState('');
     const [role, setRole] = useState(null);
     const [branch, setBranch] = useState(null);
     const [pipeline, setPipeline] = useState(null);
@@ -102,14 +103,7 @@ const AllUsers = () => {
             }
         };
 
-        // const fetchProducts = async () => {
-        //     try {
-        //         const response = await axios.get(`/api/products/get-all-products`);
-        //         setProducts(response.data);
-        //     } catch (error) {
-        //         console.error('Error fetching products:', error);
-        //     }
-        // };
+
 
         const fetchRoles = async () => {
             try {
@@ -152,6 +146,7 @@ const AllUsers = () => {
             verified: user.verified || false,
             products: user.products ? user.products._id : null, // Set product ID or null
             phone: user.phone || '',
+            target: user.target || '',
             image: user.image || null
         });
         setShowModal(true);
@@ -224,9 +219,6 @@ const AllUsers = () => {
         if (!password) newErrors.password = 'Password is required';
         if (!phone) newErrors.phone = 'Phone is required';
         if (!role) newErrors.role = 'Role is required';
-        // if (!branch) newErrors.branch = 'Branch is required';
-        // if (!product) newErrors.product = 'Product is required';
-        // if (!pipeline) newErrors.pipeline = 'Pipeline is required';
 
         // Check if there are any errors
         if (Object.keys(newErrors).length > 0) {
@@ -239,6 +231,7 @@ const AllUsers = () => {
         formData.append('email', email);
         formData.append('password', password);
         formData.append('phone', phone);
+        formData.append('target', target);
         formData.append('role', role?.value);
         // formData.append('branch', branch?.value);
         // formData.append('pipeline', pipeline?.value);
@@ -309,6 +302,11 @@ const AllUsers = () => {
         if (errors.phone) setErrors((prev) => ({ ...prev, phone: '' }));
     };
 
+    const handleTargetChange = (e) => {
+        setTarget(e.target.value);
+        if (errors.target) setErrors((prev) => ({ ...prev, target: '' }));
+    };
+
     const handleRoleChange = (selectedOption) => {
         setRole(selectedOption);
         if (errors.role) setErrors((prev) => ({ ...prev, role: '' }));
@@ -338,6 +336,7 @@ const AllUsers = () => {
         setEmail('');
         setPassword('');
         setPhone('');
+        setTarget('');
         setRole(null);
         setBranch(null);
         setPipeline(null);
@@ -471,31 +470,36 @@ const AllUsers = () => {
                                 </Button>
 
                                 {/* Branch Selection Buttons */}
-                                {branchNames.map(branch => (
-                                    <Button
-                                        key={branch._id}
-                                        variant="outline-primary"
-                                        onClick={() => setSelectedBranch(branch.name)}
-                                        active={selectedBranch === branch.name}
-                                    >
-                                        {branch.name}
-                                    </Button>
-                                ))}
+                                {Array.isArray(branchNames) && branchNames.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '5px' }} className="mt-2">
+                                        {branchNames.map(branch => (
+                                            <Button
+                                                key={branch._id}
+                                                variant="outline-primary"
+                                                onClick={() => setSelectedBranch(branch.name)}
+                                                active={selectedBranch === branch.name}
+                                            >
+                                                {branch.name}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                )}
 
                                 {/* Product Selection Buttons */}
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '5px' }} className='mt-2' >
-                                {productNames.map(product => (
-                                    <Button
-                                        key={product._id}
-                                        variant="outline-primary"
-                                        onClick={() => setSelectedProduct(product.name)}
-                                        active={selectedProduct === product.name}
-                                    >
-                                        {product.name}
-                                    </Button>
-                                ))}
+                                {Array.isArray(productNames) && productNames.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '5px' }} className="mt-2">
+                                        {productNames.map(product => (
+                                            <Button
+                                                key={product._id}
+                                                variant="outline-primary"
+                                                onClick={() => setSelectedProduct(product.name)}
+                                                active={selectedProduct === product.name}
+                                            >
+                                                {product.name}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <Row>
                                 {filteredUsers.map(user => (
@@ -665,6 +669,20 @@ const AllUsers = () => {
                             </Col>
 
                             <Col md={6}>
+                                <Form.Group controlId="formPhone">
+                                    <Form.Label>Target</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="target"
+                                        value={formData.target}
+                                        onChange={handleInputChange}
+                                    />
+                                </Form.Group>
+                            </Col>
+
+                        </Row>
+                        <Row>
+                            <Col md={12}>
                                 <Form.Group controlId="formImage">
                                     <Form.Label>Image</Form.Label>
                                     <Form.Control
@@ -846,7 +864,20 @@ const AllUsers = () => {
                         </Row>
 
                         <Row className="mb-3">
-                            <Col md={12}>
+                            <Col md={6}>
+                                <Form.Group controlId="formTarget">
+                                    <Form.Label>Target</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Enter Target"
+                                        value={target}
+                                        onChange={handleTargetChange}
+
+                                    />
+                                    {errors.target && <small className="text-danger">{errors.target}</small>}
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
                                 <Form.Group controlId="formImage">
                                     <Form.Label>Image</Form.Label>
                                     <Form.Control

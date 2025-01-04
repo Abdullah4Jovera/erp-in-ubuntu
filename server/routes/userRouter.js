@@ -35,10 +35,7 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
-
 const upload = multer({ storage: storage });
-
-
 router.get('/get-users-non-operational', async (req, res) => {
   try {
     const users = await User.find({ delstatus: false , role: 'None Operational' }).populate('products') 
@@ -48,9 +45,6 @@ router.get('/get-users-non-operational', async (req, res) => {
     res.status(500).json({ message: 'Error fetching users with UnActive products' });
   }
 });
-
-
-
 router.patch('/resign-user/:id', async (req, res) => {
   try {
     const userId = req.params.id;
@@ -113,12 +107,6 @@ router.patch('/resign-user/:id', async (req, res) => {
     res.status(500).json({ message: 'Error marking user as resigned' });
   }
 });
-
-
-
-
-
-
 router.patch('/block-user/:id', isAuth, hasPermission(['app_management']), async (req, res) => {
   try {
     const { block } = req.body; // block should be true to block and false to unblock
@@ -137,7 +125,6 @@ router.patch('/block-user/:id', isAuth, hasPermission(['app_management']), async
     res.status(500).json({ message: 'Error blocking user' });
   }
 });
-
 router.post('/logout', isAuth, async (req, res) => {
   try {
     const userId = req.user._id;
@@ -157,7 +144,6 @@ router.post('/logout', isAuth, async (req, res) => {
     res.status(500).json({ message: 'Error logging out' });
   }
 });
-
 // Logout another user by marking their sessions as inactive
 router.post('/logout-user/:id', isAuth, hasPermission(['app_management']), async (req, res) => {
   try {
@@ -183,7 +169,6 @@ router.post('/logout-user/:id', isAuth, hasPermission(['app_management']), async
     res.status(500).json({ message: 'Error logging out user' });
   }
 });
-
 // Get active sessions (with filtering out inactive ones)
 router.get('/active-sessions', isAuth, async (req, res) => {
   try {
@@ -195,8 +180,6 @@ router.get('/active-sessions', isAuth, async (req, res) => {
     res.status(500).json({ message: 'Error retrieving active sessions' });
   }
 });
-
-
 router.get('/permissions', isAuth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('permissions');
@@ -213,7 +196,6 @@ router.get('/permissions', isAuth, async (req, res) => {
     res.status(500).json({ message: 'Error fetching permissions' });
   }
 });
-
 // Refresh token
 router.post('/refresh-token', isAuth, async (req, res) => {
   try {
@@ -230,7 +212,6 @@ router.post('/refresh-token', isAuth, async (req, res) => {
     res.status(500).json({ message: 'Error refreshing token' });
   }
 });
-
 router.get('/get-users-by-branch/:branchId/:productId', async (req, res) => {
   try {
     const { branchId, productId } = req.params; // Get branchId and productId from the URL parameters
@@ -272,11 +253,6 @@ router.get('/get-users-by-branch/:branchId/:productId', async (req, res) => {
     res.status(500).json({ message: 'Error fetching users by branch and product' });
   }
 });
-
-
-
-
-
 router.get('/get-users-by-product/:productId',  async (req, res) => {
   try {
     // Get the productId from the URL parameters
@@ -306,8 +282,6 @@ router.get('/get-users-by-product/:productId',  async (req, res) => {
     res.status(500).json({ message: 'Error fetching users by product' });
   }
 });
-
-
 // GET route to fetch all users based on pipeline 
 router.get('/get-users-by-pipeline', isAuth, async (req, res) => {
   try {
@@ -339,8 +313,6 @@ router.get('/get-users-by-pipeline', isAuth, async (req, res) => {
     res.status(500).json({ message: 'Error fetching users by pipeline' });
   }
 });
-
-
 // GET route to fetch all users
 router.get('/get-users', async (req, res) => {
   try {
@@ -378,7 +350,7 @@ router.get('/get-users', async (req, res) => {
 // Route to create a new user with image upload
 router.post('/create-user', upload.single('image'),isAuth,hasRole(['Super Admin', 'Developer']), async (req, res) => {
   try {
-    const { name, pipeline, email, password, role, branch, permissions, delStatus, verified, phone,products,commission } = req.body;
+    const { name, pipeline, email, password, role, branch, permissions, delStatus, verified, phone,products,target } = req.body;
 
     // Validate request body
     // if (!name || !pipeline || !email || !role || !branch) {
@@ -409,7 +381,7 @@ router.post('/create-user', upload.single('image'),isAuth,hasRole(['Super Admin'
       branch,
       permissions,
       products,
-      commission,
+      target,
       delStatus,
       verified,
       phone
@@ -479,6 +451,7 @@ router.post('/login', async (req, res) => {
       image: user.image,
       permissions: user.permissions,
       products: user.products,
+      target: user.target,
       token,
       sessionId: session._id, // Send the session ID in the response
       ipAddress: ipAddress, // Optionally send IP address in the response
@@ -493,7 +466,7 @@ router.post('/login', async (req, res) => {
 router.put('/update-user/:id', upload.single('image'),isAuth,hasRole(['Super Admin', 'Developer']), async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, pipeline, email, password, role, branch, delstatus, verified, products, phone,commission } = req.body;
+    const { name, pipeline, email, password, role, branch, delstatus, verified, products, phone,target } = req.body;
 
     // Find the user by ID
     const user = await User.findById(id);
@@ -553,8 +526,8 @@ router.put('/update-user/:id', upload.single('image'),isAuth,hasRole(['Super Adm
     if (products !== undefined) {
       user.products = products === null ? null : products;
     }
-    if (commission !== commission) {
-      user.commission = commission === null ? null : commission;
+    if (target !== undefined) {
+      user.target = target === null ? null : target;
     }
 
     if (phone !== undefined) {

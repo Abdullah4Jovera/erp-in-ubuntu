@@ -6,7 +6,7 @@ import { Container, Row, Col, Button, Card, Form, Modal, Image, Spinner, Alert, 
 import Sidebar from '../Components/sidebar/Sidebar';
 import { Link } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import './Dashboard.css';
+import '../Pages/salesDashboard/Dashboard.css';
 import { AiFillDelete } from "react-icons/ai";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { BiSolidLabel } from "react-icons/bi";
@@ -45,6 +45,7 @@ const CeoDashboard = () => {
     const [stages, setStages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [discussionerror, setDiscussionError] = useState(null);
     const [leads, setLeads] = useState([]);
     const [leadsByStage, setLeadsByStage] = useState({});
     const [selectedBranchId, setSelectedBranchId] = useState(localStorage.getItem('selectedBranchId') || branch || null);
@@ -226,7 +227,7 @@ const CeoDashboard = () => {
             setLeads(response.data.leads);
             organizeLeadsByStage(response.data.leads);
             const messageCountMap = {};
-            response.data.leads.forEach(lead => {
+            response.data.leads?.forEach(lead => {
                 const messageCount = Array.isArray(lead.messages) ? lead.messages.length : 0;
                 messageCountMap[lead._id] = messageCount;
             });
@@ -298,17 +299,30 @@ const CeoDashboard = () => {
     }, [token]);
 
     useEffect(() => {
-        const branchId = selectedBranchId || branches.find(b => b.name === defaultBranchName)?._id;
-        const productId = selectedProductId || products.find(p => p.name === defaultProductName)?._id;
+        // Ensure branches and products are arrays before using .find()
+        const branchId = selectedBranchId || (Array.isArray(branches) && branches.find(b => b.name === defaultBranchName))?._id;
+        const productId = selectedProductId || (Array.isArray(products) && products.find(p => p.name === defaultProductName))?._id;
 
         if (branchId && productId && !hasFetchedLeads && token) {
+            // Fetch leads and product stages if all conditions are met
             fetchLeads(productId, branchId);
             fetchProductStages(productId);
+
+            // Update state
             setSelectedBranchId(branchId);
             setSelectedProductId(productId);
             setHasFetchedLeads(true);
         }
-    }, [selectedBranchId, selectedProductId, token, branch, product, branches, products, hasFetchedLeads]);
+    }, [
+        selectedBranchId,
+        selectedProductId,
+        token,
+        branches, // Assuming branches and products are dynamic
+        products,
+        hasFetchedLeads,
+        defaultBranchName,
+        defaultProductName
+    ]);
 
     const fetchLeads = async (productId, branchId) => {
         setIsFetchingLeads(true);
@@ -350,7 +364,7 @@ const CeoDashboard = () => {
     const organizeLeadsByStage = (leads) => {
         const organizedLeads = {};
 
-        leads.forEach(lead => {
+        leads?.forEach(lead => {
             const stageId = lead.product_stage._id;
             if (!organizedLeads[stageId]) {
                 organizedLeads[stageId] = {
@@ -562,7 +576,7 @@ const CeoDashboard = () => {
     // Add Discussion
     const sendDiscussionMessage = async () => {
         if (!discussionText.trim()) {
-            setError('Please Enter a Comment.');
+            setDiscussionError('Please Enter a Comment.');
             return;
         }
 
@@ -824,50 +838,52 @@ const CeoDashboard = () => {
                                         id="lead_type"
                                         value={selectedLeadType}
                                         onChange={setSelectedLeadType}
-                                        options={leadTypes.map((leadType) => ({ value: leadType._id, label: leadType.name }))}
+                                        options={Array.isArray(leadTypes) ? leadTypes.map((leadType) => ({ value: leadType?._id, label: leadType?.name })) : []}
                                         placeholder={rtl === 'true' ? 'اختر نوع العميل' : 'Lead Type'}
                                         classNamePrefix="react-select"
-                                        className='input_field_input_field'
+                                        className="input_field_input_field"
                                         styles={{
                                             container: (provided) => ({
                                                 ...provided,
                                                 width: '100vw',          // Full viewport width
-                                                maxWidth: '200px',
-                                                borderRadius: '0.375rem'      // Maximum width set to 200px
+                                                maxWidth: '200px',       // Maximum width set to 200px
+                                                borderRadius: '0.375rem' // Border radius
                                             }),
                                             option: (provided) => ({
                                                 ...provided,
                                                 whiteSpace: 'nowrap',    // Ensuring no wrapping of option text
-                                                overflowX: 'hidden'
-                                            }),
+                                                overflowX: 'hidden'     // Hide overflow text
+                                            })
                                         }}
                                     />
                                 </div>
+
 
                                 <div>
                                     <Select
                                         id="source"
                                         value={selectedSource}
                                         onChange={setSelectedSource}
-                                        options={sources.map((source) => ({ value: source._id, label: source.name }))}
+                                        options={Array.isArray(sources) ? sources.map((source) => ({ value: source._id, label: source.name })) : []}
                                         placeholder={rtl === 'true' ? 'اختر المصدر' : 'Source'}
                                         classNamePrefix="react-select"
-                                        className='input_field_input_field'
+                                        className="input_field_input_field"
                                         styles={{
                                             container: (provided) => ({
                                                 ...provided,
                                                 width: '100vw',          // Full viewport width
-                                                maxWidth: '200px',
-                                                borderRadius: '0.375rem'      // Maximum width set to 200px
+                                                maxWidth: '200px',       // Maximum width set to 200px
+                                                borderRadius: '0.375rem' // Border radius
                                             }),
                                             option: (provided) => ({
                                                 ...provided,
                                                 whiteSpace: 'nowrap',    // Ensuring no wrapping of option text
-                                                overflowX: 'hidden'
-                                            }),
+                                                overflowX: 'hidden'     // Hide overflow text
+                                            })
                                         }}
                                     />
                                 </div>
+
 
                                 <div>
                                     <Form>
@@ -921,11 +937,11 @@ const CeoDashboard = () => {
                             </div>
 
                             <Row>
-                                <div className='' >
+                                <div className="">
                                     {!branch && (
                                         <div style={{ position: 'relative' }}>
                                             <div style={{ position: 'absolute', left: 0, bottom: 0, zIndex: 1 }}>
-                                                {branches.length > 0 ? (
+                                                {Array.isArray(branches) && branches.length > 0 ? (
                                                     branches.map((branch) => (
                                                         <Button
                                                             key={branch._id}
@@ -933,7 +949,7 @@ const CeoDashboard = () => {
                                                             style={{
                                                                 backgroundColor: selectedBranchId === branch._id ? '#d7aa47' : '#2d3134',
                                                                 color: selectedBranchId === branch._id ? 'white' : 'white',
-                                                                border: 'none'
+                                                                border: 'none',
                                                             }}
                                                             onClick={() => handleBranchSelect(branch._id)}
                                                         >
@@ -941,16 +957,16 @@ const CeoDashboard = () => {
                                                         </Button>
                                                     ))
                                                 ) : (
-                                                    <p className='mutual_heading_class' >No Branches Available</p>
+                                                    <p className="mutual_heading_class">No Branches Available</p>
                                                 )}
                                             </div>
                                         </div>
                                     )}
 
                                     {!product && (
-                                        <div style={{ position: 'relative' }} >
-                                            <div style={{ position: 'absolute', right: 0, bottom: 0, zIndex: 1 }} >
-                                                {products.length > 0 ? (
+                                        <div style={{ position: 'relative' }}>
+                                            <div style={{ position: 'absolute', right: 30, bottom: 0, zIndex: 1 }}>
+                                                {Array.isArray(products) && products.length > 0 ? (
                                                     products.map((product) => (
                                                         <Button
                                                             key={product._id}
@@ -966,14 +982,25 @@ const CeoDashboard = () => {
                                                         </Button>
                                                     ))
                                                 ) : (
-                                                    <p className='mutual_heading_class'>No Products Available</p>
+                                                    <p className="mutual_heading_class">No Products Available</p>
                                                 )}
-                                                <AiOutlineFileAdd style={{ backgroundColor: '#d7aa47', borderRadius: '5px', cursor: 'pointer', fontSize: '35px' }} onClick={() => setModal2Open(true)} />
                                             </div>
                                         </div>
                                     )}
 
+                                    <div style={{ position: 'absolute', right: 10, top: 85, zIndex: 1 }}>
+                                        <AiOutlineFileAdd
+                                            style={{
+                                                backgroundColor: '#d7aa47',
+                                                borderRadius: '5px',
+                                                cursor: 'pointer',
+                                                fontSize: '35px',
+                                            }}
+                                            onClick={() => setModal2Open(true)}
+                                        />
+                                    </div>
                                 </div>
+
 
                             </Row>
 
@@ -1366,7 +1393,7 @@ const CeoDashboard = () => {
                                                         maxLength={300}
                                                         className="w-100 input_field_input_field"
                                                     />
-                                                    {error && <div style={{ color: 'red', marginTop: '5px' }}>{error}</div>}
+                                                    {discussionerror && <div style={{ color: 'red', marginTop: '5px' }}>{discussionerror}</div>}
                                                 </Form>
                                             </div>
                                             <Button onClick={sendDiscussionMessage} className="all_common_btn_single_lead" style={{ marginRight: '10px' }} >

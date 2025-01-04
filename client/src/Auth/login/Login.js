@@ -23,10 +23,8 @@ const Login = () => {
     const userRole = useSelector((state) => state.loginSlice.user?.role);
     const [showError, setShowError] = useState(true);
     const error = useSelector((state) => state.loginSlice.error);
-    const animations = ['bubble1', 'bubble2', 'bubble3', 'bubble4', 'bubble5'];
-
     const [financeData, setFinanceData] = useState(null);
-    const [apiError, setApiError] = useState('');
+    const animations = ['bubble1', 'bubble2', 'bubble3', 'bubble4', 'bubble5'];
 
     // Fetch highest finance amount and pipeline details
     useEffect(() => {
@@ -35,7 +33,7 @@ const Login = () => {
                 const response = await axios.get(`/api/commission/highest-finance-amount-pipeline`);
                 setFinanceData(response.data);
             } catch (err) {
-                setApiError('Failed to fetch finance data.');
+                console.log(error)
             }
         };
         fetchFinanceData();
@@ -120,7 +118,7 @@ const Login = () => {
                             className="animated-input"
                         />
                         <Form.Control.Feedback type="invalid">
-                            Please enter a valid email.
+                            Please Enter a Valid Email.
                         </Form.Control.Feedback>
                     </Form.Group>
 
@@ -135,7 +133,7 @@ const Login = () => {
                             className="animated-input"
                         />
                         <Form.Control.Feedback type="invalid">
-                            Please enter your password.
+                            Please Enter your Password.
                         </Form.Control.Feedback>
                     </Form.Group>
 
@@ -181,11 +179,11 @@ const Login = () => {
                 <h1 className='top_rated_department' >Top Rated Department</h1>
                 {financeData ? (
                     <>
-                        <h2 className='login_pipeline_name' >{financeData.pipeline.name}</h2>
+                        <h2 className='login_pipeline_name' >{financeData?.pipeline?.name}</h2>
                         <div className="image_control_discussion_container">
-                            {financeData.users.map((user, index) => {
+                            {financeData?.users?.map((user, index) => {
                                 const imageSrc = user?.image
-                                    ? `/images/${user.image}`
+                                    ? `/images/${user?.image}`
                                     : default_image;
 
                                 // Assign a unique animation class to each image
@@ -199,15 +197,13 @@ const Login = () => {
                             })}
                         </div>
                     </>
-                ) : apiError ? (
-                    <Alert variant="danger">{apiError}</Alert>
                 ) : (
-                    <Spinner animation="border" variant="light" />
+                    <div className='text-center' >
+                        <Spinner animation="border" variant="light" />
+                    </div>
                 )}
             </div>
-
         </Container >
-
     );
 };
 

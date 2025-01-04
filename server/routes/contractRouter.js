@@ -359,14 +359,24 @@ router.put('/update-service-commission/:contractId', isAuth, async (req, res) =>
 });
 // Get all contracts 
 router.get('/get-all-contracts', isAuth, async (req, res) => {
+   
     try {
-        const userId = req.user._id;
-
-        const contracts = await Contract.find({
-            selected_users: userId,
-            is_converted: false,
-            is_reject: false
-        })
+        const userId = req.user._id; // Get the user ID from the request
+        const pipelineId = req.user.pipeline; // Get the pipeline ID from the user
+        const matchFilter = (additionalFilters = {}) => {
+            const filter = {
+                selected_users: userId,
+                is_converted: false,
+                is_reject: false,
+                ...additionalFilters,
+            };
+            // Include pipelineId filter if it's not an empty array
+            if (pipelineId && pipelineId.length > 0) {
+                filter.pipeline_id = { $in: pipelineId }; // Match any pipeline ID in the array
+            }
+            return filter;
+        };
+        const contracts = await Contract.find(matchFilter())
             .populate('client_id', 'name')
             .populate('lead_type', 'name')
             .populate('pipeline_id', 'name')
@@ -383,7 +393,7 @@ router.get('/get-all-contracts', isAuth, async (req, res) => {
         console.error('Error fetching contracts:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-});
+}); 
 
 // Get a single contract by ID
 router.get('/single-contract/:id', async (req, res) => {

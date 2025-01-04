@@ -170,21 +170,27 @@ const RejectedLeads = () => {
                                 >
                                     {language.all}
                                 </Button>
-                                {branchNames.map((branch) => (
-                                    <Button
-                                        key={branch._id}
-                                        variant="outline-primary"
-                                        onClick={() => setSelectedBranch(branch.name)}
-                                        active={selectedBranch === branch.name}
-                                        style={{
-                                            backgroundColor: selectedBranch === branch.name ? '#d7aa47' : '#6c757da2',
-                                            color: 'white',
-                                            border: 'none',
-                                        }}
-                                    >
-                                        {branch.name}
-                                    </Button>
-                                ))}
+                                {Array.isArray(branchNames) && branchNames.length > 0 ? (
+                                    branchNames.map((branch) => (
+                                        <Button
+                                            key={branch._id}
+                                            variant="outline-primary"
+                                            onClick={() => setSelectedBranch(branch.name)}
+                                            active={selectedBranch === branch.name}
+                                            style={{
+                                                backgroundColor: selectedBranch === branch.name ? '#d7aa47' : '#6c757da2',
+                                                color: 'white',
+                                                border: 'none',
+                                            }}
+                                            aria-selected={selectedBranch === branch.name} // Adding aria-selected for accessibility
+                                        >
+                                            {branch.name}
+                                        </Button>
+                                    ))
+                                ) : (
+                                    <p>No branches available</p> // Fallback message if no branches
+                                )}
+
                             </div>
                             {!product && (
                                 <div style={{ display: 'flex', gap: '5px' }} className='mt-3' >

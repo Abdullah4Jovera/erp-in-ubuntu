@@ -4,6 +4,7 @@ import { Container, Row, Col, Card, Spinner, Modal, Button, Form, Table, InputGr
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import SidebarComponent from '../Components/sidebar/Sidebar';
+import { useSelector } from "react-redux";
 
 const CommissionsList = () => {
     const [commissions, setCommissions] = useState([]);
@@ -16,26 +17,31 @@ const CommissionsList = () => {
     const [errorsMessage, setErrorsMessage] = useState({});
     const [confirmModal, setConfirmModal] = useState(false);
     const [currentDeal, setCurrentDeal] = useState(null);
+    const token = useSelector((state) => state.loginSlice.user?.token);
+
+    const fetchCommissions = async () => {
+        try {
+            const response = await axios.get(`/api/commission/commissions`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setCommissions(response.data.commissions);
+            setLoading(false);
+        } catch (err) {
+            setError('Failed to fetch commissions');
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchCommissions = async () => {
-            try {
-                const response = await axios.get(`/api/commission/commissions`);
-                setCommissions(response.data.commissions);
-                setLoading(false);
-            } catch (err) {
-                setError('Failed to fetch commissions');
-                setLoading(false);
-            }
-        };
-
-        fetchCommissions();
-    }, []);
+        if (token) {
+            fetchCommissions();
+        }
+    }, [token]);
 
     // Aggregate commissions by userId and dealId
     const aggregatedCommissions = commissions.reduce((acc, commission) => {
-        const userId = commission.userId._id;
-        const dealId = commission.dealId._id;
+        const userId = commission?.userId?._id;
+        const dealId = commission?.dealId?._id;
         if (!acc[userId]) {
             acc[userId] = {
                 user: commission.userId,
@@ -65,43 +71,67 @@ const CommissionsList = () => {
         return acc;
     }, {});
 
-    // Filter the aggregated commissions based on the search query
-    const filteredCommissions = Object.values(aggregatedCommissions).filter(userCommission =>
-        userCommission.user.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
     const handlePaymentChange = (userId, dealId, value) => {
-        setPaymentData(prev => ({
+        setPaymentData((prev) => ({
             ...prev,
-            [`${userId}-${dealId}`]: value
+            [`${userId}-${dealId}`]: value, // Store payment value in paymentData
         }));
     };
 
-    const handlePaymentSubmit = async (userId, dealId, paymentAmount) => {
+    const handlePaymentSubmit = async (userId, dealId) => {
+        const key = `${userId}-${dealId}`;
+        const paymentAmount = paymentData[key]; // Retrieve the payment value from paymentData
+        // if (!paymentAmount || isNaN(paymentAmount) || paymentAmount <= 0) {
+        //     toast.error('Invalid payment amount. Please enter a valid number.');
+        //     return;
+        // }
+
+        const commission = commissions.find(
+            (commission) => commission?.userId?._id === userId && commission?.dealId?._id === dealId
+        );
+        const totalPayment = commission?.remainingCommission || 0; // Get the total payment from commission data
+        console.log(totalPayment, 'totalPayment')
         try {
             await axios.put(`/api/commission/commissions/pay`, {
                 userId,
                 dealId,
-                paymentAmount
+                paymentAmount: paymentAmount || totalPayment// Send paymentAmount from input value
             });
 
-            toast.success('Payment successful!');
-            setCommissions(prev => prev.map(commission =>
-                commission.userId._id === userId && commission.dealId._id === dealId
-                    ? {
-                        ...commission,
-                        paidCommission: commission.paidCommission + paymentAmount,
-                        remainingCommission: commission.remainingCommission - paymentAmount
-                    }
-                    : commission
-            ));
-            setPaymentData({})
+            toast.success('Payment Successful!');
 
+            setCommissions((prev) =>
+                prev.map((commission) =>
+                    commission?.userId?._id === userId && commission?.dealId?._id === dealId
+                        ? {
+                            ...commission,
+                            paidCommission: commission.paidCommission + parseFloat(paymentAmount),
+                            remainingCommission: commission.remainingCommission - parseFloat(paymentAmount),
+                        }
+                        : commission
+                )
+            );
+
+            // Clear payment data and modal state
+            setPaymentData((prev) => {
+                const updatedData = { ...prev };
+                delete updatedData[key]; // Remove only the current payment data
+                return updatedData;
+            });
+
+            setShowModal(false);
+            fetchCommissions();
         } catch (err) {
             console.error(err);
-            toast.error('Failed to process payment.');
+            toast.error('Failed to Process Payment.');
         }
     };
+
+
+    // Filter the aggregated commissions based on the search query
+    const filteredCommissions = Object.values(aggregatedCommissions).filter(userCommission =>
+        userCommission.user.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const handleFullPayment = (userId, dealId, remainingCommission) => {
         const paymentAmount = remainingCommission;
@@ -225,22 +255,22 @@ const CommissionsList = () => {
                                 <Table striped bordered hover responsive variant="dark" className='table_main_container'>
                                     <thead>
                                         <tr>
-                                            <th style={{ backgroundColor: '#d7aa47' }} >User</th>
-                                            <th style={{ backgroundColor: '#d7aa47' }}>Email</th>
-                                            <th style={{ backgroundColor: '#d7aa47' }}>Total Commission</th>
-                                            <th style={{ backgroundColor: '#d7aa47' }}>Paid Commission</th>
-                                            <th style={{ backgroundColor: '#d7aa47' }}>Remaining Commission</th>
-                                            <th style={{ backgroundColor: '#d7aa47' }}>Action</th>
+                                            <th style={{ backgroundColor: '#d7aa47', textAlign: 'center' }} >User</th>
+                                            <th style={{ backgroundColor: '#d7aa47', textAlign: 'center' }}>Email</th>
+                                            <th style={{ backgroundColor: '#d7aa47', textAlign: 'center' }}>Total Commission</th>
+                                            <th style={{ backgroundColor: '#d7aa47', textAlign: 'center' }}>Paid Commission</th>
+                                            <th style={{ backgroundColor: '#d7aa47', textAlign: 'center' }}>Remaining Commission</th>
+                                            <th style={{ backgroundColor: '#d7aa47', textAlign: 'center' }}>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {filteredCommissions.map(userCommission => (
-                                            <tr key={userCommission.user._id}>
-                                                <td className="table_td_class">{userCommission.user.name}</td>
-                                                <td className="table_td_class">{userCommission.user.email}</td>
-                                                <td className="table_td_class">{`${Math.round(userCommission.totalCommission)} AED`}</td>
-                                                <td className="table_td_class">{`${Math.round(userCommission.paidCommission)} AED`}</td>
-                                                <td className="table_td_class">{`${Math.round(userCommission.remainingCommission)} AED`}</td>
+                                            <tr key={userCommission?.user?._id}>
+                                                <td className="table_td_class">{userCommission?.user?.name}</td>
+                                                <td className="table_td_class">{userCommission?.user?.email}</td>
+                                                <td className="table_td_class">{`${Math.round(userCommission?.totalCommission)} AED`}</td>
+                                                <td className="table_td_class">{`${Math.round(userCommission?.paidCommission)} AED`}</td>
+                                                <td className="table_td_class">{`${Math.round(userCommission?.remainingCommission)} AED`}</td>
                                                 <td className="table_td_class" style={{ textAlign: 'center' }}>
                                                     <Button style={{ backgroundColor: '#d7aa47', border: 'none' }} onClick={() => openPaymentModal(userCommission)}>
                                                         Pay
@@ -262,7 +292,7 @@ const CommissionsList = () => {
                             >
                                 <Modal.Header closeButton style={{ border: 'none' }}>
                                     <Modal.Title style={{ color: '#d7aa47' }}>
-                                        Payment for {selectedUser?.user.name}
+                                        Payment for {selectedUser?.user?.name}
                                     </Modal.Title>
                                 </Modal.Header>
                                 <Modal.Body>
@@ -270,14 +300,14 @@ const CommissionsList = () => {
                                         Object.values(selectedUser.deals).map(deal => {
                                             if (deal.remainingCommission <= 0) return null;
 
-                                            const remainingCommission = Math.round(deal.remainingCommission);
-                                            const totalCommission = Math.round(deal.totalCommission);
-                                            const paidCommission = Math.round(deal.paidCommission);
-                                            const clientName = deal.deal.client_id?.name || 'Unknown Client';
-                                            const key = `${selectedUser.user._id}-${deal.deal._id}`;
+                                            const remainingCommission = Math.round(deal?.remainingCommission);
+                                            const totalCommission = Math.round(deal?.totalCommission);
+                                            const paidCommission = Math.round(deal?.paidCommission);
+                                            const clientName = deal?.deal?.client_id?.name || 'Unknown Client';
+                                            const key = `${selectedUser?.user?._id}-${deal?.deal?._id}`;
 
                                             return (
-                                                <div key={deal.deal._id} className="deal-container">
+                                                <div key={deal?.deal?._id} className="deal-container">
                                                     <p>
                                                         <span style={{ color: '#d7aa47', textAlign: 'center' }}> {clientName}</span> <br />
                                                         <span style={{ color: "white" }}>Total Amount : </span>
@@ -294,8 +324,9 @@ const CommissionsList = () => {
                                                             type="text"
                                                             value={paymentData[key] || ''}
                                                             onChange={e => {
-                                                                handlePaymentChange(selectedUser.user._id, deal.deal._id, e.target.value);
-                                                                validatePayment(selectedUser.user._id, deal.deal._id, e.target.value);
+                                                                console.log(e.target.value, 'etargetvalue')
+                                                                handlePaymentChange(selectedUser?.user?._id, deal?.deal?._id, e.target.value);
+                                                                validatePayment(selectedUser?.user?._id, deal?.deal?._id, e.target.value);
                                                             }}
                                                             placeholder="Enter Amount"
                                                             className='input_field_input_field'
@@ -305,11 +336,11 @@ const CommissionsList = () => {
                                                         )}
                                                     </Form.Group>
                                                     <Button
-                                                        variant="success"
+                                                        variant="danger"
                                                         onClick={() => {
-                                                            const isValid = validatePayment(selectedUser.user._id, deal.deal._id, paymentData[key]);
+                                                            const isValid = validatePayment(selectedUser?.user?._id, deal?.deal?._id, paymentData[key]);
                                                             if (isValid) {
-                                                                handlePaymentSubmit(selectedUser.user._id, deal.deal._id, deal.remainingCommission);
+                                                                handlePaymentSubmit(selectedUser?.user?._id, deal?.deal?._id, deal.remainingCommission);
                                                             }
                                                         }}
                                                     >
@@ -317,13 +348,12 @@ const CommissionsList = () => {
                                                     </Button>
                                                     <Button
                                                         onClick={() =>
-                                                            handleFullPaymentClick(selectedUser.user._id, deal.deal._id, deal.remainingCommission)
+                                                            handleFullPaymentClick(selectedUser?.user?._id, deal?.deal?._id, deal?.remainingCommission)
                                                         }
                                                         style={{ marginLeft: '10px', backgroundColor: '#d7aa47', border: 'none' }}
                                                     >
                                                         Full Payment
                                                     </Button>
-                                                    <hr />
                                                 </div>
                                             );
                                         })}

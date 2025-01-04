@@ -24,26 +24,53 @@ const AccountantDashboard = () => {
         { role: "hom", field: "hom_commission_amount" },
         { role: "sale_manager", field: "sale_manager_commission_amount" },
         { role: "sales_agent", field: "sales_agent_commission_amount" },
+        { role: "ajman_manager", field: "ajman_manager_commission_amount" },
+        { role: "ajman_coordinator", field: "ajman_coordinator_commission_amount" },
+        { role: "ajman_team_leader", field: "ajman_team_leader_commission_amount" },
+        { role: "dubai_manager", field: "dubai_manager_commission_amount" },
+        { role: "dubai_coordinator", field: "dubai_coordinator_commission_amount" },
+        { role: "dubaiteam_leader", field: "dubaiteam_leader_commission_amount" },
+        { role: "dubaisale_agent", field: "dubaiteam_sale_agent_amount" },
+        { role: "ajman_sale_agent", field: "ajman_sale_agent_amount" },
+        { role: "coordinator", field: "coordinator_commission_amount" },
+        { role: "team_leader_one", field: "team_leader_one_commission_amount" },
+        { role: "sales_agent_one", field: "sales_agent_one_commission_amount" },
+        { role: "ref_hod", field: "ref_hod_commission_amount" },
+        { role: "ref_manager", field: "ref_manager_commission_amount" },
+        { role: "ref_hom", field: "ref_hom_commission_amount" },
+        { role: "ts_hod", field: "ts_hod_commision_amount" },
+        { role: "ts_team_leader", field: "ts_team_leader_commission_amount" },
+        { role: "ts_agent", field: "tsagent_commission_amount" },
+        { role: "marketing_one", field: "marketing_one_commission_amount" },
+        { role: "marketing_two", field: "marketing_two_commission_amount" },
+        { role: "marketing_three", field: "marketing_three_commission_amount" },
+        { role: "marketing_four", field: "marketing_four_commission_amount" },
+        { role: "developer_one", field: "developer_one_commission_amount" },
+        { role: "developer_two", field: "developer_two_commission_amount" },
+        { role: "developerthree", field: "developer_three_commission_amount" },
+        { role: "developer_four", field: "developer_four_commission_amount" },
+        { role: "broker_name", field: "broker_name_commission_amount" },
     ];
 
+    const fetchDeals = async () => {
+        try {
+            const response = await axios.get(`/api/deals/get-deals`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const filteredDeals = response.data.filter(
+                (deal) => deal.deal_stage.name === "Collected" && deal.is_report_generated === false
+            );
+            setDeals(filteredDeals);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
     useEffect(() => {
-        const fetchDeals = async () => {
-            try {
-                const response = await axios.get(`/api/deals/get-deals`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const filteredDeals = response.data.filter(
-                    (deal) => deal.deal_stage.name === "Collected"
-                );
-                setDeals(filteredDeals);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDeals();
+        if (token) {
+            fetchDeals();
+        }
     }, [token]);
 
     const handleFetchNonOperationalUsers = async (deal) => {
@@ -145,6 +172,7 @@ const AccountantDashboard = () => {
 
             toast.success("Commission saved successfully!");
             setShowModal(false);
+            fetchDeals();
         } catch (error) {
             console.error(error);
             toast.error("Failed to save commission.");
@@ -238,7 +266,7 @@ const AccountantDashboard = () => {
                                         </tbody>
                                     </Table>
                                 ) : (
-                                    <p className="mutual_class_color text-center" >No Deals Match the Search Criteria.</p>
+                                    <p className="mutual_class_color text-center" >No Deals Available !</p>
                                 )}
                             </div>
                         </Card>
@@ -251,7 +279,7 @@ const AccountantDashboard = () => {
                     {uniqueProducts.map((product) => {
                         const usersForProduct = productsGroupedByUsers[product._id];
                         const totalProductCommission = Math.round(calculatedCommission / uniqueProducts.length);
-
+                        console.log(usersForProduct, 'usersForProduct')
                         return (
                             <div key={product._id}>
                                 <h5 style={{ color: '#d7aa47' }}>{product.name}</h5>

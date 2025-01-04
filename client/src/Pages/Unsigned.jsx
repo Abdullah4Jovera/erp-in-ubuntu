@@ -350,15 +350,20 @@ const UnassignedLead = () => {
                         <Form.Label>{rtl === 'true' ? 'اختر المستخدمين' : 'Select Users'}</Form.Label>
                         <Select
                             isMulti
-                            options={allUsers.map((user) => ({
-                                value: user._id,
-                                label: `${user.name} (${user.role})`
-                            }))}
+                            options={
+                                Array.isArray(allUsers) && allUsers.length > 0
+                                    ? allUsers.map((user) => ({
+                                        value: user._id,
+                                        label: `${user.name} (${user.role})`
+                                    }))
+                                    : [] // If allUsers is not an array or is empty, use an empty array for options
+                            }
                             value={selectedLeadUsers}
                             onChange={(selectedOptions) => setSelectedLeadUsers(selectedOptions)}
                             placeholder={rtl === 'true' ? 'حدد المستخدمين' : 'Select users'}
                         />
                     </Form.Group>
+
                     {userError && <p style={{ color: 'red' }}>{userError}</p>}
                 </Modal.Body>
                 <Modal.Footer>
@@ -371,8 +376,8 @@ const UnassignedLead = () => {
                 </Modal.Footer>
             </Modal>
 
-                {/* Selected User Modal Description */}
-                <Modal
+            {/* Selected User Modal Description */}
+            <Modal
                 size="lg"
                 aria-labelledby="contained-modal-title-vcenter"
                 centered

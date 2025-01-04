@@ -138,7 +138,7 @@ const UpdateRolePermissions = () => {
 
     return (
         <div>
-            <Container fluid >
+            <Container>
                 <Row>
                     <Col xs={12} md={12} lg={1} >
                         {/* <Sidebar /> */}
@@ -180,7 +180,7 @@ const UpdateRolePermissions = () => {
                             <Modal.Header closeButton>
                                 <Modal.Title>Edit Role Permissions</Modal.Title>
                             </Modal.Header>
-                            <Modal.Body>
+                            <Modal.Body style={{color:'white'}} >
                                 <Form>
                                     <Form.Group>
                                         <Form.Label>Permissions</Form.Label>

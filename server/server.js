@@ -39,7 +39,7 @@ const leadConfigRouter= require('./routes/leadConfigRouter')
 const contractStagesRouter= require('./routes/contractStageRouter')
 const databaseRouter= require('./routes/databaseRouter')
 const app = express();
-const port = process.env.PORT || 4000; // Use environment variable for port
+const port = process.env.PORT || 8080; // Use environment variable for port
 const server = http.createServer(app);
 const fetchAndStoreLeads = require('./leadFetcher');
 // Connect to MongoDB

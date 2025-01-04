@@ -101,6 +101,27 @@ h1 {
   max-height: 1200px;
 }
 
+.move_trasnfer_request {
+  background-color: rgb(215, 170, 71);
+  border: none;
+  border-radius: 12px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  height: 35px;
+  padding: 0 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+
+}
+
+.move_trasnfer_request:hover {
+  background: linear-gradient(90deg, black, #d7aa47);
+}
+
 .lead_discussion_main_card_main_lead_discussion {
   box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
   height: 100vh;
@@ -198,6 +219,11 @@ h1 {
 .outside_lead_class {
   /* border: 1px solid rgb(215, 170, 71) !important; */
   background-color: rgb(215, 170, 71);
+}
+
+.value_currency{
+  display: flex;
+  gap: 5px;
 }
 
 .modal-content {
@@ -405,6 +431,32 @@ h1 {
   height: '100%';
   max-height: 400px;
   background-color: red;
+}
+
+.custom-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.custom-table th,
+.custom-table td {
+  text-align: center;
+  padding: 10px;
+  word-wrap: break-word;
+}
+
+.custom-table td {
+  height: 40px;
+}
+
+.custom-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+/* Add hover effect for rows */
+.custom-table tr:hover {
+  background-color: #f1f1f1;
 }
 
 /* Hover effect for input field */

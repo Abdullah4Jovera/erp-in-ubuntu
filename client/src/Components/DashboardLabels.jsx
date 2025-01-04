@@ -22,9 +22,9 @@ const DashboardLabels = ({ fetchLeadsData, leadId, setLabelsDashBoardModal, labe
             });
             const leadData = response.data;
             setSingleLead(leadData);
-            setPreviousLabels(leadData.labels);
-            setSelectedLabelIds(leadData.labels.map(label => label._id));
-            setPipelineID(leadData.pipeline_id._id);
+            setPreviousLabels(leadData?.labels);
+            setSelectedLabelIds(leadData?.labels?.map(label => label?._id));
+            setPipelineID(leadData?.pipeline_id?._id);
         } catch (error) {
             console.error('Error fetching single lead:', error);
         }

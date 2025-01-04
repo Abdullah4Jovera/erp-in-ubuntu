@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Modal, Button, Form, Container, Row, Col } from 'react-bootstrap'; // Importing Modal, Button, and Form from 'react-bootstrap'
 import Sidebar from '../sidebar/Sidebar';
+import { useSelector } from 'react-redux';
 
 const Pipelines = () => {
     const [pipelines, setPipelines] = useState([]); // State to store pipelines
@@ -12,6 +13,10 @@ const Pipelines = () => {
     const [updatePipelineName, setUpdatePipelineName] = useState(''); // State for update pipeline name
     const [modalType, setModalType] = useState(''); // State for modal type (create/update)
     const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
+    const [newPipelineTarget, setNewPipelineTarget] = useState('');
+    const [updatePipelineTarget, setUpdatePipelineTarget] = useState('');
+    const [targetError, setTargetError] = useState('');
+    const token = useSelector((state) => state.loginSlice.user?.token);
 
     // Fetch pipelines from the API when the component mounts
     useEffect(() => {
@@ -32,10 +37,19 @@ const Pipelines = () => {
     // Create a new pipeline
     const handleCreatePipeline = async () => {
         try {
-            const response = await axios.post(`/api/pipelines/create-pipeline`, {
-                name: newPipelineName,
-                created_by: 'User ID or Name' // Replace with the actual user ID or name
-            });
+            const response = await axios.post(
+                `/api/pipelines/create-pipeline`,
+                {
+                    name: newPipelineName,
+                    target: newPipelineTarget,
+                    created_by: 'User ID or Name' // Replace with the actual user ID or name
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
             setPipelines([...pipelines, response.data]); // Add new pipeline to the state
             closeModal(); // Close the modal
         } catch (err) {
@@ -46,17 +60,29 @@ const Pipelines = () => {
     // Update a pipeline
     const handleUpdatePipeline = async () => {
         try {
-            const response = await axios.put(`/api/pipelines/update-pipeline/${updatePipelineId}`, {
-                name: updatePipelineName,
-            });
-            setPipelines(pipelines.map(pipeline =>
-                pipeline._id === updatePipelineId ? response.data : pipeline
-            )); // Update the pipeline in the state
+            const response = await axios.put(
+                `/api/pipelines/update-pipeline/${updatePipelineId}`,
+                {
+                    name: updatePipelineName,
+                    target: updatePipelineTarget
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            setPipelines(
+                pipelines.map(pipeline =>
+                    pipeline._id === updatePipelineId ? response.data : pipeline
+                )
+            ); // Update the pipeline in the state
             closeModal(); // Close the modal
         } catch (err) {
             setError('Error updating pipeline');
         }
     };
+
 
     // Soft delete a pipeline
     const handleDeletePipeline = async (id) => {
@@ -95,11 +121,6 @@ const Pipelines = () => {
         return <div>Loading pipelines...</div>;
     }
 
-    // Show error message if any
-    if (error) {
-        return <div>{error}</div>;
-    }
-
     return (
         <div>
             <Container fluid >
@@ -116,7 +137,7 @@ const Pipelines = () => {
                         <Button variant="primary" onClick={openCreateModal}>Create New Pipeline</Button>
 
                         {/* Modal for creating and updating pipelines */}
-                        <Modal show={isModalOpen} onHide={closeModal} backdrop="static" keyboard={false} centered >
+                        <Modal show={isModalOpen} onHide={closeModal} backdrop="static" keyboard={false} centered>
                             <Modal.Header closeButton>
                                 <Modal.Title>{modalType === 'create' ? "Create New Pipeline" : "Update Pipeline"}</Modal.Title>
                             </Modal.Header>
@@ -132,17 +153,34 @@ const Pipelines = () => {
                                                 placeholder="Enter pipeline name"
                                                 isInvalid={!!error}
                                             />
-                                            <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback> {/* Show validation error message */}
+                                            <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>
+                                        </Form.Group>
+                                        <Form.Group controlId="formNewPipelineTarget">
+                                            <Form.Label>Target</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                value={newPipelineTarget}
+                                                onChange={(e) => setNewPipelineTarget(e.target.value)}
+                                                placeholder="Enter target value"
+                                                isInvalid={!!targetError}
+                                            />
+                                            <Form.Control.Feedback type="invalid">{targetError}</Form.Control.Feedback>
                                         </Form.Group>
                                     </Form>
                                 ) : (
                                     <Form>
                                         <Form.Group controlId="formUpdatePipeline">
                                             <Form.Label>Select Pipeline</Form.Label>
-                                            <Form.Control as="select" onChange={(e) => setUpdatePipelineId(e.target.value)} value={updatePipelineId}>
+                                            <Form.Control
+                                                as="select"
+                                                onChange={(e) => setUpdatePipelineId(e.target.value)}
+                                                value={updatePipelineId}
+                                            >
                                                 <option value="">Select Pipeline</option>
                                                 {pipelines.map(pipeline => (
-                                                    <option key={pipeline._id} value={pipeline._id}>{pipeline.name}</option>
+                                                    <option key={pipeline._id} value={pipeline._id}>
+                                                        {pipeline.name}
+                                                    </option>
                                                 ))}
                                             </Form.Control>
                                         </Form.Group>
@@ -154,6 +192,17 @@ const Pipelines = () => {
                                                 onChange={(e) => setUpdatePipelineName(e.target.value)}
                                                 placeholder="Enter new pipeline name"
                                             />
+                                        </Form.Group>
+                                        <Form.Group controlId="formUpdatePipelineTarget">
+                                            <Form.Label>Target</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                value={updatePipelineTarget}
+                                                onChange={(e) => setUpdatePipelineTarget(e.target.value)}
+                                                placeholder="Enter new target value"
+                                                isInvalid={!!targetError}
+                                            />
+                                            <Form.Control.Feedback type="invalid">{targetError}</Form.Control.Feedback>
                                         </Form.Group>
                                     </Form>
                                 )}
@@ -168,10 +217,12 @@ const Pipelines = () => {
                             </Modal.Footer>
                         </Modal>
 
+
                         <ul>
                             {pipelines.map((pipeline) => (
                                 <li key={pipeline._id} style={{ color: 'white' }}>
                                     <h2>{pipeline.name}</h2>
+                                    <p>Target: {`${pipeline.target}AED`}</p>
                                     <p>Created By: {pipeline.created_by}</p>
                                     <p>Created At:   {new Date(pipeline.created_at).toLocaleDateString('en-US', {
                                         year: 'numeric',

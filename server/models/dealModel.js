@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const dealSchema = new Schema({
+    is_converted: {
+        type: Boolean,
+        default: false
+    }, 
     is_reject: {
         type: Boolean,
         default: false

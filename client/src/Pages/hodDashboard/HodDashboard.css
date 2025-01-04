@@ -1,0 +1,33 @@
+.hod_dashboard_card {
+    position: relative;
+    overflow: hidden;
+    background-color: #444;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.hod_dashboard_card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgb(145, 142, 133) 100%);
+    transition: left 0.4s ease-in-out;
+    z-index: 0;
+}
+
+.hod_dashboard_card:hover::before {
+    left: 0;
+}
+
+.hod_dashboard_card:hover {
+    transform: translateY(-5px);
+}
+
+.hod_dashboard_card * {
+    position: relative;
+    z-index: 1;
+}

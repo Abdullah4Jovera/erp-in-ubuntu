@@ -192,6 +192,7 @@ const Contract = () => {
         setSelectedPipeline(null)
         setSearchTerm('')
         setEndDate(null)
+
         setStartDate(null)
     };
     const isSearchEnabled =
@@ -234,13 +235,14 @@ const Contract = () => {
                                             className='input_field_input_field'
                                         >
                                             <option value="">Select Pipeline</option>
-                                            {allPipelines.map(pipeline => (
+                                            {/* Check if allPipelines is an array before using map */}
+                                            {Array.isArray(allPipelines) && allPipelines.map(pipeline => (
                                                 <option key={pipeline._id} value={pipeline.name}>{pipeline.name}</option>
                                             ))}
                                         </Form.Control>
-
                                     </InputGroup>
                                 </div>
+
                                 {/* Date Range Picker */}
                                 <div className='w-100' style={{ display: 'flex', gap: '5px' }}>
                                     <DatePicker
@@ -297,9 +299,10 @@ const Contract = () => {
                                 ))}
                             </Row>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div className="d-flex flex-wrap">
-                                    {allBranches.map((branch) => (
+                                    {/* Check if allBranches is an array before using map */}
+                                    {Array.isArray(allBranches) && allBranches.map((branch) => (
                                         <Button
                                             key={branch._id}
                                             variant={selectedBranch === branch.name ? 'primary' : 'outline-primary'}
@@ -326,9 +329,11 @@ const Contract = () => {
                                         </Button>
                                     )}
                                 </div>
+
                                 {/* Product Filter Buttons */}
                                 <div className="d-flex flex-wrap">
-                                    {allProducts.map((product) => (
+                                    {/* Check if allProducts is an array before using map */}
+                                    {Array.isArray(allProducts) && allProducts.map((product) => (
                                         <Button
                                             key={product._id}
                                             variant={selectedProduct === product.name ? 'primary' : 'outline-primary'}
@@ -357,6 +362,7 @@ const Contract = () => {
                                 </div>
                             </div>
 
+
                             {/* Drag and Drop */}
                             {loading ? (
                                 <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -369,7 +375,7 @@ const Contract = () => {
                                     <div style={{ display: 'flex', overflow: 'hidden' }}>
                                         {Object.keys(groupedContracts).map((stageId) => {
                                             const stage = groupedContracts[stageId];
-                                            console.log(stage,'contractstage')
+                                            console.log(stage, 'contractstage')
                                             return (
                                                 <Droppable key={stageId} droppableId={stageId}>
                                                     {(provided) => (

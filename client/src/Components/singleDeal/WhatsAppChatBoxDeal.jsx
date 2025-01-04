@@ -127,14 +127,15 @@ const WhatsAppChat = ({ leadId, rtl }) => {
     };
 
     // Group chat history by date
-    const groupedMessages = chatHistory.reduce((groups, chat) => {
+    const groupedMessages = Array.isArray(chatHistory) ? chatHistory.reduce((groups, chat) => {
         const messageDate = formatDate(chat.createdAt);
         if (!groups[messageDate]) {
             groups[messageDate] = [];
         }
         groups[messageDate].push(chat);
         return groups;
-    }, {});
+    }, {}) : {}; // If chatHistory is not an array, return an empty object
+    
 
 
     useEffect(() => {

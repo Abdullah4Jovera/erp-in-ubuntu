@@ -254,7 +254,7 @@ router.get('/search-leads', isAuth, async (req, res) => {
         // Filter by pipeline if provided or restrict by the user's pipeline array
         if (pipeline) {
             query.pipeline_id = new mongoose.Types.ObjectId(String(pipeline));
-        } 
+        }
 
         // Filter by lead type
         if (lead_type) {
@@ -503,7 +503,10 @@ router.post('/create-lead', isAuth, hasPermission(['create_lead']), async (req, 
         }
 
         const initialSelectedUsers = req.body.selected_users || [];
-        const initialUserIds = initialSelectedUsers.map(user => user._id.toString());
+        const initialUserIds = initialSelectedUsers
+            .filter(user => user && user._id)  // Filter out invalid or undefined users
+            .map(user => user._id.toString()); // Now safely call toString()
+
         let allSelectedUserIds = [...initialUserIds, req.user._id.toString()];
 
         const ceoUsers = await User.find({ role: 'CEO' }).select('_id name');
@@ -794,7 +797,7 @@ router.get('/unassigned-leads/:productId', isAuth, hasPermission(['unassigned_le
         const leadsWithoutSalesOrTeamLeaders = unassignedLeads.filter(lead => {
             const hasSales = lead.selected_users.some(user => user.role === 'Sales');
             const hasTeamLeader = lead.selected_users.some(user => user.role === 'Team Leader');
-            
+
             // Return lead only if neither Sales nor Team Leader is present
             return !hasSales && !hasTeamLeader;
         });
@@ -1551,21 +1554,21 @@ router.post('/convert-lead-to-contract/:leadId', isAuth, hasPermission(['convert
         const {
             finance_amount,
             bank_commission,
-            customer_commission, 
+            customer_commission,
             with_vat_commission,
             without_vat_commission,
             hod, hod_commission_percentage, hod_commission_amount,
             hom, hom_commission_percentage, hom_commission_amount,
             sale_manager, sale_manager_commission_percentage, sale_manager_commission_amount,
             ajman_manager, ajman_manager_commission_percentage, ajman_manager_commission_amount,
-            ajman_coordinator, ajman_coordinator_commission_percentage, ajman_coordinator_commission_amount, 
+            ajman_coordinator, ajman_coordinator_commission_percentage, ajman_coordinator_commission_amount,
             ajman_team_leader, ajman_team_leader_commission_percentage, ajman_team_leader_commission_amount,
             dubai_manager, dubai_manager_commission_percentage, dubai_manager_commission_amount,
             dubai_coordinator, dubai_coordinator_commission_percentage, dubai_coordinator_commission_amount,
             dubaiteam_leader, dubaiteam_leader_commission_percentage, dubaiteam_leader_commission_amount,
             dubaisale_agent, dubaiteam_sale_agent_percentage, dubaiteam_sale_agent_amount,
             ajman_sale_agent, ajman_sale_agent_percentage, ajman_sale_agent_amount,
-            coordinator, coordinator_commission_percentage, coordinator_commission_amount, 
+            coordinator, coordinator_commission_percentage, coordinator_commission_amount,
             team_leader, team_leader_commission_percentage, team_leader_commission_amount,
             sales_agent, sales_agent_commission_percentage, sales_agent_commission_amount,
             sales_agent_one, sales_agent_one_commission_percentage, sales_agent_one_commission_amount,
@@ -1579,12 +1582,12 @@ router.post('/convert-lead-to-contract/:leadId', isAuth, hasPermission(['convert
             developer_four, developer_four_commission_percentage, developer_four_commission_amount,
             broker_name, broker_name_commission_percentage, broker_name_commission_amount,
             lead_created_by, lead_created_by_commission_percentage, lead_created_by_commission_amount
-            ,ts_team_leader,ts_team_leader_commission_percentage,ts_team_leader_commission_amount,
-            ts_agent,tsagent_commission_percentage,tsagent_commission_amount,
-            ref_hod,ref_hod_commission_percentage,ref_hod_commission_amount,
-            ref_manager,ref_manager_commission_percentage,ref_manager_commission_amount,
-            ref_hom,ref_hom_commission_percentage,ref_hom_commission_amount,
-            team_leader_one,team_leader_one_commission_percentage,team_leader_one_commission_amount
+            , ts_team_leader, ts_team_leader_commission_percentage, ts_team_leader_commission_amount,
+            ts_agent, tsagent_commission_percentage, tsagent_commission_amount,
+            ref_hod, ref_hod_commission_percentage, ref_hod_commission_amount,
+            ref_manager, ref_manager_commission_percentage, ref_manager_commission_amount,
+            ref_hom, ref_hom_commission_percentage, ref_hom_commission_amount,
+            team_leader_one, team_leader_one_commission_percentage, team_leader_one_commission_amount
         } = req.body;
 
         // Find the lead
@@ -1596,7 +1599,7 @@ router.post('/convert-lead-to-contract/:leadId', isAuth, hasPermission(['convert
             return res.status(404).json({ message: 'Lead not found' });
         }
 
-        const productIds = lead.products._id;       
+        const productIds = lead.products._id;
         // Create a new ServiceCommission
         const newServiceCommission = new serviceCommissionModel({
             contract_id: null, // Temporary, updated after creating the contract
@@ -1690,10 +1693,10 @@ router.post('/convert-lead-to-contract/:leadId', isAuth, hasPermission(['convert
             ts_team_leader: convertToObjectId(ts_team_leader),
             ts_team_leader_commission_percentage,
             ts_team_leader_commission_amount,
-            ref_hom: convertToObjectId(ref_hom),ref_hom_commission_percentage,ref_hom_commission_amount,
-            ref_hod: convertToObjectId(ref_hod),ref_hod_commission_percentage,ref_hod_commission_amount,
-            ref_manager: convertToObjectId(ref_manager),ref_manager_commission_percentage,ref_manager_commission_amount,
-            team_leader_one: convertToObjectId(team_leader_one),team_leader_one_commission_percentage,team_leader_one_commission_amount
+            ref_hom: convertToObjectId(ref_hom), ref_hom_commission_percentage, ref_hom_commission_amount,
+            ref_hod: convertToObjectId(ref_hod), ref_hod_commission_percentage, ref_hod_commission_amount,
+            ref_manager: convertToObjectId(ref_manager), ref_manager_commission_percentage, ref_manager_commission_amount,
+            team_leader_one: convertToObjectId(team_leader_one), team_leader_one_commission_percentage, team_leader_one_commission_amount
 
 
         });
@@ -1711,7 +1714,7 @@ router.post('/convert-lead-to-contract/:leadId', isAuth, hasPermission(['convert
             contract_stage: '673dad2024830568266491ff',
             status: 'Active',
             is_transfer: false,
-            labels: lead.labels, 
+            labels: lead.labels,
             branch: lead.branch._id,
             created_by: req.user._id,
             lead_id: lead._id,
@@ -2099,18 +2102,18 @@ router.put('/transfer-lead/:id', isAuth, hasPermission(['transfer_lead']), async
         }).select('_id name');
 
         const previousproduct = lead.products;
-        previousPipelineId =lead.pipeline_id._id;
-        const previousproductHodUser = await User.findOne({ 
+        previousPipelineId = lead.pipeline_id._id;
+        const previousproductHodUser = await User.findOne({
             role: 'HOD',
-            products: previousproduct, 
+            products: previousproduct,
         }).select('_id');
-        const previousproductHomUser = await User.findOne({ 
+        const previousproductHomUser = await User.findOne({
             role: 'HOM',
-            products: previousproduct, 
-        }).select('_id'); 
-        const previousPipelinemanagerUser = await User.findOne({ 
+            products: previousproduct,
+        }).select('_id');
+        const previousPipelinemanagerUser = await User.findOne({
             role: 'Manager',
-            pipeline: previousPipelineId, 
+            pipeline: previousPipelineId,
         }).select('_id');
 
         lead.ref_hod = previousproductHodUser ? previousproductHodUser._id : null;
@@ -2194,7 +2197,7 @@ router.put('/transfer-lead/:id', isAuth, hasPermission(['transfer_lead']), async
             message: 'Lead transferred successfully, notifications sent',
             lead: updatedLead,
             activity_log: activityLog,
-            notifications, 
+            notifications,
         });
     } catch (error) {
         console.error('Error transferring lead:', error);
@@ -2293,14 +2296,14 @@ router.put('/add-user-to-lead/:leadId', isAuth, hasPermission(['add_user_lead'])
         res.status(500).json({ message: 'Server error' });
     }
 });
- // Add multiple users to selected_users and update branch
+// Add multiple users to selected_users and update branch
 router.put('/add-multiple-users-to-lead/:leadId', isAuth, hasPermission(['add_user_lead']), async (req, res) => {
     try {
         const { userIds, branchId } = req.body;
         const leadId = req.params.leadId;
 
         const lead = await Lead.findById(leadId).populate('client selected_users');
-        if (!lead) { 
+        if (!lead) {
             return res.status(404).json({ message: 'Lead not found' });
         }
 
@@ -2536,7 +2539,7 @@ router.put('/move-lead/:id', isAuth, hasPermission(['move_lead']), async (req, r
             lead: updatedLead,
             activity_log: activityLog,
             notifications,
-        }); 
+        });
     } catch (error) {
         console.error('Error moving lead:', error);
         res.status(500).json({ message: 'Error moving lead' });
@@ -2905,7 +2908,7 @@ router.put('/edit-lead/:id', isAuth, hasPermission(['edit_lead']), async (req, r
             clientw_phone,
             product_stage,
             company_Name,
-            lead_type, 
+            lead_type,
             pipeline,
             products,
             source,

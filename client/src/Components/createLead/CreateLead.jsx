@@ -19,7 +19,6 @@ const debounce = (func, delay) => {
 };
 
 const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
-    console.log(leads, 'allleads')
     // Redux User Data
     const branchesSlice = useSelector(state => state.loginSlice.branches);
     const leadTypeSlice = useSelector(state => state.loginSlice.leadType);
@@ -52,7 +51,6 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
     const [productStage, setProductStage] = useState([])
     const [leadType, setLeadType] = useState('')
     const [source, setSource] = useState('')
-    console.log(leadType, 'leadType', source)
     const [leadDetails, setLeadDetails] = useState('')
     const [thirdparty, setThirdParty] = useState('')
     const [isValid, setIsValid] = useState(false);
@@ -83,7 +81,6 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
     const [currentProduct, setCurrentProduct] = useState('')
     const [currentPipeLine, setCurrentPipeline] = useState('')
     const [currentProductStage, setCurrentProductStage] = useState('')
-    console.log(currentBranch, currentProduct, currentPipeLine, currentProductStage, 'currentProductStage')
 
     // Auth Token
     const token = useSelector(state => state.loginSlice.user?.token);
@@ -617,12 +614,15 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
         }
     };
 
-    const userOptions = allUsers
+    const userOptions = Array.isArray(allUsers)
+    ? allUsers
         .filter(user => user.role === 'TS Team Leader') // Filter users by role
         .map(user => ({
             value: user._id,
             label: user.name
-        }));
+        }))
+    : []; // Return an empty array if allUsers is not an array
+
 
     const handlethirdpartyInputChange = (e) => {
         const value = e.target.value
@@ -996,37 +996,45 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                 </Form.Group>
                             </Col>
                         </Row>
-
                         <Row>
                             {/* Product Select Dropdown */}
                             {!productUserSlice && (
                                 <Col md={4}>
                                     <Form.Group controlId="product">
-                                        <Form.Label className='mutual_heading_class'>Product</Form.Label>
+                                        <Form.Label className="mutual_heading_class">Product</Form.Label>
                                         <Form.Select
                                             aria-label="Select Product"
                                             name="product"
                                             value={product}
                                             onChange={handleProductInputChange}
                                             disabled={isClientNameDisabled} // Disable based on state
-                                            className='input_field_input_field'
+                                            className="input_field_input_field"
                                         >
                                             <option value="">Select Product</option>
-                                            {productNamesSlice.map(p => (
-                                                <option key={p._id} value={p._id}>
-                                                    {p.name}
-                                                </option>
-                                            ))}
+                                            {Array.isArray(productNamesSlice) && productNamesSlice.length > 0 ? (
+                                                productNamesSlice.map(p => (
+                                                    <option key={p._id} value={p._id}>
+                                                        {p.name}
+                                                    </option>
+                                                ))
+                                            ) : (
+                                                <option>No Products Available</option>
+                                            )}
                                         </Form.Select>
-                                        {errorMessages.product && <div className="text-danger"> <p style={{ fontSize: '12px' }}>{errorMessages.product}</p> </div>}
+                                        {errorMessages.product && (
+                                            <div className="text-danger">
+                                                <p style={{ fontSize: '12px' }}>{errorMessages.product}</p>
+                                            </div>
+                                        )}
                                     </Form.Group>
                                 </Col>
                             )}
 
+                            {/* Branch Select Dropdown */}
                             {branchUserSlice === null && (
                                 <Col md={4}>
                                     <Form.Group className="mb-3" controlId="branch">
-                                        <Form.Label className='mutual_heading_class'>Branch</Form.Label>
+                                        <Form.Label className="mutual_heading_class">Branch</Form.Label>
                                         <Form.Select
                                             aria-label="Select Branch"
                                             name="branch"
@@ -1034,14 +1042,18 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                             onChange={handleBranchname}
                                             isInvalid={!!errors.branch}
                                             disabled={isClientNameDisabled} // Disable based on state
-                                            className='input_field_input_field'
+                                            className="input_field_input_field"
                                         >
                                             <option value="">Select Branch</option>
-                                            {branchesSlice.map((branch, index) => (
-                                                <option key={index} value={branch._id}>
-                                                    {branch.name}
-                                                </option>
-                                            ))}
+                                            {Array.isArray(branchesSlice) && branchesSlice.length > 0 ? (
+                                                branchesSlice.map((branch, index) => (
+                                                    <option key={index} value={branch._id}>
+                                                        {branch.name}
+                                                    </option>
+                                                ))
+                                            ) : (
+                                                <option>No Branches Available</option>
+                                            )}
                                         </Form.Select>
                                         <Form.Control.Feedback type="invalid">
                                             {errors.branch}
@@ -1055,34 +1067,41 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                 </Col>
                             )}
 
-
                             {/* Pipeline Select Dropdown */}
-                            {pipelineUserSlice?.length === 0 && (
+                            {(pipelineUserSlice?.length === 0 || pipelineUserSlice?.length > 1) && (
                                 <Col md={4}>
-                                    <Form.Label className='mutual_heading_class'>Pipeline</Form.Label>
+                                    <Form.Label className="mutual_heading_class">Pipeline</Form.Label>
                                     <Form.Select
                                         aria-label="Select Pipeline"
                                         name="pipeline"
                                         value={pipelineId}
                                         onChange={handlePipelineInputChange}
                                         disabled={isClientNameDisabled} // Disable based on state
-                                        className='input_field_input_field'
+                                        className="input_field_input_field"
                                     >
                                         <option value="">Select Pipeline</option>
-                                        {filteredPipelines.map(pipeline => (
-                                            <option key={pipeline._id} value={pipeline._id}>
-                                                {pipeline.name}
-                                            </option>
-                                        ))}
-                                        {errorMessages.pipelineId && <div className="text-danger"> <p style={{ fontSize: '12px' }}>{errorMessages.pipelineId}</p> </div>}
+                                        {Array.isArray(filteredPipelines) && filteredPipelines.length > 0 ? (
+                                            filteredPipelines.map(pipeline => (
+                                                <option key={pipeline._id} value={pipeline._id}>
+                                                    {pipeline.name}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option>No Pipelines Available</option>
+                                        )}
+                                        {errorMessages.pipelineId && (
+                                            <div className="text-danger">
+                                                <p style={{ fontSize: '12px' }}>{errorMessages.pipelineId}</p>
+                                            </div>
+                                        )}
                                     </Form.Select>
                                 </Col>
                             )}
 
-
+                            {/* Product Stage Select Dropdown */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="product_stage">
-                                    <Form.Label className='mutual_heading_class'>Product Stages</Form.Label>
+                                    <Form.Label className="mutual_heading_class">Product Stages</Form.Label>
                                     <Form.Select
                                         aria-label="Select Product Stage"
                                         name="product_stage"
@@ -1090,25 +1109,34 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                         onChange={handleInputChangeProductstage}
                                         isInvalid={!!errors.product_stage}
                                         disabled={isClientNameDisabled} // Disable based on state
-                                        className='input_field_input_field'
+                                        className="input_field_input_field"
                                     >
                                         <option value="">Select Product Stage</option>
-                                        {productStage?.map(stage => (
-                                            <option key={stage._id} value={stage._id}>
-                                                {stage.name}
-                                            </option>
-                                        ))}
+                                        {Array.isArray(productStage) && productStage.length > 0 ? (
+                                            productStage.map(stage => (
+                                                <option key={stage._id} value={stage._id}>
+                                                    {stage.name}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option>No Product Stages Available</option>
+                                        )}
                                     </Form.Select>
                                     <Form.Control.Feedback type="invalid">
                                         {errors.product_stage}
                                     </Form.Control.Feedback>
-                                    {errorMessages.selectedProductStage && <div className="text-danger"><p style={{ fontSize: '12px' }}>{errorMessages.selectedProductStage}</p></div>}
+                                    {errorMessages.selectedProductStage && (
+                                        <div className="text-danger">
+                                            <p style={{ fontSize: '12px' }}>{errorMessages.selectedProductStage}</p>
+                                        </div>
+                                    )}
                                 </Form.Group>
                             </Col>
 
+                            {/* Lead Type Select Dropdown */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="lead_type">
-                                    <Form.Label className='mutual_heading_class'>Lead Type</Form.Label>
+                                    <Form.Label className="mutual_heading_class">Lead Type</Form.Label>
                                     <Form.Select
                                         aria-label="Select Lead Type"
                                         name="lead_type"
@@ -1116,25 +1144,34 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                         onChange={handleInputChangeLeadType}
                                         isInvalid={!!errors.lead_type}
                                         disabled={isClientNameDisabled} // Disable based on state
-                                        className='input_field_input_field'
+                                        className="input_field_input_field"
                                     >
                                         <option value="">Select Lead Type</option>
-                                        {leadTypeSlice.map((type, index) => (
-                                            <option key={index} value={type._id}>
-                                                {type.name}
-                                            </option>
-                                        ))}
+                                        {Array.isArray(leadTypeSlice) && leadTypeSlice.length > 0 ? (
+                                            leadTypeSlice.map((type, index) => (
+                                                <option key={index} value={type._id}>
+                                                    {type.name}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option>No Lead Types Available</option>
+                                        )}
                                     </Form.Select>
                                     <Form.Control.Feedback type="invalid">
                                         {errors.lead_type}
                                     </Form.Control.Feedback>
-                                    {errorMessages.leadType && <div className="text-danger"><p style={{ fontSize: '12px' }}>{errorMessages.leadType} </p> </div>}
+                                    {errorMessages.leadType && (
+                                        <div className="text-danger">
+                                            <p style={{ fontSize: '12px' }}>{errorMessages.leadType}</p>
+                                        </div>
+                                    )}
                                 </Form.Group>
                             </Col>
 
+                            {/* Source Select Dropdown */}
                             <Col md={4}>
                                 <Form.Group className="mb-3" controlId="source">
-                                    <Form.Label className='mutual_heading_class'>Source</Form.Label>
+                                    <Form.Label className="mutual_heading_class">Source</Form.Label>
                                     <Form.Select
                                         aria-label="Select Source"
                                         name="source"
@@ -1142,19 +1179,27 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                         onChange={handleSourceInputChange}
                                         isInvalid={!!errors.source}
                                         disabled={isClientNameDisabled} // Disable based on state
-                                        className='input_field_input_field'
+                                        className="input_field_input_field"
                                     >
                                         <option value="">Select Source</option>
-                                        {sources.map((source, index) => (
-                                            <option key={index} value={source._id}>
-                                                {source.name}
-                                            </option>
-                                        ))}
+                                        {Array.isArray(sources) && sources.length > 0 ? (
+                                            sources.map((source, index) => (
+                                                <option key={index} value={source._id}>
+                                                    {source.name}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option>No Sources Available</option>
+                                        )}
                                     </Form.Select>
                                     <Form.Control.Feedback type="invalid">
                                         {errors.source}
                                     </Form.Control.Feedback>
-                                    {errorMessages.source && <div className="text-danger"> <p style={{ fontSize: '12px' }}>{errorMessages.source}</p> </div>}
+                                    {errorMessages.source && (
+                                        <div className="text-danger">
+                                            <p style={{ fontSize: '12px' }}>{errorMessages.source}</p>
+                                        </div>
+                                    )}
                                 </Form.Group>
                             </Col>
                         </Row>
@@ -1272,7 +1317,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                     {apiData && apiData ? (
                         <>
                             <p className='mutual_heading_class'>
-                                A lead already exists for the client <strong>{apiData && apiData.client.name}</strong> with the following details:
+                                A Lead Already Exists for the Client <strong>{apiData && apiData.client.name}</strong> with the following Details:
                             </p>
                             <ul className='mutual_heading_class'>
                                 <li>Product: <strong>{apiData && apiData.products.name}</strong></li>
@@ -1281,7 +1326,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                 <li>Stage: <strong>{apiData && apiData.productStage.name}</strong></li>
                             </ul>
                             <p className='mutual_heading_class'>
-                                If you wish to work with this lead, please submit a Move or Transfer Request to the <strong>{apiData && apiData.products.name}</strong>. HOD/Manager.
+                                If you wish to Work with this Lead, Please Submit a Move or Transfer Request to the <strong>{apiData && apiData.products.name}</strong>. HOD/Manager.
                             </p>
                         </>
                     ) : (
@@ -1289,9 +1334,8 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                     )}
                 </Modal.Body>
                 <Modal.Footer style={{ border: 'none' }}>
-                    {/* <Button className='all_close_btn_container' onClick={() => setMovePipeline(false)} >Close</Button> */}
-                    <Button className='all_single_leads_button' onClick={() => MoveLead(apiData && apiData.id)} >Move Request </Button>
-                    <Button className='all_single_leads_button' onClick={() => TransferCase(apiData && apiData.id)} >Transfer Request </Button>
+                    <Button className='move_trasnfer_request' onClick={() => MoveLead(apiData && apiData.id)} >Move Request </Button>
+                    <Button className='move_trasnfer_request' onClick={() => TransferCase(apiData && apiData.id)} >Transfer Request </Button>
                 </Modal.Footer>
             </Modal>
 
@@ -1324,7 +1368,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                     className={`input_field_input_field ${product ? 'enabled' : 'disabled-select'}`}
                                 >
                                     <option value="">Select Product</option>
-                                    {productNamesSlice.map(p => (
+                                    {Array.isArray(productNamesSlice) && productNamesSlice.map(p => (
                                         <option key={p._id} value={p._id}>
                                             {p.name}
                                         </option>
@@ -1346,7 +1390,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                     className='input_field_input_field'
                                 >
                                     <option value="">Select Branch</option>
-                                    {branchesSlice.map((branch, index) => (
+                                    {Array.isArray(branchesSlice) && branchesSlice.map((branch, index) => (
                                         <option key={index} value={branch._id}>
                                             {branch.name}
                                         </option>
@@ -1369,15 +1413,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                 className='input_field_input_field'
                             >
                                 <option value="">Select Pipeline</option>
-                                {filteredPipelines.map(pipeline => (
+                                {Array.isArray(filteredPipelines) && filteredPipelines.map(pipeline => (
                                     <option key={pipeline._id} value={pipeline._id}>
                                         {pipeline.name}
                                     </option>
                                 ))}
-                                {errorMessages.pipelineId && <div className="text-danger"> <p style={{ fontSize: '12px' }}>{errorMessages.pipelineId}</p> </div>}
                             </Form.Select>
+                            {errorMessages.pipelineId && <div className="text-danger"> <p style={{ fontSize: '12px' }}>{errorMessages.pipelineId}</p> </div>}
                         </Col>
-
 
                         <Col md={6}>
                             <Form.Group className="mb-3" controlId="product_stage">
@@ -1391,7 +1434,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                     className='input_field_input_field'
                                 >
                                     <option value="">Select Product Stage</option>
-                                    {productStage.map(stage => (
+                                    {Array.isArray(productStage) && productStage.map(stage => (
                                         <option key={stage._id} value={stage._id}>
                                             {stage.name}
                                         </option>
@@ -1405,6 +1448,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                         </Col>
                     </Row>
 
+
                 </Modal.Body>
                 <Modal.Footer style={{ border: 'none' }}>
                     <Button className='all_close_btn_container' onClick={() => {
@@ -1413,7 +1457,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                         setMoveModalSuccessMessage(false)
                         setModal2Open(true);
                     }}>Close</Button>
-                    <Button className='all_single_leads_button' onClick={() => {
+                    <Button className='move_trasnfer_request' onClick={() => {
                         resetFormFields();
                         // setIsClientNameDisabled(false)
                         // setMoveModalSuccessMessage(false)
@@ -1451,13 +1495,13 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                     className='input_field_input_field'
                                 >
                                     <option value="">Select Product</option>
-                                    {productNamesSlice.map(p => (
+                                    {Array.isArray(productNamesSlice) && productNamesSlice.map(p => (
                                         <option key={p._id} value={p._id}>
                                             {p.name}
                                         </option>
                                     ))}
                                 </Form.Select>
-                                {errorMessages.product && <div className="text-danger"> <p style={{ fontSize: '12px' }}>{errorMessages.product}</p> </div>}
+                                {errorMessages.product && <div className="text-danger"><p style={{ fontSize: '12px' }}>{errorMessages.product}</p></div>}
                             </Form.Group>
                         </Col>
 
@@ -1474,7 +1518,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                     className={`input_field_input_field ${productEnableTransfer ? 'disabled-select' : ''}`}
                                 >
                                     <option value="">Select Branch</option>
-                                    {branchesSlice.map((branch, index) => (
+                                    {Array.isArray(branchesSlice) && branchesSlice.map((branch, index) => (
                                         <option key={index} value={branch._id}>
                                             {branch.name}
                                         </option>
@@ -1483,10 +1527,9 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                 <Form.Control.Feedback type="invalid">
                                     {errors.branch}
                                 </Form.Control.Feedback>
-                                {errorMessages.branch && <div className="text-danger"> <p style={{ fontSize: '12px' }}>{errorMessages.branch}</p> </div>}
+                                {errorMessages.branch && <div className="text-danger"><p style={{ fontSize: '12px' }}>{errorMessages.branch}</p></div>}
                             </Form.Group>
                         </Col>
-
 
                         <Col md={6} className="mb-2">
                             <Form.Label className='mutual_heading_class'>Pipeline</Form.Label>
@@ -1499,15 +1542,14 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                 className={`input_field_input_field ${productEnableTransfer ? 'disabled-select' : ''}`}
                             >
                                 <option value="">Select Pipeline</option>
-                                {filteredPipelines.map(pipeline => (
+                                {Array.isArray(filteredPipelines) && filteredPipelines.map(pipeline => (
                                     <option key={pipeline._id} value={pipeline._id}>
                                         {pipeline.name}
                                     </option>
                                 ))}
-                                {errorMessages.pipelineId && <div className="text-danger"> <p style={{ fontSize: '12px' }}>{errorMessages.pipelineId}</p> </div>}
                             </Form.Select>
+                            {errorMessages.pipelineId && <div className="text-danger"><p style={{ fontSize: '12px' }}>{errorMessages.pipelineId}</p></div>}
                         </Col>
-
 
                         <Col md={6}>
                             <Form.Group className="mb-3" controlId="product_stage">
@@ -1522,7 +1564,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                     className={`input_field_input_field ${productEnableTransfer ? 'disabled-select' : ''}`}
                                 >
                                     <option value="">Select Product Stage</option>
-                                    {productStage.map(stage => (
+                                    {Array.isArray(productStage) && productStage.map(stage => (
                                         <option key={stage._id} value={stage._id}>
                                             {stage.name}
                                         </option>
@@ -1535,6 +1577,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                             </Form.Group>
                         </Col>
                     </Row>
+
                 </Modal.Body>
                 <Modal.Footer style={{ border: 'none' }} >
                     <Button className='all_close_btn_container' onClick={() => {
@@ -1543,7 +1586,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                         setTransferModalSuccessMessage(false)
                         setModal2Open(true);
                     }}>Close</Button>
-                    <Button disabled={productEnableTransfer} className='all_single_leads_button' onClick={() => {
+                    <Button disabled={productEnableTransfer} className='move_trasnfer_request' onClick={() => {
                         resetFormFields();
                         // setIsClientNameDisabled(false)
                         // setTransferModalSuccessMessage(false)
@@ -1611,7 +1654,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                     className="input_field_input_field"
                                 >
                                     <option value="">Select Product</option>
-                                    {productNamesSlice.map(p => (
+                                    {Array.isArray(productNamesSlice) && productNamesSlice.map(p => (
                                         <option key={p._id} value={p._id}>
                                             {p.name}
                                         </option>
@@ -1636,7 +1679,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                     className="input_field_input_field"
                                 >
                                     <option value="">Select Branch</option>
-                                    {branchesSlice.map((branch, index) => (
+                                    {Array.isArray(branchesSlice) && branchesSlice.map((branch, index) => (
                                         <option key={index} value={branch._id}>
                                             {branch.name}
                                         </option>
@@ -1654,7 +1697,6 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                         </Col>
                     )}
 
-
                     {/* Pipeline Select Dropdown */}
                     {pipelineUserSlice?.length === 0 && (
                         <Col md={12}>
@@ -1668,7 +1710,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                 className="input_field_input_field"
                             >
                                 <option value="">Select Pipeline</option>
-                                {filteredPipelines.map(pipeline => (
+                                {Array.isArray(filteredPipelines) && filteredPipelines.map(pipeline => (
                                     <option key={pipeline._id} value={pipeline._id}>
                                         {pipeline.name}
                                     </option>
@@ -1677,7 +1719,6 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                             </Form.Select>
                         </Col>
                     )}
-
 
                     <Col md={12}>
                         <Form.Group className="mt-3" controlId="product_stage">
@@ -1692,7 +1733,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                                 className="input_field_input_field"
                             >
                                 <option value="">Select Product Stage</option>
-                                {productStage.map(stage => (
+                                {Array.isArray(productStage) && productStage.map(stage => (
                                     <option key={stage._id} value={stage._id}>
                                         {stage.name}
                                     </option>
@@ -1704,6 +1745,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                             {errorMessages.selectedProductStage && <div className="text-danger"><p style={{ fontSize: '12px' }}>{errorMessages.selectedProductStage}</p></div>}
                         </Form.Group>
                     </Col>
+
                     <div className="mt-3">
                         <label htmlFor="description" className='mutual_heading_class'>Description:</label>
                         <textarea
@@ -1716,6 +1758,7 @@ const CreateLead = ({ setModal2Open, modal2Open, fetchLeadsData, leads }) => {
                         />
                     </div>
                 </Modal.Body>
+
                 <Modal.Footer style={{ border: 'none' }} >
                     <Button className='all_close_btn_container' onClick={() => setRestorModal(false)}>Close</Button>
                     <Button className='all_single_leads_button' onClick={() => handleRestore()}>Restore</Button>

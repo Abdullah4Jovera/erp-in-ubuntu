@@ -363,15 +363,35 @@ router.get('/get-single-deal/:id', async (req, res) => {
 });
 
 router.get('/get-deals', isAuth, async (req, res) => {
+ 
   try {
     // Ensure req.user exists and contains _id (e.g., middleware for authentication)
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const userId = req.user._id;
+    const userId = req.user._id; // Get the user ID from the request
+    const pipelineId = req.user.pipeline; // Get the pipeline ID from the user
 
-    const deals = await Deal.find({ selected_users: userId, is_reject:false  }) // Filter by selected_users
+    // Build the filter conditions dynamically based on the presence of pipelineId
+    const matchFilter = (additionalFilters = {}) => {
+      const filter = {
+          selected_users: userId,
+          is_converted: false,
+          is_reject: false,
+          ...additionalFilters,
+      };
+      // Include pipelineId filter if it's not an empty array
+      if (pipelineId && pipelineId.length > 0) {
+          filter.pipeline_id = { $in: pipelineId }; // Match any pipeline ID in the array
+      }
+      return filter;
+  };
+
+
+    
+    // Fetch deals with the dynamic filter
+    const deals = await Deal.find(matchFilter())
       .populate('client_id', 'name email')
       .populate('created_by', 'name email')
       .populate('pipeline_id', 'name')
@@ -401,6 +421,8 @@ router.get('/get-deals', isAuth, async (req, res) => {
     res.status(500).json({ message: 'Error fetching deals' });
   }
 });
+
+
 
 // Update deal stage
 router.put('/update-deal-stage/:id', isAuth, async (req, res) => {

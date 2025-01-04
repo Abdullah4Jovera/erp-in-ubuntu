@@ -25,17 +25,17 @@ const userSchema = new mongoose.Schema(
       type: String,
 
     },
-    commission: {
+    target: {
       type: Number,
       default: 0
     },
     products: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
-      required: false, // Allow null or undefined
+      required: false, 
     },
     permissions: [{ type: String }],
-    isBlocked: { type: Boolean, default: false }, // New field
+    isBlocked: { type: Boolean, default: false }, 
     verified: { type: Boolean, default: false },
     delstatus: { type: Boolean, default: false },
     resigned: { type: Boolean, default: false },
