@@ -17,15 +17,20 @@ async function initializeSocket(server) {
     io.on('connection', async (socket) => {
         const userId = socket.handshake.query.userId;
         socket.join(`user_${userId}`); // Join the user-specific room
-
+    
         // Fetch and send any unread notifications or lead requests when the user connects
         try {
-            const unreadNotifications = await Notification.find({ receiver: userId, read: false, delStatus: false })
+            const unreadNotifications = await Notification.find({ receiver: userId, read: false })
+                .populate('sender', 'name image') // Populate sender's name and image
                 .populate('reference_id')
                 .sort({ created_at: -1 });
-            
+    
             unreadNotifications.forEach(notification => {
                 socket.emit('notification', {
+                    sender: {
+                        name: notification.sender?.name,  // Ensure sender is populated
+                        image: notification.sender?.image, // Ensure sender's image is included
+                    },
                     message: notification.message,
                     referenceId: notification.reference_id ? notification.reference_id._id : null,
                     notificationType: notification.notification_type,
@@ -33,16 +38,16 @@ async function initializeSocket(server) {
                     createdAt: notification.created_at,
                 });
             });
-
+    
         } catch (error) {
             console.error('Error fetching unread notifications or lead requests:', error);
         }
-
+    
         socket.on('disconnect', () => {
             socket.leave(`user_${userId}`); // Leave the user room on disconnect
         });
     });
-
+    
     return io;
 }
 

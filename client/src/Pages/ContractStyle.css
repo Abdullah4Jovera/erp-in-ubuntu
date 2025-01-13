@@ -1,0 +1,161 @@
+.contact_main_card {
+    background-color: #6c757da2 !important;
+    height: 100%;
+    width: 100%;
+    max-width: 300px;
+    min-width: 360px;
+}
+
+.deal_main_card {
+    background-color: #6c757da2 !important;
+    height: 100%;
+    width: 100%;
+    max-width: 300px;
+    max-height: 650px;
+    overflow-y: auto;
+    border-radius: 10px;
+}
+
+.first_card {
+    padding: 0px 10px;
+    background-color: #6c757d6b !important;
+    border-radius: 10px !important;
+    padding: 5px 5px 5px 20px !important;
+}
+
+.activity_toggle_buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.commsion_details_table {
+    max-height: 285px !important;
+    overflow-y: auto !important;
+    height: auto !important;
+}
+
+.lead-discussion-main-card-contract-log {
+    padding: 0px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    max-height: 180px;
+    overflow: hidden;
+}
+
+.lead-discussion-main-card-contract-commission {
+    padding: 0px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    max-height: 305px;
+    overflow: hidden;
+}
+
+.service_detail_data {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+}
+
+.contract-main-card-activity-log {
+    padding: 0px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 100vh;
+    max-height: 340px;
+    margin-bottom: 4%;
+    overflow: hidden;
+}
+
+.pdf_download {
+    background-color: rgb(215, 170, 71);
+    /* Gold-like color */
+    color: rgb(63, 60, 60);
+    padding: 4px 10px;
+    /* Add comfortable padding */
+    font-size: 16px;
+    /* Slightly larger font for better readability */
+    font-weight: 500;
+    /* Semi-bold text */
+    border: none;
+    /* Remove any default border */
+    border-radius: 12px;
+    /* Rounded corners for the iOS-like look */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
+    /* Subtle shadow for depth */
+    transition: all 0.3s ease;
+    /* Smooth transitions for hover effects */
+    cursor: pointer;
+    /* Change cursor to pointer */
+    transform: scale(1);
+    /* Default scale */
+}
+
+.pdf_download:hover {
+    background-color: rgb(200, 160, 65);
+    /* Slightly darker on hover */
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1);
+    /* Enhanced shadow on hover */
+    transform: scale(1.05);
+    /* Slightly increase size */
+}
+
+.pdf_download:active {
+    background-color: rgb(180, 140, 55);
+    /* Darker for active state */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    /* Reduce shadow for pressed effect */
+    transform: scale(0.98);
+    /* Slightly shrink for press effect */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.pdf_download {
+    animation: fadeIn 0.5s ease-out;
+    /* Apply fade-in animation on load */
+}
+
+/* Card Styles */
+.ios-card {
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background-color: #fff;
+    overflow: hidden;
+}
+
+.ios-card .card-body {
+    padding: 20px;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #d7aa47;
+}
+
+.card-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Hover effect for animated style */
+.ios-card.hovered {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}

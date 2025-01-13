@@ -59,7 +59,7 @@
         "id": "8",
         "name": "Company Data",
         "lead_type_id": "1",
-        "created_by": "2", 
+        "created_by": "2",
         "created_at": "2023-05-19 06:00:42",
         "updated_at": "2023-05-22 09:10:51"
     },
@@ -146,9 +146,33 @@
     {
         "id": "22",
         "name": "WhatsApp",
-        "lead_type_id": "2",
+        "lead_type_id": "1",
         "created_by": "2",
         "created_at": "2024-02-29 18:52:20",
         "updated_at": "2024-02-29 18:52:20"
+    },
+    {
+        "id": "23",
+        "name": "Website",
+        "lead_type_id": "1",
+        "created_by": "2",
+        "created_at": "2024-08-07 13:55:19",
+        "updated_at": "2024-08-07 13:55:19"
+    },
+    {
+        "id": "24",
+        "name": "Digital Marketing",
+        "lead_type_id": "1",
+        "created_by": "2",
+        "created_at": "2024-08-07 13:55:52",
+        "updated_at": "2024-08-07 13:56:06"
+    },
+    {
+        "id": "25",
+        "name": "Advertising",
+        "lead_type_id": "1",
+        "created_by": "2",
+        "created_at": "2024-08-07 13:57:17",
+        "updated_at": "2024-08-07 13:57:17"
     }
 ]

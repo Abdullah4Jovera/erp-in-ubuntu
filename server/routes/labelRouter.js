@@ -52,7 +52,7 @@ router.post('/create', isAuth, hasPermission(['label_management']), async (req, 
 
 
 // Get all labels (excluding soft-deleted labels)
-router.get('/all', async (req, res) => {
+router.get('/all', async (req, res) => { 
     try {
         // Find labels with delstatus: false and populate the pipeline_id with the name field from Pipeline
         const labels = await Label.find({ delstatus: false }).populate({

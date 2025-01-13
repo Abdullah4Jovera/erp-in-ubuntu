@@ -15,7 +15,7 @@ const Product = require('../models/productModel');
 const ProductStage = require('../models/productStageModel');
 const Label = require('../models/labelModel');
 
-mongoose.connect('mongodb://localhost:27017/erp3', { 
+mongoose.connect('mongodb://localhost:27017/crm', { 
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => console.log('MongoDB connected'))
@@ -485,7 +485,7 @@ const insertLeads = async () => {
         client: clientId,
         pipeline_id: PipelineId,
         description,
-        company_Name: company_name,
+        // company_Name: company_name,
         lead_type: LeadTypeId,
         source: sourceId, 
         stage: stageId,
@@ -498,7 +498,7 @@ const insertLeads = async () => {
         activity_logs: activityLogIds,
         discussions: discussionIds,
         files: fileIds,
-        is_active: isActive,
+        is_active: isActive, 
         is_converted: isConverted,
         is_reject: isReject,
         created_at: lead.created_at || new Date(),

@@ -112,7 +112,7 @@ const Session = () => {
             <ToastContainer />
             <Row>
                 <Col xs={12} md={12} lg={2}>
-                    <Sidebar />
+                    {/* <Sidebar /> */}
                 </Col>
 
                 <Col xs={12} md={12} lg={10}>

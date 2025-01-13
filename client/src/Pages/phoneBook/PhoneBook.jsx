@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Modal, Button, Form, Dropdown, Row, Col, Container, Card, Image, } from 'react-bootstrap';
+import { Table, Modal, Button, Form, Row, Col, Container, Card, Image, } from 'react-bootstrap';
 import { MdAdd } from 'react-icons/md';
 import axios from 'axios';
 import { AiOutlineEye } from "react-icons/ai";
@@ -13,6 +13,8 @@ import './phoneBookstyle.css'
 import Select from 'react-select'
 import CreatePhoneBook from './CreatePhoneBook';
 import { IoOpenOutline } from "react-icons/io5";
+import { Dropdown, Menu } from 'antd';
+import { BsThreeDotsVertical } from "react-icons/bs";
 
 const PhoneBook = () => {
     const navigate = useNavigate();
@@ -33,19 +35,16 @@ const PhoneBook = () => {
     const [showCommentsModal, setShowCommentsModal] = useState(false);
     const [phoneBookNumber, setPhoneBookNumber] = useState('')
     const [phoneID, setPhoneID] = useState('')
+    const [rtl, setRtl] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 12;
+    const [currentIdForComments, setCurrentIdForComments] = useState(null);
+    const [calStatus, setCalStatus] = useState('');
+    const itemsPerPage = 14;
 
     // State for handling the conversion confirmation modal
     const [showConvertModal, setShowConvertModal] = useState(false);
     const [pendingStatusChange, setPendingStatusChange] = useState(null);
 
-    // useEffect(() => {
-    //     const userData = localStorage.getItem('phoneUserData');
-    //     if (!userData) {
-    //         navigate('/');
-    //     }
-    // }, [navigate]);
 
     const getPhoneNumber = async () => {
         if (token) {
@@ -54,19 +53,20 @@ const PhoneBook = () => {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                    },
                 });
-
 
                 if (response.ok) {
                     const data = await response.json();
-                    // Sort data by updatedAt in descending order
-                    const sortedData = data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                    console.log(sortedData, 'response')
 
-                    setPhonebookData(sortedData);
-                    setFilteredPhonebookData(sortedData); // Initialize filtered data
+                    // Filter out the 'Convert to Lead' status before setting phonebook data
+                    const filteredData = data.filter(entry => entry.calstatus !== 'Convert to Lead');
+
+                    // Set phonebook data and filtered data, ensuring the order is not changed
+                    setPhonebookData(filteredData);
+                    setFilteredPhonebookData(filteredData); // Initialize filtered data
+
                 } else {
                     console.error('Failed to fetch phonebook data:', response.status);
                 }
@@ -77,6 +77,13 @@ const PhoneBook = () => {
             navigate('/');
         }
     };
+
+
+
+    useEffect(() => {
+        const savedRtl = localStorage.getItem('rtl');
+        setRtl(savedRtl); // Update state with the 'rtl' value from localStorage
+    }, [rtl]);
 
     useEffect(() => {
         getPhoneNumber();
@@ -106,50 +113,6 @@ const PhoneBook = () => {
         setShowViewCommentModal(true);
     };
 
-    // Add Comment API
-    // const handleSaveComment = async () => {
-    //     if (selectedEntry) {
-    //         try {
-    //             if (token) {
-    //                 await axios.post(
-    //                     `/api/phonebook/add-comment`,
-    //                     {
-    //                         phonebookId: selectedEntry._id,
-    //                         comment: currentComment
-    //                     },
-    //                     {
-    //                         headers: {
-    //                             'Authorization': `Bearer ${token}`,
-    //                             'Content-Type': 'application/json'
-    //                         }
-    //                     }
-    //                 );
-
-    //                 const updatedData = phonebookData.map((entry) =>
-    //                     entry._id === selectedEntry._id ? { ...entry, comments: [...(entry.comments || []), { remarks: currentComment }] } : entry
-    //                 );
-    //                 // Re-sort updated data by updatedAt
-    //                 const sortedUpdatedData = updatedData.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    //                 setPhonebookData(sortedUpdatedData);
-    //                 setFilteredPhonebookData(sortedUpdatedData);
-    //             } else {
-    //                 navigate('/');
-    //             }
-    //         } catch (error) {
-    //             console.error('Error saving comment:', error);
-    //         }
-    //     }
-    //     setShowAddCommentModal(false);
-    // };
-
-    const handleCallStatusChange = (status) => {
-        if (status === 'Convert to Lead') {
-            setPendingStatusChange(status);
-            setShowConvertModal(true);
-        } else {
-            updateCallStatus(status);
-        }
-    };
 
     const updateCallStatus = async (status) => {
         if (dropdownEntry) {
@@ -194,10 +157,18 @@ const PhoneBook = () => {
 
     // Define options for the dropdown
     const options = [
-        { value: 'Interested', label: 'Interested' },
-        { value: 'Rejected', label: 'Rejected' },
-        { value: 'No Answer', label: 'No Answer' }, // Ensure this matches your data
-        { value: 'Not Interested', label: 'Not Interested' }, // Ensure this matches your data
+        {
+            value: 'Req to call',
+            label: rtl === 'true' ? 'طلب الاتصال' : 'Req to call'  // Localized label for 'Req to call'
+        },
+        {
+            value: 'No Answer',
+            label: rtl === 'true' ? 'مرفوض' : 'No Answer'  // Localized label for 'Rejected'
+        },
+        {
+            value: 'Not Interested',
+            label: rtl === 'true' ? 'مرفوض' : 'Not Interested'  // Localized label for 'Rejected'
+        },
     ];
 
     const HandleCreatePhoneBook = async (num, id) => {
@@ -250,18 +221,17 @@ const PhoneBook = () => {
                         }
                     );
 
-                    // Update local state with the new comment
+                    // Update local state with the new comment without sorting
                     const updatedData = phonebookData.map(entry =>
                         entry._id === selectedEntry._id
                             ? { ...entry, comments: [...(entry.comments || []), { remarks: currentComment, createdAt: new Date() }] }
                             : entry
                     );
 
-                    const sortedUpdatedData = updatedData.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
                     getPhoneNumber();
-                    setPhonebookData(sortedUpdatedData);
-                    setFilteredPhonebookData(sortedUpdatedData);
-                    setShowCommentsModal(false)
+                    setPhonebookData(updatedData); // No sorting
+                    setFilteredPhonebookData(updatedData); // No sorting
+                    setShowCommentsModal(false);
                 } else {
                     navigate('/');
                 }
@@ -272,25 +242,107 @@ const PhoneBook = () => {
         setCurrentComment(''); // Clear the comment field
     };
 
+
+    const handleCallStatusChange = async (id, status) => {
+        if (status === 'Convert to Lead') {
+            setPendingStatusChange(status);
+            setShowConvertModal(true);
+        } else {
+            try {
+                const response = await updateCallStatusAPI(id, status); // Call the API with status and id
+                if (response.success) {
+                    // Update the table data locally to reflect the new status
+                    setFilteredPhonebookData((prevData) =>
+                        prevData.map((entry) =>
+                            entry._id === id ? { ...entry, calstatus: status } : entry
+                        )
+                    );
+                } else {
+                    console.error('Error updating status:', response.message);
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+            }
+        }
+    };
+    const updateCallStatusAPI = async (id, status) => {
+        try {
+            // Make the API call to update the call status
+            const response = await fetch(`/api/phonebook/update-calstatus/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ calstatus: status }),
+            });
+
+            // Fetch updated phonebook data
+            await getPhoneNumber();;
+
+            // Check if the status is "Not Interested"
+            if (status === 'Not Interested') {
+                setCurrentIdForComments(id); // Store the unique ID
+                setShowCommentsModal(true); // Open the modal
+            }
+            setCalStatus(status);
+            return response.json();
+        } catch (error) {
+            console.error('API Call Error:', error);
+            throw error;
+        }
+    };
+
+    const renderMenu = (id) => {
+        const filteredOptions = options.filter(option => option.value !== calStatus);
+
+        return (
+            <>
+                <Menu
+                    style={{
+                        padding: '10px 20px',
+                        inset: '0px 0px auto auto',
+                        display: 'flex',
+                        gap: '5px',
+                        flexDirection: 'column',
+                        backgroundColor: '#fff',
+                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                    }}
+                >
+                    {options.map(option => (
+                        <Menu.Item
+                            key={option.value}
+                            onClick={() => {
+                                updateCallStatusAPI(id, option.value); // Update the status via API
+                            }}
+                        >
+                            {option.label}
+                        </Menu.Item>
+                    ))}
+                </Menu>
+            </>
+        );
+    };
     return (
         <div>
             {/* <Navbar /> */}
-            <Container fluid>
+            <Container fluid style={{ direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
                 <Row>
                     <Col xs={12} md={12} lg={2}>
-                        <Sidebar />
+                        {/* <Sidebar /> */}
                     </Col>
 
                     <Col xs={12} md={12} lg={10}>
                         <Card className='leads_main_cards'>
                             <div className="phonebook-container mt-3">
-                                <div className="search-bar-container mb-4" style={{ display: 'flex', justifyContent: 'space-around', gap: '20px' }}  >
-                                    <Form.Group controlId="searchBar" className="w-100">
+                                <div className="search-bar-container  mb-4" style={{ display: 'flex', justifyContent: 'space-around', gap: '20px' }}  >
+                                    <Form.Group controlId="searchBar" className="w-100 ">
                                         <Form.Control
                                             type="text"
-                                            placeholder="Search by Number"
+                                            placeholder={rtl === 'true' ? 'بحث حسب الرقم' : 'Search by Number'}
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
+                                            className='input_field_input_field'
                                         />
                                     </Form.Group>
 
@@ -298,9 +350,10 @@ const PhoneBook = () => {
                                         options={options}
                                         value={options.find(option => option.value === searchCalStatus)}
                                         onChange={(selectedOption) => setSearchCalStatus(selectedOption?.value || '')}
-                                        placeholder="Search by Call Status"
+                                        placeholder={rtl === 'true' ? 'بحث حسب حالة المكالمة' : 'Search by Call Status'}
                                         isClearable
-                                        className="w-100"
+                                        className="w-100 input_field_input_field"
+                                        classNamePrefix="react-select"
                                         styles={{
                                             control: (provided) => ({
                                                 ...provided,
@@ -315,52 +368,109 @@ const PhoneBook = () => {
                                 </div>
 
                                 {filteredPhonebookData.length > 0 ? (
-                                    <Table hover bordered responsive className='mt-3 table_main_container' size='md'>
+                                    <Table hover bordered responsive striped className='table_main_container' size='md' variant='dark' >
                                         <thead style={{ backgroundColor: '#f8f9fd' }}>
-                                            <tr className="teble_tr_class" style={{ backgroundColor: '#e9ecef', color: '#343a40', borderBottom: '2px solid #dee2e6', transition: 'background-color 0.3s ease' }}>
-                                                <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">Number</th>
-                                                <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">Status</th>
-                                                <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">Call Status</th>
-                                                <th style={{ backgroundColor: '#f8f9fd' }} className="equal-width">Actions</th>
+                                            <tr
+                                                className="teble_tr_class"
+                                                style={{
+                                                    backgroundColor: '#000',
+                                                    color: '#343a40',
+                                                    borderBottom: '1px solid #d7aa47',
+                                                    transition: 'background-color 0.3s ease',
+                                                }}
+                                            >
+                                                <th className="equal-width" style={{ backgroundColor: '#d7aa47', color: 'white' }}>
+                                                    {rtl === 'true' ? 'تم التحميل بواسطة' : 'Uploaded by'}
+                                                </th>
+                                                <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">
+                                                    {rtl === 'true' ? 'رقم' : 'Number'}
+                                                </th>
+                                                <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">
+                                                    {rtl === 'true' ? 'الحالة' : 'Status'}
+                                                </th>
+                                                <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">
+                                                    {rtl === 'true' ? 'حالة المكالمة' : 'Call Status'}
+                                                </th>
+                                                <th style={{ backgroundColor: '#d7aa47' }} className="equal-width">
+                                                    {rtl === 'true' ? 'إجراءات' : 'Actions'}
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {currentItems.map((entry, index) => (
                                                 <tr key={index}>
-                                                    <td className='table_td_class'>{entry.number}</td>
-                                                    <td className='table_td_class'>{entry.status}</td>
+                                                    <td className="table_td_class">
+                                                        <div className="name-container">
+                                                            {entry.uploaded_by.name.split(' ').slice(0, 2).join(' ')}
+                                                            {entry.uploaded_by.name.split(' ').length > 15 && '...'}
+                                                            <span className="tooltip">{entry.uploaded_by.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className='table_td_class' style={{ textAlign: 'center', direction: rtl === 'true' ? 'ltr' : 'ltr' }}>{entry.number}</td>
+                                                    <td className="table_td_class">
+                                                        {(() => {
+                                                            const date = new Date(entry.createdAt); // Parse the createdAt date
+                                                            const today = new Date(); // Get today's date
+                                                            const yesterday = new Date(); // Prepare yesterday's date
+                                                            yesterday.setDate(today.getDate() - 1); // Subtract 1 day from today
+
+                                                            // Reset time to midnight for accurate date-only comparison
+                                                            today.setHours(0, 0, 0, 0);
+                                                            yesterday.setHours(0, 0, 0, 0);
+                                                            date.setHours(0, 0, 0, 0);
+
+                                                            // Logic to determine how to display the date
+                                                            if (date.getTime() === today.getTime()) {
+                                                                return 'Today';
+                                                            } else if (date.getTime() === yesterday.getTime()) {
+                                                                return 'Yesterday';
+                                                            } else {
+                                                                // Show the day of the week for other dates
+                                                                return date.toLocaleDateString('en-US', { weekday: 'long' }); // e.g., "Monday"
+                                                            }
+                                                        })()}
+                                                    </td>
                                                     <td
-                                                        className='table_td_class'
                                                         style={{
                                                             textAlign: 'center',
-                                                            backgroundColor: entry.calstatus === 'No Answer' ? 'green' : entry.calstatus === 'Not Interested' ? 'red' : 'transparent',
-                                                            color: entry.calstatus === 'No Answer' || entry.calstatus === 'Not Interested' ? 'white' : 'inherit'
+                                                            backgroundColor: '#000',
+                                                            color:
+                                                                entry.calstatus === 'Not Interested'
+                                                                    ? 'red'
+                                                                    : entry.calstatus === 'No Answer'
+                                                                        ? '#d7aa47'
+                                                                        : 'white',
+                                                            border: '1px solid #d7aa47',
                                                         }}
                                                     >
                                                         {entry.calstatus}
                                                     </td>
-                                                    <td style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px' }}>
-                                                        <div className='editAction'>
-                                                            <FiEdit2
-                                                                onClick={() => setDropdownEntry(entry)}
-                                                                style={{ fontSize: '12px', cursor: 'pointer', color: 'white' }}
-                                                            />
-                                                            <div className="tooltip">Edit Status</div>
-                                                        </div>
-                                                        <div className='addAction'>
+                                                    <td
+                                                        className="table_td_class"
+                                                        style={{
+                                                            textAlign: 'center',
+                                                            display: 'flex',
+                                                            justifyContent: 'center',
+                                                            alignItems: 'center',
+                                                            gap: '15px',
+                                                        }}
+                                                    >
+                                                        <Dropdown overlay={renderMenu(entry._id)} trigger={['click']}>
+                                                            <BsThreeDotsVertical style={{ cursor: 'pointer', fontSize: '25px' }} />
+                                                        </Dropdown>
+                                                        <div className="addAction">
                                                             <MdAdd
                                                                 style={{ fontSize: '15px', cursor: 'pointer', color: 'white' }}
                                                                 onClick={() => handleCommentsClick(entry)}
                                                             />
-                                                            <div className="tooltip">View/Add Comments</div>
+                                                            <div className="tooltip"> {rtl === 'true' ? 'عرض / إضافة تعليقات' : 'View/Add Comments'}</div>
                                                         </div>
-                                                        {/* <div className='viewAction'>
-                                                            <AiOutlineEye onClick={() => handleViewCommentsClick(entry)} style={{ fontSize: '15px', cursor: 'pointer', color: 'white' }} />
-                                                            <div className="tooltip">View Comments</div>
-                                                        </div> */}
-                                                        <div className='viewAction'>
-                                                            <IoOpenOutline onClick={() => HandleCreatePhoneBook(entry.number, entry._id)} style={{ fontSize: '15px', cursor: 'pointer', color: 'white' }} />
-                                                            <div className="tooltip">Create Lead</div>
+                                                        <div className="viewAction">
+                                                            <IoOpenOutline
+                                                                onClick={() => HandleCreatePhoneBook(entry.number, entry._id)}
+                                                                style={{ fontSize: '15px', cursor: 'pointer', color: 'white' }}
+                                                            />
+                                                            <div className="tooltip">  {rtl === 'true' ? 'إنشاء فرصة' : 'Create Lead'}</div>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -369,28 +479,33 @@ const PhoneBook = () => {
                                     </Table>
 
                                 ) : (
-                                    <p style={{ textAlign: 'center' }} className='mt-5' >No Data Available</p>
+                                    <p style={{ textAlign: 'center' }} className='mt-5 mutual_heading_class' >No Data Available</p>
                                 )}
                             </div>
 
                             {/* Pagination Controls */}
-                            <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
-                                <button onClick={handlePrevPage} disabled={currentPage === 1} className="btn btn-secondary">
-                                    Previous
-                                </button>
-                                <span style={{ margin: '0 10px' }}>Page {currentPage} of {Math.ceil(filteredPhonebookData.length / itemsPerPage)}</span>
-                                <button onClick={handleNextPage} disabled={currentPage === Math.ceil(filteredPhonebookData.length / itemsPerPage)} className="btn btn-secondary">
-                                    Next
-                                </button>
+                            <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center' }}>
+                                <Button onClick={handlePrevPage} disabled={currentPage === 1} className="all_common_btn_single_lead">
+                                    {rtl === 'true' ? 'السابق' : 'Previous'}
+                                </Button>
+                                <span style={{ margin: '0 10px' }} className='mutual_heading_class' >
+                                    {rtl === 'true' ? `الصفحة ${currentPage} من ${Math.ceil(filteredPhonebookData.length / itemsPerPage)}` : `Page ${currentPage} of ${Math.ceil(filteredPhonebookData.length / itemsPerPage)}`}
+                                </span>
+                                <Button clas onClick={handleNextPage} disabled={currentPage === Math.ceil(filteredPhonebookData.length / itemsPerPage)} className="all_common_btn_single_lead">
+                                    {rtl === 'true' ? 'التالي' : 'Next'}
+                                </Button>
                             </div>
                         </Card>
 
                         {/* Add Comment Modal */}
                         <Modal show={showCommentsModal} onHide={() => setShowCommentsModal(false)} centered size="md">
-                            <Modal.Header closeButton>
-                                <Modal.Title>Comments</Modal.Title>
+                            <Modal.Header closeButton style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                                <Modal.Title className='mutual_heading_class'>{rtl === 'true' ? 'تعليقات' : 'Comments'}</Modal.Title>
                             </Modal.Header>
-                            <Modal.Body>
+                            <Modal.Body style={{
+                                textAlign: rtl === 'true' ? 'right' : 'left',
+                                direction: rtl === 'true' ? 'rtl' : 'ltr'
+                            }}>
                                 <div className="comments-section" style={{
                                     height: '100%',
                                     maxHeight: '300px',
@@ -399,14 +514,13 @@ const PhoneBook = () => {
                                     backgroundColor: '#f5f5f5',
                                     borderRadius: '15px',
                                     boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-                                    marginTop: '20px',
                                     position: 'relative'
                                 }}>
                                     {commentsToView.length > 0 ? (
-                                        commentsToView.map((comment, index) => (
+                                        commentsToView.slice().reverse().map((comment, index) => (
                                             <div key={index} className="comment-item" style={{
                                                 display: 'flex',
-                                                flexDirection: comment?.user?.name === 'CurrentUser' ? 'row-reverse' : 'row', // Align comments differently
+                                                flexDirection: comment.user.name === 'CurrentUser' ? 'row-reverse' : 'row',
                                                 alignItems: 'flex-start',
                                                 marginBottom: '20px',
                                                 animation: 'fadeIn 0.5s ease-in-out'
@@ -420,8 +534,8 @@ const PhoneBook = () => {
                                                     marginRight: '15px',
                                                     marginLeft: comment.user.name === 'CurrentUser' ? '0' : '15px',
                                                     marginRight: comment.user.name === 'CurrentUser' ? '15px' : '0',
-                                                    border: '2px solid #fff',  // Add a border around the image
-                                                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)' // Slight shadow to create depth
+                                                    border: '2px solid #fff',
+                                                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
                                                 }}>
                                                     <Image
                                                         src={comment.user?.image ? `/images/${comment.user?.image}` : defaultimage}
@@ -432,8 +546,8 @@ const PhoneBook = () => {
 
                                                 {/* Comment Text */}
                                                 <div className="comment-text" style={{
-                                                    backgroundColor: comment.user.name === 'CurrentUser' ? '#4CAF50' : '#fff', // Different colors for current user
-                                                    color: comment.user.name === 'CurrentUser' ? '#fff' : '#333', // Dark text for others, light for current user
+                                                    backgroundColor: comment.user.name === 'CurrentUser' ? '#4CAF50' : '#fff',
+                                                    color: comment.user.name === 'CurrentUser' ? '#fff' : '#333',
                                                     borderRadius: '15px',
                                                     padding: '12px 18px',
                                                     maxWidth: '75%',
@@ -475,25 +589,26 @@ const PhoneBook = () => {
                                             </div>
                                         ))
                                     ) : (
-                                        <p style={{ fontSize: '14px', color: '#888' }}>No comments yet. Be the first to add one!</p>
+                                        <p style={{ fontSize: '14px' }} className='mutual_class_color'>
+                                            {rtl === 'true' ? 'لا تعليقات بعد. كن الأول في إضافة تعليق!' : 'No comments yet. Be the first to add one!'}
+                                        </p>
                                     )}
                                 </div>
 
-
                                 {/* Text area for adding a new comment */}
-                                <Form.Group controlId="commentTextarea" className="mt-3">
+                                <Form.Group controlId="commentTextarea" className="mt-2">
                                     <Form.Control
                                         as="textarea"
                                         rows={1}
                                         value={currentComment}
                                         onChange={(e) => setCurrentComment(e.target.value)}
-                                        placeholder="Enter your comment here"
+                                        placeholder={rtl === 'true' ? 'أدخل تعليقك هنا' : 'Enter your comment here'}
                                     />
                                 </Form.Group>
                             </Modal.Body>
-                            <Modal.Footer>
-                                <Button className='all_single_leads_button' onClick={handleSaveComment}>
-                                    Save Comment
+                            <Modal.Footer style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                                <Button className='all_common_btn_single_lead' onClick={() => handleSaveComment()}>
+                                    {rtl === 'true' ? 'حفظ التعليق' : 'Save Comment'}
                                 </Button>
                             </Modal.Footer>
                         </Modal>

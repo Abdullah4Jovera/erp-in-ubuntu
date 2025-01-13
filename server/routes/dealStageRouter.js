@@ -4,11 +4,11 @@ const DealStage = require('../models/dealStageModel'); // Adjust the path to you
 const { isAuth } = require('../utils');
 
 
-router.post('/create-deal-stage', isAuth, async (req, res) => {
+router.post('/create-deal-stage', isAuth, async (req, res) => { 
     try {
         const { name, order } = req.body;
         const created_by = req.user._id
-
+ 
         // Validation (you can expand it as per your requirements)
         if (!name || !order) {
             return res.status(400).json({ msg: 'Please provide all required fields' });
@@ -23,16 +23,16 @@ router.post('/create-deal-stage', isAuth, async (req, res) => {
 
         const savedDealStage = await newDealStage.save();
         res.status(201).json(savedDealStage);
-    } catch (error) {
+    } catch (error) { 
         console.error('Error creating deal stage:', error);
         res.status(500).json({ msg: 'Server error' });
     }
 });
-
+ 
 
 router.get('/get-all-deal-stages', isAuth, async (req, res) => {
     try {
-        const dealStages = await DealStage.find();
+        const dealStages = await DealStage.find({delStatus: false});
         res.json(dealStages);
     } catch (error) {
         console.error('Error fetching deal stages:', error);

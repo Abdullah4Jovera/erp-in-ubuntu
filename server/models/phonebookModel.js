@@ -30,7 +30,7 @@ const phonebookSchema = new mongoose.Schema(
         },
         calstatus: {
             type: String,
-            enum: ['Req to call', 'Interested', 'Rejected', 'Convert to Lead'], 
+            enum: ['Req to call', 'Interested', 'Rejected', 'Convert to Lead','No Answer', 'Not Interested'], 
             default: 'Req to call' 
         },
         comments: [{

@@ -19,7 +19,7 @@ router.put('/update-calstatus/:phonebookId', isAuth, async (req, res) => {
         const { phonebookId } = req.params;
 
         // Validate the calstatus value
-        if (!['Req to call', 'Interested', 'Rejected', 'Convert to Lead'].includes(calstatus)) {
+        if (!['Req to call', 'Interested', 'Rejected', 'Convert to Lead','No Answer', 'Not Interested'].includes(calstatus)) {
             return res.status(400).json({ message: 'Invalid calstatus value' });
         }
 
@@ -137,11 +137,13 @@ router.post('/upload-csv', isAuth, upload.single('file'), async (req, res) => {
             .pipe(csv(['number', 'status']))
             .on('data', (row) => {
                 if (row.number && row.status) {
-                    const formattedNumber = `+${row.number.trim()}`;
+                    // Remove whitespace and validate number format
+                    const formattedNumber = row.number.trim();
 
-                    // Use Map to avoid duplicate numbers
-                    if (!phonebookData.has(formattedNumber)) {
-                        phonebookData.set(formattedNumber, row.status);
+                    // Check if the number is exactly 12 digits and contains only numeric characters
+                    if (/^\d{12}$/.test(formattedNumber)) {
+                        // Prepend "+" and use Map to avoid duplicate numbers
+                        phonebookData.set(`+${formattedNumber}`, row.status);
                     }
                 }
             })
@@ -150,28 +152,38 @@ router.post('/upload-csv', isAuth, upload.single('file'), async (req, res) => {
                     // Find existing phone numbers in the Phonebook model
                     const existingPhonebookEntries = await Phonebook.find({
                         number: { $in: Array.from(phonebookData.keys()) }
-                    }).select('number').exec();
+                    }).select('number status').exec();
 
-                    const existingPhoneNumbers = new Set(existingPhonebookEntries.map(entry => entry.number));
+                    const existingPhoneNumbers = new Map(
+                        existingPhonebookEntries.map(entry => [entry.number, entry.status])
+                    );
+
                     const skippedNumbers = []; // Track numbers that were skipped
+                    const updatedNumbers = []; // Track numbers that were updated
                     const insertedNumbers = []; // Track numbers that were inserted
 
-                    // Filter out phone numbers that already exist in the Phonebook model
+                    // Prepare entries for insertion or update
                     const newPhonebookEntries = Array.from(phonebookData)
-                        .filter(([number]) => {
-                            const isDuplicate = existingPhoneNumbers.has(number);
-                            if (isDuplicate) {
-                                skippedNumbers.push(number); // Add to skipped if it's a duplicate
-                            } else {
-                                insertedNumbers.push(number); // Add to inserted if it's new
+                        .filter(([number, status]) => {
+                            if (existingPhoneNumbers.has(number)) {
+                                const existingStatus = existingPhoneNumbers.get(number);
+                                if (existingStatus !== status) {
+                                    // Update the status if it's different
+                                    updatedNumbers.push({ number, status });
+                                    return false; // Do not insert new, as we will update instead
+                                } else {
+                                    skippedNumbers.push(number); // Status is the same, skip
+                                    return false;
+                                }
                             }
-                            return !isDuplicate;
+                            insertedNumbers.push(number); // New number to insert
+                            return true;
                         })
                         .map(([number, status]) => ({
                             user: userId,
                             pipeline: pipelineId,
                             uploaded_by: requserId, // Add uploaded_by field
-                            number: number,
+                            number: number, // Number already prefixed with '+'
                             status: status,
                         }));
 
@@ -195,14 +207,24 @@ router.post('/upload-csv', isAuth, upload.single('file'), async (req, res) => {
                         })));
                     }
 
-                    res.status(200).json({ 
+                    // Update statuses for existing numbers
+                    if (updatedNumbers.length > 0) {
+                        await Promise.all(
+                            updatedNumbers.map(({ number, status }) =>
+                                Phonebook.updateOne({ number }, { $set: { status } }).exec()
+                            )
+                        );
+                    }
+
+                    res.status(200).json({
                         message: 'Phonebook entries processed successfully!',
                         insertedNumbers,
+                        updatedNumbers,
                         skippedNumbers
                     });
                 } catch (error) {
-                    console.error('Error inserting phonebook entries:', error);
-                    res.status(500).json({ message: 'Error inserting phonebook entries' });
+                    console.error('Error processing phonebook entries:', error);
+                    res.status(500).json({ message: 'Error processing phonebook entries' });
                 } finally {
                     // Delete the file after processing
                     fs.unlink(filePath, (err) => {
@@ -221,6 +243,10 @@ router.post('/upload-csv', isAuth, upload.single('file'), async (req, res) => {
 });
 
 
+
+
+
+ 
 router.get('/get-all-phonebook', isAuth , async (req, res) => {
     try {
         // Make sure req.user is populated by your authentication middleware
@@ -351,6 +377,14 @@ router.get('/get-leads-numbers', isAuth, async (req, res) => {
             .populate('user', 'name email')
             .populate('pipeline', 'name')
             .populate({
+                path: 'lead_id',
+                select: 'selected_users', // Selecting only selected_users field
+                populate: {
+                    path: 'selected_users', // Populating selected_users
+                    select: 'name' // Selecting only the name field of selected_users
+                }
+            })
+            .populate({
                 path: 'comments',
                 populate: {
                     path: 'user',
@@ -359,7 +393,7 @@ router.get('/get-leads-numbers', isAuth, async (req, res) => {
             });
 
         res.status(200).json(leadEntries);
-    } catch (error) {
+    } catch (error) { 
         console.error('Error fetching leads phonebook entries:', error);
         res.status(500).json({ message: 'Error fetching leads phonebook entries' });
     }

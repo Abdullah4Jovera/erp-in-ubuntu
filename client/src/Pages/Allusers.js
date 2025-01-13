@@ -17,7 +17,6 @@ const AllUsers = () => {
     const [pipelines, setPipelines] = useState([]);
     const [branches, setBranches] = useState([]);
     const [roles, setRoles] = useState([]); // New state for roles
-    const [products, setProducts] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [deleteModal, setdeleteModal] = useState(false)
@@ -28,6 +27,9 @@ const AllUsers = () => {
     const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false)
     const [resetPasswordError, setResetPasswordError] = useState('')
     const [resignModal, setResignModal] = useState(false)
+    const [products, setProducts] = useState([])
+
+    const [replacementUserId, setReplacementUserId] = useState(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -36,12 +38,13 @@ const AllUsers = () => {
         password: '',
         image: '',
         role: '', // Role field
-        branch: '',
+        branch: [],
         permissions: [],
         delstatus: false,
         verified: false,
-        products: '',
+        products: [],
         phone: '',
+        target: '',
     });
     const token = useSelector(state => state.loginSlice.user?.token);
 
@@ -50,11 +53,21 @@ const AllUsers = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [phone, setPhone] = useState('');
+    const [target, setTarget] = useState('');
     const [role, setRole] = useState(null);
     const [branch, setBranch] = useState(null);
     const [pipeline, setPipeline] = useState(null);
     const [product, setProduct] = useState(null);
     const [image, setImage] = useState(null);
+
+    const fetchProducts = async () => {
+        try {
+            const response = await axios.get(`/api/products/get-all-products-admin`)
+            setProducts(response.data)
+        } catch (error) {
+            console.log(error)
+        }
+    }
 
     // Fetch all users
     const fetchUsers = async () => {
@@ -67,6 +80,7 @@ const AllUsers = () => {
     };
     useEffect(() => {
         fetchUsers();
+        fetchProducts()
     }, []);
 
     // Fetch pipelines, branches, products, and roles
@@ -89,14 +103,7 @@ const AllUsers = () => {
             }
         };
 
-        const fetchProducts = async () => {
-            try {
-                const response = await axios.get(`/api/products/get-all-products`);
-                setProducts(response.data);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-            }
-        };
+
 
         const fetchRoles = async () => {
             try {
@@ -116,6 +123,7 @@ const AllUsers = () => {
     // Handle input change
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
+        console.log(name, value, 'namevalue')
         setFormData({
             ...formData,
             [name]: type === 'checkbox' ? checked : value,
@@ -124,6 +132,7 @@ const AllUsers = () => {
 
     // Open modal and populate form data with the selected user's data
     const handleEditClick = (user) => {
+        console.log(user, 'edituser')
         setSelectedUser(user);
         setFormData({
             name: user.name || '',
@@ -131,13 +140,15 @@ const AllUsers = () => {
             email: user.email || '',
             password: '',
             image: user.image || '',
-            role: user.role || '', // Set role from user data
-            branch: user.branch ? user.branch._id : null, // Set branch ID or null
-            permissions: user.permissions || [], // Ensure permissions is an array
+            role: user?.role || '', // Set role from user data
+            branch: user?.branch?.map(b => b._id) || [],
+            products: user?.products?.map(product => product._id) || [], // Set product ID or null
+            // user.products.map(product => product._id) || [],
+            permissions: user?.permissions || [], // Ensure permissions is an array
             delstatus: user.delstatus || false,
             verified: user.verified || false,
-            products: user.products ? user.products._id : null, // Set product ID or null
             phone: user.phone || '',
+            target: user.target || '',
             image: user.image || null
         });
         setShowModal(true);
@@ -147,13 +158,12 @@ const AllUsers = () => {
     const handleUpdateUser = async (e) => {
         e.preventDefault();
 
-        // Set null values for branch and products if "No Branch" or "No Product" is selected
+        // Set null values for products and pipeline if "No Product" or "No Pipeline" is selected
         const updatedFormData = {
             ...formData,
-            branch: formData.branch === 'null' ? null : formData.branch,
-            products: formData.products === 'null' ? null : formData.products,
-            pipeline: formData.pipeline[0] === 'null' ? [] : formData.pipeline,
-            // image: formData.append('image', image)
+            branch: formData.branch && formData.branch.length > 0 ? formData.branch : [], // Ensure it's an empty array if no branches are selected
+            products: formData.products && formData.products.length > 0 ? formData.products : [], // Ensure products is an array
+            pipeline: formData.pipeline && formData.pipeline.length > 0 ? formData.pipeline : [], // Ensure pipeline is an array
         };
 
         try {
@@ -185,7 +195,7 @@ const AllUsers = () => {
     // Delete User API
     const handleDeleteClick = async (id) => {
         try {
-            await axios.put(`/api/users//delete-user/${id}`,{}, {
+            await axios.put(`/api/users//delete-user/${id}`, {}, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -196,40 +206,47 @@ const AllUsers = () => {
             console.log(error, 'err')
         }
     }
-
     // Handle form submission
+    // Handle user creation
     const handleCreateUser = async (e) => {
-        e.preventDefault(); // Prevent the default form submission
+        e.preventDefault(); // Prevent default form submission
 
-        // Clear previous errors
+        // Validate required fields
         const newErrors = {};
-
-        // Validate form fields
         if (!name) newErrors.name = 'Name is required';
         if (!email) newErrors.email = 'Email is required';
         if (!password) newErrors.password = 'Password is required';
         if (!phone) newErrors.phone = 'Phone is required';
         if (!role) newErrors.role = 'Role is required';
-        // if (!branch) newErrors.branch = 'Branch is required';
-        // if (!product) newErrors.product = 'Product is required';
-        // if (!pipeline) newErrors.pipeline = 'Pipeline is required';
-
-        // Check if there are any errors
+        if (!branch || branch.length === 0) newErrors.branch = 'At least one branch is required';
+        // if (!product || product.length === 0) newErrors.product = 'At least one product is required';
+        // if (!pipeline || pipeline.length === 0) newErrors.pipeline = 'At least one pipeline is required';
         if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors); // Set the errors to display
-            return; // Stop form submission if there are errors
+            setErrors(newErrors); // Set validation errors
+            return; // Stop form submission
         }
 
-        const formData = new FormData(); // Use FormData to handle image and other data
+        // Prepare form data
+        const formData = new FormData();
         formData.append('name', name);
         formData.append('email', email);
         formData.append('password', password);
         formData.append('phone', phone);
+        formData.append('target', target);
         formData.append('role', role?.value);
-        // formData.append('branch', branch?.value);
-        // formData.append('pipeline', pipeline?.value);
-        // formData.append('product', product?.value);
-        formData.append('image', image); // Append image file
+        formData.append('image', image);
+
+        // Append branches as an array
+        const branchIds = branch.map((b) => b.value); // Extract only the `value` from selected options
+        formData.append('branch', JSON.stringify(branchIds)); // Send as a JSON string
+
+        // Append products as an array
+        const productIds = product.map((p) => p.value); // Extract only the `value` from selected options
+        formData.append('products', JSON.stringify(productIds)); // Send as a JSON string
+
+        // Append pipelines as an array
+        const pipelineIds = pipeline.map((p) => p.value); // Extract pipeline IDs
+        formData.append('pipeline', JSON.stringify(pipelineIds)); // Send as JSON string
 
         try {
             const response = await axios.post(
@@ -238,13 +255,13 @@ const AllUsers = () => {
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data', // To handle image upload
+                        'Content-Type': 'multipart/form-data',
                     },
                 }
             );
             setCreateModal(false); // Close modal on success
-            fetchUsers();
-            resetFormFields(); // Clear the form state after successful user creation
+            fetchUsers(); // Fetch the updated user list
+            resetFormFields(); // Clear the form state
         } catch (error) {
             console.error('Error creating user:', error);
         }
@@ -256,7 +273,7 @@ const AllUsers = () => {
         label: role.role,
     }));
 
-    // User Branch
+    // Branch options
     const branchOptions = branches.map((branch) => ({
         value: branch._id,
         label: branch.name,
@@ -295,13 +312,19 @@ const AllUsers = () => {
         if (errors.phone) setErrors((prev) => ({ ...prev, phone: '' }));
     };
 
+    const handleTargetChange = (e) => {
+        setTarget(e.target.value);
+        if (errors.target) setErrors((prev) => ({ ...prev, target: '' }));
+    };
+
     const handleRoleChange = (selectedOption) => {
         setRole(selectedOption);
         if (errors.role) setErrors((prev) => ({ ...prev, role: '' }));
     };
 
-    const handleBranchChange = (selectedOption) => {
-        setBranch(selectedOption);
+    // Handle branch change
+    const handleBranchChange = (selectedOptions) => {
+        setBranch(selectedOptions); // Store the selected options as an array
         // if (errors.branch) setErrors((prev) => ({ ...prev, branch: '' }));
     };
 
@@ -324,6 +347,7 @@ const AllUsers = () => {
         setEmail('');
         setPassword('');
         setPhone('');
+        setTarget('');
         setRole(null);
         setBranch(null);
         setPipeline(null);
@@ -389,23 +413,35 @@ const AllUsers = () => {
         }));
     };
 
+    // Open resign modal
     const openResignModal = (id) => {
-        setUserId(id)
-        setResignModal(true)
-    }
-
+        setUserId(id);
+        setReplacementUserId(null); // Reset selection
+        setResignModal(true);
+    };
     const ResignHandler = async () => {
         try {
-            await axios.patch(`/api/users/resign-user/${userId}`, {}, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            })
-            setResignModal(false)
+            const payload = replacementUserId ? { replacementUserId } : {};
+            const response = await axios.patch(
+                `/api/users/resign-user/${userId}`,
+                payload
+            );
+
+            console.log(response.data.message);
+            // Handle success (e.g., show a toast or update the UI)
         } catch (error) {
-            console.log(error, 'error')
+            console.error('Error resigning user:', error.response?.data?.message || error.message);
+            // Handle error (e.g., show an error toast)
+        } finally {
+            setResignModal(false);
         }
-    }
+    };
+
+    // Format users for React-Select
+    const userOptions = users.map((user) => ({
+        value: user._id,
+        label: user.name,
+    }));
 
     // Filter users based on selected branch and product
     const filteredUsers = users.filter((user) => {
@@ -420,7 +456,7 @@ const AllUsers = () => {
             <Container fluid >
                 <Row>
                     <Col xs={12} md={12} lg={2} >
-                        <Sidebar />
+                        {/* <Sidebar /> */}
                     </Col>
 
                     <Col xs={12} md={12} lg={10}>
@@ -445,31 +481,36 @@ const AllUsers = () => {
                                 </Button>
 
                                 {/* Branch Selection Buttons */}
-                                {branchNames.map(branch => (
-                                    <Button
-                                        key={branch._id}
-                                        variant="outline-primary"
-                                        onClick={() => setSelectedBranch(branch.name)}
-                                        active={selectedBranch === branch.name}
-                                    >
-                                        {branch.name}
-                                    </Button>
-                                ))}
+                                {Array.isArray(branchNames) && branchNames.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '5px' }} className="mt-2">
+                                        {branchNames.map(branch => (
+                                            <Button
+                                                key={branch._id}
+                                                variant="outline-primary"
+                                                onClick={() => setSelectedBranch(branch.name)}
+                                                active={selectedBranch === branch.name}
+                                            >
+                                                {branch.name}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                )}
 
                                 {/* Product Selection Buttons */}
-                            </div>
-                            
-                            <div style={{ display: 'flex', gap: '5px' }} className='mt-2' >
-                                {productNames.map(product => (
-                                    <Button
-                                        key={product._id}
-                                        variant="outline-primary"
-                                        onClick={() => setSelectedProduct(product.name)}
-                                        active={selectedProduct === product.name}
-                                    >
-                                        {product.name}
-                                    </Button>
-                                ))}
+                                {Array.isArray(productNames) && productNames.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '5px' }} className="mt-2">
+                                        {productNames.map(product => (
+                                            <Button
+                                                key={product._id}
+                                                variant="outline-primary"
+                                                onClick={() => setSelectedProduct(product.name)}
+                                                active={selectedProduct === product.name}
+                                            >
+                                                {product.name}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <Row>
                                 {filteredUsers.map(user => (
@@ -569,19 +610,20 @@ const AllUsers = () => {
                             <Col md={6}>
                                 <Form.Group controlId="formBranch">
                                     <Form.Label>Branch</Form.Label>
-                                    <Form.Control
-                                        as="select"
+                                    <Select
+                                        options={branchOptions} // Options for react-select
                                         name="branch"
-                                        value={formData.branch || 'null'}
-                                        onChange={handleInputChange}
-                                    >
-                                        <option value="null">No Branch</option> {/* No Branch option */}
-                                        {branches.map((branch) => (
-                                            <option key={branch._id} value={branch._id}>
-                                                {branch.name}
-                                            </option>
-                                        ))}
-                                    </Form.Control>
+                                        value={branchOptions.filter((option) =>
+                                            formData.branch?.includes(option.value)
+                                        )}
+                                        onChange={(selectedOption) => {
+                                            // When multi-select, collect all selected values
+                                            const selectedValues = selectedOption.map(option => option.value);
+                                            handleInputChange({ target: { name: 'branch', value: selectedValues } });
+                                        }}
+                                        placeholder="Select a branch"
+                                        isMulti
+                                    />
                                 </Form.Group>
                             </Col>
                         </Row>
@@ -590,19 +632,20 @@ const AllUsers = () => {
                             <Col md={6}>
                                 <Form.Group controlId="formProducts">
                                     <Form.Label>Products</Form.Label>
-                                    <Form.Control
-                                        as="select"
+                                    <Select
+                                        options={productOptions} // Options for react-select
                                         name="products"
-                                        value={formData.products || 'null'} // Default to "null" if no product is selected
-                                        onChange={handleInputChange}
-                                    >
-                                        <option value="null">No Product</option> {/* No Product option */}
-                                        {products.map((product) => (
-                                            <option key={product._id} value={product._id}>
-                                                {product.name}
-                                            </option>
-                                        ))}
-                                    </Form.Control>
+                                        value={productOptions.filter((option) =>
+                                            formData.products?.includes(option.value)
+                                        )}
+                                        onChange={(selectedOption) => {
+                                            // When multi-select, collect all selected values
+                                            const selectedValues = selectedOption.map(option => option.value);
+                                            handleInputChange({ target: { name: 'products', value: selectedValues } });
+                                        }}
+                                        placeholder="Select a product"
+                                        isMulti
+                                    />
                                 </Form.Group>
                             </Col>
                             <Col md={6}>
@@ -622,23 +665,38 @@ const AllUsers = () => {
                             <Col md={6}>
                                 <Form.Group controlId="formPipeline">
                                     <Form.Label>Pipeline</Form.Label>
-                                    <Form.Control
-                                        as="select"
+                                    <Select
+                                        options={pipelineOptions} // Options for react-select
                                         name="pipeline"
-                                        value={formData.pipeline.length > 0 ? formData.pipeline[0] : 'null'} // Default to "null" if no pipeline is selected
-                                        onChange={(e) => setFormData({ ...formData, pipeline: [e.target.value] })}
-                                    >
-                                        <option value="null">No Pipeline</option> {/* No Pipeline option */}
-                                        {pipelines.map((pipeline) => (
-                                            <option key={pipeline._id} value={pipeline._id}>
-                                                {pipeline.name}
-                                            </option>
-                                        ))}
-                                    </Form.Control>
+                                        value={pipelineOptions.filter((option) =>
+                                            formData.pipeline?.includes(option.value)
+                                        )}
+                                        onChange={(selectedOption) => {
+                                            // When multi-select, collect all selected values
+                                            const selectedValues = selectedOption.map(option => option.value);
+                                            setFormData({ ...formData, pipeline: selectedValues });
+                                        }}
+                                        placeholder="Select a pipeline"
+                                        isMulti
+                                    />
                                 </Form.Group>
                             </Col>
 
                             <Col md={6}>
+                                <Form.Group controlId="formPhone">
+                                    <Form.Label>Target</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="target"
+                                        value={formData.target}
+                                        onChange={handleInputChange}
+                                    />
+                                </Form.Group>
+                            </Col>
+
+                        </Row>
+                        <Row>
+                            <Col md={12}>
                                 <Form.Group controlId="formImage">
                                     <Form.Label>Image</Form.Label>
                                     <Form.Control
@@ -690,8 +748,8 @@ const AllUsers = () => {
                 show={createModal}
                 onHide={() => setCreateModal(false)}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title id="contained-modal-title-vcenter">
+                <Modal.Header closeButton style={{ border: 'none' }} >
+                    <Modal.Title id="contained-modal-title-vcenter" style={{ color: '#fff' }}>
                         User Details
                     </Modal.Title>
                 </Modal.Header>
@@ -700,7 +758,7 @@ const AllUsers = () => {
                         <Row className="mb-3">
                             <Col md={6}>
                                 <Form.Group controlId="formName">
-                                    <Form.Label>Name</Form.Label>
+                                    <Form.Label style={{ color: '#fff' }}>Name</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="Enter name"
@@ -713,7 +771,7 @@ const AllUsers = () => {
                             </Col>
                             <Col md={6}>
                                 <Form.Group controlId="formEmail">
-                                    <Form.Label>Email</Form.Label>
+                                    <Form.Label style={{ color: '#fff' }}>Email</Form.Label>
                                     <Form.Control
                                         type="email"
                                         placeholder="Enter email"
@@ -729,7 +787,7 @@ const AllUsers = () => {
                         <Row className="mb-3">
                             <Col md={6}>
                                 <Form.Group controlId="formPassword">
-                                    <Form.Label>Password</Form.Label>
+                                    <Form.Label style={{ color: '#fff' }}>Password</Form.Label>
                                     <Form.Control
                                         type="password"
                                         placeholder="Enter password"
@@ -742,7 +800,7 @@ const AllUsers = () => {
                             </Col>
                             <Col md={6}>
                                 <Form.Group controlId="formPhone">
-                                    <Form.Label>Phone</Form.Label>
+                                    <Form.Label style={{ color: '#fff' }}>Phone</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="Enter phone number"
@@ -758,7 +816,7 @@ const AllUsers = () => {
                         <Row className="mb-3">
                             <Col md={6}>
                                 <Form.Group controlId="formRole">
-                                    <Form.Label>Role</Form.Label>
+                                    <Form.Label style={{ color: '#fff' }}>Role</Form.Label>
                                     <Select
                                         options={roleOptions}
                                         placeholder="Select role"
@@ -773,14 +831,14 @@ const AllUsers = () => {
 
                             <Col md={6}>
                                 <Form.Group controlId="formBranch">
-                                    <Form.Label>Branch</Form.Label>
+                                    <Form.Label style={{ color: '#fff' }}>Branch</Form.Label>
                                     <Select
                                         options={branchOptions}
                                         placeholder="Select branch"
                                         value={branch}
                                         onChange={handleBranchChange}
                                         isClearable
-                                    // required
+                                        isMulti
                                     />
                                     {errors.branch && <small className="text-danger">{errors.branch}</small>}
                                 </Form.Group>
@@ -790,14 +848,14 @@ const AllUsers = () => {
                         <Row className="mb-3">
                             <Col md={6}>
                                 <Form.Group controlId="formProduct">
-                                    <Form.Label>Product</Form.Label>
+                                    <Form.Label style={{ color: '#fff' }}>Product</Form.Label>
                                     <Select
                                         options={productOptions}
                                         placeholder="Select product"
                                         value={product}
                                         onChange={handleProductChange}
                                         isClearable
-                                    // required
+                                        isMulti
                                     />
                                     {errors.product && <small className="text-danger">{errors.product}</small>}
                                 </Form.Group>
@@ -805,14 +863,14 @@ const AllUsers = () => {
 
                             <Col md={6}>
                                 <Form.Group controlId="formPipeline">
-                                    <Form.Label>Pipeline</Form.Label>
+                                    <Form.Label style={{ color: '#fff' }}>Pipeline</Form.Label>
                                     <Select
                                         options={pipelineOptions}
                                         placeholder="Select pipeline"
                                         value={pipeline}
                                         onChange={handlePipelineChange}
                                         isClearable
-                                    // required
+                                        isMulti
                                     />
                                     {errors.pipeline && <small className="text-danger">{errors.pipeline}</small>}
                                 </Form.Group>
@@ -820,9 +878,22 @@ const AllUsers = () => {
                         </Row>
 
                         <Row className="mb-3">
-                            <Col md={12}>
+                            <Col md={6}>
+                                <Form.Group controlId="formTarget">
+                                    <Form.Label style={{ color: '#fff' }}>Target</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Enter Target"
+                                        value={target}
+                                        onChange={handleTargetChange}
+
+                                    />
+                                    {errors.target && <small className="text-danger">{errors.target}</small>}
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
                                 <Form.Group controlId="formImage">
-                                    <Form.Label>Image</Form.Label>
+                                    <Form.Label style={{ color: '#fff' }}>Image</Form.Label>
                                     <Form.Control
                                         type="file"
                                         onChange={handleImageUpload}
@@ -831,7 +902,7 @@ const AllUsers = () => {
                             </Col>
                         </Row>
 
-                        <Modal.Footer>
+                        <Modal.Footer style={{ border: 'none' }}>
                             <Button className="all_close_btn_container" onClick={() => setCreateModal(false)}>
                                 Close
                             </Button>
@@ -898,9 +969,15 @@ const AllUsers = () => {
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p>
-                        Are You Sure you want to make it Resign ?
-                    </p>
+                    <p>Are you sure you want to resign this user?</p>
+                    <Select
+                        options={userOptions}
+                        onChange={(selectedOption) =>
+                            setReplacementUserId(selectedOption?.value || null)
+                        }
+                        placeholder="Select Replacement User (optional)"
+                        isClearable
+                    />
                 </Modal.Body>
                 <Modal.Footer>
                     <Button onClick={() => setResignModal(false)}>No</Button>
@@ -912,3 +989,4 @@ const AllUsers = () => {
 };
 
 export default AllUsers;
+// 509133445

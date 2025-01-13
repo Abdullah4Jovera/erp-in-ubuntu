@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 
-const DashboardLabels = ({ fetchLeadsData, leadId, setLabelsDashBoardModal, labelsDashboardModal }) => {
+const DashboardLabels = ({ fetchLeadsData, leadId, setLabelsDashBoardModal, labelsDashboardModal,rtl }) => {
     const token = useSelector(state => state.loginSlice.user?.token);
     const [singleLead, setSingleLead] = useState(null);
     const [pipelineId, setPipelineID] = useState(null);
@@ -22,9 +22,9 @@ const DashboardLabels = ({ fetchLeadsData, leadId, setLabelsDashBoardModal, labe
             });
             const leadData = response.data;
             setSingleLead(leadData);
-            setPreviousLabels(leadData.labels);
-            setSelectedLabelIds(leadData.labels.map(label => label._id));
-            setPipelineID(leadData.pipeline_id._id);
+            setPreviousLabels(leadData?.labels);
+            setSelectedLabelIds(leadData?.labels?.map(label => label?._id));
+            setPipelineID(leadData?.pipeline_id?._id);
         } catch (error) {
             console.error('Error fetching single lead:', error);
         }
@@ -62,7 +62,6 @@ const DashboardLabels = ({ fetchLeadsData, leadId, setLabelsDashBoardModal, labe
     };
 
     const getBranchID = localStorage.getItem('selectedBranchId');
-    console.log(getBranchID, 'getBranchID')
     const getProductID = localStorage.getItem('selectedProductId');
 
     const submitDashBoardLabels = async () => {
@@ -127,17 +126,36 @@ const DashboardLabels = ({ fetchLeadsData, leadId, setLabelsDashBoardModal, labe
                 setSelectedColor('#fff');
             }}
         >
-            <Modal.Header closeButton>
-                <Modal.Title id="contained-modal-title-vcenter">Labels</Modal.Title>
+            <Modal.Header closeButton style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                <Modal.Title id="contained-modal-title-vcenter" className='mutual_heading_class'>
+                    {rtl === 'true' ? 'التصنيفات' : 'Labels'}
+                </Modal.Title>
             </Modal.Header>
-            <Modal.Body style={{ height: '100%', maxHeight: '600px', overflowY: 'scroll' }}>
+            <Modal.Body
+                style={{
+                    height: '100%',
+                    maxHeight: '600px',
+                    overflowY: 'scroll',
+                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                    textAlign: rtl === 'true' ? 'right' : 'left',
+                }}
+            >
                 {allLabels.length === 0 ? (
-                    <p className="text-center mt-2">No labels found for this pipeline.</p>
+                    <p className="text-center mt-2 mutual_class_color">
+                        {rtl === 'true' ? 'لم يتم العثور على تصنيفات لهذه الفئة.' : 'No labels found for this pipeline.'}
+                    </p>
                 ) : (
                     <div style={{ display: 'flex', flexWrap: 'wrap', margin: '-4px' }}>
                         {allLabels.map((label, index) => {
                             return (
-                                <div key={index} style={{ flex: '0 0 calc(25% - 8px)', margin: '4px' }}>
+                                <div
+                                    key={index}
+                                    style={{
+                                        flex: '0 0 calc(25% - 8px)',
+                                        margin: '4px',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
                                     <div
                                         className="labels_class"
                                         style={{
@@ -148,7 +166,7 @@ const DashboardLabels = ({ fetchLeadsData, leadId, setLabelsDashBoardModal, labe
                                             padding: '4px',
                                             cursor: 'pointer',
                                             fontSize: '12px',
-                                            justifyContent: 'space-between',
+                                            justifyContent: rtl === 'true' ? 'flex-start' : 'space-between',
                                         }}
                                         onClick={() => handleLabelClick(label)}
                                     >
@@ -159,6 +177,10 @@ const DashboardLabels = ({ fetchLeadsData, leadId, setLabelsDashBoardModal, labe
                                             label={label.name}
                                             onChange={() => handleCheckboxChange(label._id)}
                                             checked={selectedLabelIds.includes(label._id)}
+                                            style={{
+                                                direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                                textAlign: rtl === 'true' ? 'right' : 'left',
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -167,10 +189,18 @@ const DashboardLabels = ({ fetchLeadsData, leadId, setLabelsDashBoardModal, labe
                     </div>
                 )}
             </Modal.Body>
-            <Modal.Footer>
-                <Button className='all_close_btn_container' onClick={() => setLabelsDashBoardModal(false)}>Close</Button>
-                <Button className='all_single_leads_button' onClick={submitDashBoardLabels}>Add Labels</Button>
+            <Modal.Footer style={{ border: 'none', direction: rtl === 'true' ? 'rtl' : 'ltr' }}>
+                <Button
+                    className='all_close_btn_container'
+                    onClick={() => setLabelsDashBoardModal(false)}
+                >
+                    {rtl === 'true' ? 'إغلاق' : 'Close'}
+                </Button>
+                <Button className='all_common_btn_single_lead' onClick={submitDashBoardLabels}>
+                    {rtl === 'true' ? 'إضافة التصنيفات' : 'Add Labels'}
+                </Button>
             </Modal.Footer>
+
         </Modal>
     );
 };

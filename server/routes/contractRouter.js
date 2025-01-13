@@ -16,6 +16,7 @@ const ServiceCommission = require('../models/serviceCommissionModel');
 const Lead = require('../models/leadModel');
 const mongoose = require('mongoose');
 const DealStage = require('../models/dealStageModel');
+const DealActivityLog = require('../models/dealActivityLogModel');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -35,7 +36,6 @@ const storage = multer.diskStorage({
     }
 });
 const upload = multer({ storage }).array('files', 10); // Max 10 files at a time (you can adjust this)
-
 router.delete('/revert-contract/:id', isAuth, async (req, res) => {
     try {
         const contractId = req.params.id;
@@ -75,6 +75,74 @@ router.delete('/revert-contract/:id', isAuth, async (req, res) => {
     } catch (error) {
         console.error('Error reverting contract:', error);
         res.status(500).json({ message: 'Error reverting contract', error });
+    }
+});
+
+router.get('/rejected-contracts', isAuth, async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const userPipeline = req.user.pipeline || [];
+
+        // Build query for rejected contracts
+        const query = { is_reject: true, selected_users: userId };
+        if (userPipeline.length > 0) {
+            query.pipeline_id = { $in: userPipeline };
+        }
+
+        // Fetch rejected contracts
+        const contracts = await Contract.find(query)
+            .populate({
+                path: 'pipeline_id',
+                select: 'name',
+            })
+            .populate({
+                path: 'contract_stage',
+                select: 'name',
+            })
+            .populate({
+                path: 'products',
+                select: 'name',
+            })
+            .populate({
+                path: 'client_id',
+                select: 'name email phone',
+            })
+            .populate({
+                path: 'source_id',
+                select: 'name',
+            })
+            .populate({
+                path: 'branch',
+                select: 'name',
+            })
+            .select(
+                '_id pipeline_id contract_stage products client_id source_id reject_reason company_name branch'
+            );
+
+        if (contracts.length === 0) {
+            return res.status(404).json({ message: 'No rejected contracts found' });
+        }
+
+        // Map contracts for response
+        const contractDetails = contracts.map((contract) => ({
+            id: contract._id,
+            pipelineName: contract.pipeline_id?.name || null,
+            contractStage: contract.contract_stage?.name || null,
+            productId: contract.products?._id || null,
+            productName: contract.products?.name || null,
+            clientName: contract.client_id?.name || null,
+            clientEmail: contract.client_id?.email || null,
+            phone: contract.client_id?.phone || null,
+            sourceName: contract.source_id?.name || null,
+            companyName: contract.company_name || null,
+            rejectReason: contract.reject_reason || null,
+            branchName: contract.branch?.name || null,
+        }));
+
+        res.status(200).json({ contractDetails });
+    } catch (error) {
+        console.error('Error fetching rejected contracts:', error);
+        res.status(500).json({ message: 'Server error', error });
     }
 });
 // Route to upload files for a contract and log activities
@@ -211,12 +279,17 @@ router.put('/reject-contract/:id', isAuth, async (req, res) => {
         const contractId = req.params.id;
         const { reject_reason } = req.body;
 
+        // Validate reject_reason 
+        if (!reject_reason || typeof reject_reason !== 'string') {
+            return res.status(400).json({ message: 'Please Enter Reject Reason' });
+        }
+
         // Find the contract and update its is_reject status and reject_reason
         const contract = await Contract.findByIdAndUpdate(
             contractId,
             {
                 is_reject: true,
-                reject_reason: reject_reason
+                reject_reason: reject_reason.trim(),
             },
             { new: true } // To return the updated document
         );
@@ -231,85 +304,208 @@ router.put('/reject-contract/:id', isAuth, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 router.put('/update-service-commission/:contractId', isAuth, async (req, res) => {
     const { contractId } = req.params;
-    const { serviceCommissionData } = req.body; // Expecting serviceCommissionData in request body
+    const serviceCommissionData = req.body; // Expecting serviceCommissionData in request body
 
     try {
+        // Filter out fields with null or zero values
+        const fieldsToUpdate = Object.fromEntries(
+            Object.entries(serviceCommissionData).filter(
+                ([_, value]) => value !== null && value !== 0
+            )
+        );
+
+        if (Object.keys(fieldsToUpdate).length === 0) {
+            return res.status(400).json({ message: 'No valid fields to update' });
+        }
+
         // Find or create ServiceCommission entry
         let serviceCommission = await ServiceCommission.findOne({ contract_id: contractId });
 
         if (serviceCommission) {
-            // Update the existing ServiceCommission entry
+            // Update the existing ServiceCommission entry with non-zero and non-null fields
             serviceCommission = await ServiceCommission.findByIdAndUpdate(
                 serviceCommission._id,
-                { $set: serviceCommissionData },
+                { $set: fieldsToUpdate },
                 { new: true }
             );
         } else {
             // Create a new ServiceCommission entry
-            serviceCommission = new ServiceCommission({ ...serviceCommissionData, contract_id: contractId });
+            serviceCommission = new ServiceCommission({ ...fieldsToUpdate, contract_id: contractId });
             await serviceCommission.save();
         }
 
         // Update the contract's service_commission_id field
-        await Contract.findByIdAndUpdate(
+        const updatedContract = await Contract.findByIdAndUpdate(
             contractId,
             { service_commission_id: serviceCommission._id },
             { new: true }
         );
 
-        res.status(200).json({ message: 'Service commission updated successfully', serviceCommission });
+        if (!updatedContract) {
+            return res.status(404).json({ error: 'Contract not found' });
+        }
+
+        res.status(200).json({
+            message: 'Service commission updated successfully',
+            serviceCommission,
+        });
     } catch (error) {
         console.error('Error updating service commission:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// Get all contracts
+// Get all contracts 
 router.get('/get-all-contracts', isAuth, async (req, res) => {
+   
     try {
-        const userId = req.user._id;
-        
-        // Fetch contracts and populate the necessary fields
-        const contracts = await Contract.find({ selected_users: userId, is_converted:false, is_reject:false })
-            .populate('client_id', 'name') // Only populate the client's name
-            .populate('lead_type', 'name') // Only populate lead type name
-            .populate('pipeline_id', 'name') // Only populate pipeline name
-            .populate('source_id', 'name') // Only populate source name
-            .populate('products', 'name') // Only populate product name
-            .populate('created_by', 'name') // Only populate creator's name
-            .populate('selected_users', 'name') // Only populate selected users' names
+        const userId = req.user._id; // Get the user ID from the request
+        const pipelineId = req.user.pipeline; // Get the pipeline ID from the user
+        const matchFilter = (additionalFilters = {}) => {
+            const filter = {
+                selected_users: userId,
+                is_converted: false,
+                is_reject: false,
+                ...additionalFilters,
+            };
+            // Include pipelineId filter if it's not an empty array
+            if (pipelineId && pipelineId.length > 0) {
+                filter.pipeline_id = { $in: pipelineId }; // Match any pipeline ID in the array
+            }
+            return filter;
+        };
+        const contracts = await Contract.find(matchFilter())
+            .populate('client_id', 'name')
+            .populate('lead_type', 'name')
+            .populate('pipeline_id', 'name')
+            .populate('source_id', 'name')
+            .populate('products', 'name')
+            .populate('created_by', 'name')
+            .populate('selected_users', 'name')
             .populate('contract_stage', 'name')
-            .populate({
-                path: 'service_commission_id', 
-                populate: [
-                    { path: 'hodsale', select: 'name' },
-                    { path: 'salemanager', select: 'name' },
-                    { path: 'coordinator', select: 'name' },
-                    { path: 'team_leader', select: 'name' },
-                    { path: 'salesagent', select: 'name' },
-                    { path: 'team_leader_one', select: 'name' },
-                    { path: 'sale_agent_one', select: 'name' },
-                    { path: 'salemanagerref', select: 'name' },
-                    { path: 'agentref', select: 'name' },
-                    { path: 'ts_hod', select: 'name' },
-                    { path: 'ts_team_leader', select: 'name' },
-                    { path: 'tsagent', select: 'name' },
-                    { path: 'marketingmanager', select: 'name' },
-                    { path: 'marketing_team_leader', select: 'name' },
-                    { path: 'other_name', select: 'name' }
-                ] 
-            });
+            .populate('branch', 'name')
+
 
         res.status(200).json(contracts);
     } catch (error) {
         console.error('Error fetching contracts:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
+}); 
+
+// Get a single contract by ID
+router.get('/single-contract/:id', async (req, res) => {
+    try {
+        const contract = await Contract.findById(req.params.id)
+            .populate('client_id', 'name email e_id phone')
+            .populate('lead_type', 'name company_Name')
+            .populate('pipeline_id', 'name')
+            .populate('source_id', 'name')
+            .populate('products', 'name')
+            .populate('created_by', 'name')
+            .populate('created_by', 'name')
+            .populate({
+                path: 'selected_users',
+                select: 'name image role',
+                populate: {
+                    path: 'branch', // Assuming the field name for branch in selected_users is "branch"
+                    select: 'name ' // Replace with the fields you want from the branch
+                }
+            })
+
+            .populate({
+                path: 'service_commission_id',
+                select: '-__v',
+                populate: [
+                    { path: 'hod', select: 'name  role image' },
+                    { path: 'hom', select: 'name  role image' },
+                    { path: 'sale_manager', select: 'name  role image' },
+                    { path: 'ajman_manager', select: 'name  role image ' },
+                    { path: 'ajman_coordinator', select: 'name  role image' },
+                    { path: 'ajman_team_leader', select: 'name  role image' },
+                    { path: 'dubai_manager', select: 'name  role image' },
+                    { path: 'dubai_coordinator', select: 'name  role image' },
+                    { path: 'dubaiteam_leader', select: 'name  role image' },
+                    { path: 'dubaisale_agent', select: 'name  role image' },
+                    { path: 'ajman_sale_agent', select: 'name  role image' },
+                    { path: 'coordinator', select: 'name  role image' },
+                    { path: 'team_leader', select: 'name  role image' },
+                    { path: 'sales_agent', select: 'name  role image' },
+                    { path: 'team_leader_one', select: 'name  role image' },
+                    { path: 'sales_agent_one', select: 'name  role image' },
+                    { path: 'ts_hod', select: 'name  role image' },
+                    { path: 'ts_team_leader', select: 'name  role image' },
+                    { path: 'ts_agent', select: 'name  role image' },
+                    { path: 'marketing_one', select: 'name  role image' },
+                    { path: 'marketing_two', select: 'name  role image' },
+                    { path: 'ref_hod', select: 'name  role image' },
+                    { path: 'ref_manager', select: 'name  role image' },
+                    { path: 'ref_hom', select: 'name  role image' },
+
+
+
+                    { path: 'marketing_three', select: 'name  role image' },
+                    { path: 'marketing_four', select: 'name  role image' },
+                    { path: 'developer_one', select: 'name  role image' },
+                    { path: 'developer_two', select: 'name  role image' },
+                    { path: 'developerthree', select: 'name  role image' },
+
+                    { path: 'developer_four', select: 'name  role image' },
+                    { path: 'lead_created_by', select: 'name  role image' },
+                    { path: 'created_by', select: 'name  role image' },
+
+
+                ]
+            })
+            .populate({
+                path: 'contract_activity_logs',
+                populate: { path: 'user_id', select: 'name image' }
+            })
+
+            .populate({
+                path: 'lead_id',
+                populate: [
+                    { path: 'client', select: 'name' },
+                    { path: 'created_by', select: 'name' },
+                    // { path: 'ref_user', select: 'name' },
+                    { path: 'selected_users', select: 'name' },
+                    { path: 'pipeline_id', select: 'name' },
+                    { path: 'stage', select: 'name' },
+                    { path: 'product_stage', select: 'name' },
+                    { path: 'lead_type', select: 'name' },
+                    { path: 'source', select: 'name' },
+                    { path: 'branch', select: 'name' },
+                    { path: 'files', select: 'file_path file_name' },
+                    {
+                        path: 'discussions',
+                        populate: { path: 'created_by', select: 'name' }
+                    },
+                    {
+                        path: 'activity_logs',
+                        populate: { path: 'user_id', select: 'name image' }
+                    }
+                ]
+            });
+
+
+
+        if (!contract) {
+            return res.status(404).json({ error: 'Contract not found' });
+        }
+
+        res.status(200).json(contract);
+    } catch (error) {
+        console.error('Error fetching contract:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
+
+
 router.put('/update-stage/:id', isAuth, async (req, res) => {
     try {
-        const { id } = req.params; 
+        const { id } = req.params;
         const { contract_stage } = req.body;
 
         // Validate input
@@ -318,7 +514,7 @@ router.put('/update-stage/:id', isAuth, async (req, res) => {
         }
 
         // Find the contract and populate the contract_stage to get its name
-        const contract = await Contract.findById(id).populate('contract_stage');
+        const contract = await Contract.findById(id).populate('contract_stage selected_users');
         if (!contract) {
             return res.status(404).json({ error: 'Contract not found' });
         }
@@ -334,18 +530,19 @@ router.put('/update-stage/:id', isAuth, async (req, res) => {
         const updatedContract = await Contract.findById(id).populate('contract_stage');
         const newStageName = updatedContract.contract_stage ? updatedContract.contract_stage.name : 'Unknown';
 
-        // Find the user to get their name
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+        // Fetch the sender's details
+        const sender = await User.findById(req.user._id);
+        if (!sender) {
+            return res.status(404).json({ error: 'Sender not found' });
         }
 
         // Create a new activity log entry
         const activityLog = new ContractActivityLog({
-            user_id: user._id,
+            user_id: sender._id,
             contract_id: contract._id,
             log_type: 'Stage Update',
-            remark: `Contract stage changed from '${previousStageName}' to '${newStageName}'`
+            remark: `Contract stage changed from '${previousStageName}' to '${newStageName}'`,
+            created_at: Date.now(),
         });
 
         const savedActivityLog = await activityLog.save();
@@ -354,112 +551,108 @@ router.put('/update-stage/:id', isAuth, async (req, res) => {
         contract.contract_activity_logs.push(savedActivityLog._id);
         await contract.save();
 
-        // Create and send notifications to all selected users
+        // Notification and Socket.IO logic
         const io = getIO();
-        const notificationPromises = contract.selected_users.map(async (userId) => {
+
+        // Filter users with roles Manager, HOD, MD, or CEO
+        const rolesToNotify = ['Manager', 'HOD', 'MD', 'CEO'];
+        const usersToNotify = contract.selected_users.filter(user =>
+            rolesToNotify.includes(user.role)
+        );
+
+        const notificationPromises = usersToNotify.map(async (user) => {
+            // Create a new notification
             const notification = new Notification({
-                receiver: userId,
-                message: `${user.name} updated the contract stage from '${previousStageName}' to '${newStageName}'`,
+                sender: sender._id,
+                receiver: user._id,
+                message: `${sender.name} updated the contract stage from '${previousStageName}' to '${newStageName}'`,
                 reference_id: contract._id,
                 notification_type: 'Contract',
+                created_at: Date.now(),
             });
 
-            await notification.save();
+            const savedNotification = await notification.save();
 
             // Emit the notification to the user's socket room
-            io.to(`user_${userId}`).emit('notification', {
+            io.to(`user_${user._id}`).emit('notification', {
                 message: notification.message,
-                referenceId: notification.reference_id,
-                notificationType: notification.notification_type,
-                notificationId: notification._id,
-                createdAt: notification.created_at,
+                referenceId: savedNotification.reference_id,
+                notificationType: savedNotification.notification_type,
+                notificationId: savedNotification._id,
+                sender: {
+                    name: sender.name, // Sender's name
+                    image: sender.image, // Sender's image
+                },
+                createdAt: savedNotification.created_at,
             });
+
+            return savedNotification;
         });
 
         // Wait for all notifications to be created and sent
         await Promise.all(notificationPromises);
 
-        res.status(200).json({ message: 'Contract stage updated successfully', contract });
+        res.status(200).json({
+            message: 'Contract stage updated successfully',
+            contract,
+            activity_log: savedActivityLog
+        });
     } catch (error) {
         console.error('Error updating contract stage:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// Get a single contract by ID
-router.get('/single-contract/:id', async (req, res) => {
-    try {
-        const contract = await Contract.findById(req.params.id)
-            .populate('client_id')
-            .populate('lead_type')
-            .populate('pipeline_id')
-            .populate('source_id')
-            .populate('products')
-            .populate('created_by')
-            .populate('lead_id')
-            .populate('selected_users')
-            .populate('service_commission_id'); // Ensure to populate service commissions
+// // Update a contract by ID
+// router.put('/:id', async (req, res) => {
+//     try {
+//         const { 
+//             is_transfer,
+//             client_id,
+//             lead_type,
+//             pipeline_id,
+//             source_id,
+//             products,
+//             contract_stage,
+//             labels,
+//             status,
+//             created_by,
+//             lead_id,
+//             selected_users,
+//             is_active,
+//             date
+//         } = req.body;
 
-        if (!contract) {
-            return res.status(404).json({ error: 'Contract not found' });
-        }
+//         const updatedContract = await Contract.findByIdAndUpdate(
+//             req.params.id,
+//             {
+//                 is_transfer,
+//                 client_id,
+//                 lead_type,
+//                 pipeline_id,
+//                 source_id,
+//                 products,
+//                 contract_stage,
+//                 labels,
+//                 status,
+//                 created_by,
+//                 lead_id,
+//                 selected_users,
+//                 is_active,
+//                 date
+//             },
+//             { new: true }
+//         );
 
-        res.status(200).json(contract);
-    } catch (error) {
-        console.error('Error fetching contract:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-// Update a contract by ID
-router.put('/:id', async (req, res) => {
-    try {
-        const {
-            is_transfer,
-            client_id,
-            lead_type,
-            pipeline_id,
-            source_id,
-            products,
-            contract_stage,
-            labels,
-            status,
-            created_by,
-            lead_id,
-            selected_users,
-            is_active,
-            date
-        } = req.body;
+//         if (!updatedContract) {
+//             return res.status(404).json({ error: 'Contract not found' });
+//         }
 
-        const updatedContract = await Contract.findByIdAndUpdate(
-            req.params.id,
-            {
-                is_transfer,
-                client_id,
-                lead_type,
-                pipeline_id,
-                source_id,
-                products,
-                contract_stage,
-                labels,
-                status,
-                created_by,
-                lead_id,
-                selected_users,
-                is_active,
-                date
-            },
-            { new: true }
-        );
-
-        if (!updatedContract) {
-            return res.status(404).json({ error: 'Contract not found' });
-        }
-
-        res.status(200).json(updatedContract);
-    } catch (error) {
-        console.error('Error updating contract:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+//         res.status(200).json(updatedContract);
+//     } catch (error) {
+//         console.error('Error updating contract:', error);
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// });
 // Delete a contract by ID
 router.delete('/:id', async (req, res) => {
     try {
@@ -491,11 +684,12 @@ router.get('/:id/service-commission', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 router.post('/convert-to-deal/:contractId', isAuth, async (req, res) => {
     try {
         const contractId = req.params.contractId;
         const userId = req.user._id;
-        
+
         // Find the contract
         const contract = await Contract.findById(contractId)
             .populate('client_id')
@@ -506,7 +700,7 @@ router.post('/convert-to-deal/:contractId', isAuth, async (req, res) => {
             .populate('created_by')
             .populate('selected_users')
             .populate('service_commission_id');
-        
+
         if (!contract) {
             return res.status(404).json({ error: 'Contract not found' });
         }
@@ -523,9 +717,9 @@ router.post('/convert-to-deal/:contractId', isAuth, async (req, res) => {
             lead_type: contract.lead_type._id,
             pipeline_id: contract.pipeline_id._id,
             source_id: contract.source_id._id,
-            products: contract.products[0]._id,  // Assuming there's at least one product
-            deal_stage: initialDealStage._id,     // Dynamically set deal stage ID
-            status: 'Active',  // Initial deal status
+            products: contract.products._id, // Handle multiple products
+            deal_stage: initialDealStage._id,
+            status: 'Active',
             created_by: userId,
             lead_id: contract.lead_id || null,
             contract_id: contract._id,
@@ -533,39 +727,88 @@ router.post('/convert-to-deal/:contractId', isAuth, async (req, res) => {
             is_active: true,
             service_commission_id: contract.service_commission_id ? contract.service_commission_id._id : null,
             date: new Date(),
+            branch: contract.branch._id,
         });
 
         // Save the new deal
         await newDeal.save();
 
-        // Update the contract to mark it as converted and transferred 
+        // Create a deal activity log for the deal creation
+        const dealActivityLog = new DealActivityLog({
+            user_id: userId,
+            deal_id: newDeal._id,
+            log_type: 'Deal Created',
+            remark: `Deal created from contract ${contract.client_id.name}`,
+        });
+
+        const savedDealActivityLog = await dealActivityLog.save();
+
+        // Push the activity log ID into the deal's deal_activity_logs
+        newDeal.deal_activity_logs = [savedDealActivityLog._id];
+        await newDeal.save();
+
+        // Update the contract to mark it as converted
         contract.is_converted = true;
-        contract.is_transfer = true;
         await contract.save();
 
-        // Optionally, log the activity (if you have activity logging set up)
-        // const log = new DealActivityLog({
-        //   deal_id: newDeal._id,
-        //   action: 'Converted contract to deal',
-        //   user_id: userId,
-        //   date: new Date(),
-        // });
-        // await log.save();
+        // Notification and Socket.IO logic
+        const io = getIO();
+
+        const sender = await User.findById(userId);
+        if (!sender) {
+            return res.status(404).json({ error: 'Sender not found' });
+        }
+
+        const rolesToNotify = ['Manager', 'HOD', 'MD', 'CEO'];
+        const usersToNotify = contract.selected_users.filter(user =>
+            rolesToNotify.includes(user.role)
+        );
+
+        const notificationPromises = usersToNotify.map(async (user) => {
+            const notification = new Notification({
+                sender: sender._id,
+                receiver: user._id,
+                message: `${sender.name} converted contract ${contract._id} to a deal.`,
+                reference_id: newDeal._id,
+                notification_type: 'Deal',
+                created_at: Date.now(),
+            });
+
+            const savedNotification = await notification.save();
+
+            io.to(`user_${user._id}`).emit('notification', {
+                message: notification.message,
+                referenceId: savedNotification.reference_id,
+                notificationType: savedNotification.notification_type,
+                notificationId: savedNotification._id,
+                sender: {
+                    name: sender.name,
+                    image: sender.image,
+                },
+                createdAt: savedNotification.created_at,
+            });
+
+            return savedNotification;
+        });
+
+        await Promise.all(notificationPromises);
 
         // Return a success response
         res.status(201).json({
             message: 'Contract converted to deal successfully',
             deal: newDeal,
+            activityLog: savedDealActivityLog,
             contract: {
                 _id: contract._id,
                 is_converted: contract.is_converted,
                 is_transfer: contract.is_transfer,
-            }
+            },
         });
     } catch (error) {
         console.error('Error converting contract to deal:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 
 module.exports = router;

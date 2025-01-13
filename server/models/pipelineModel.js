@@ -7,7 +7,10 @@ const pipelineSchema = new mongoose.Schema({
     required: true,
     trim: true,
   }, 
-
+  target: {
+    type: Number,
+    default: 0
+  },
   created_by: {
     type: String,
   },

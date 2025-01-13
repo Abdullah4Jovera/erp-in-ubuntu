@@ -6,36 +6,36 @@ const userSchema = new mongoose.Schema(
     pipeline: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Pipeline',
-      required: false, // Allow null or undefined
+      required: false, 
     }],
- 
+
     email: { type: String, required: true, unique: true },
     password: { type: String, default: null },
     image: { type: String },
     role: { type: String, required: true },
-    branch: {
+    branch: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Branch',
       required: false, 
-    },
+    }],
     // branch: {
-    //  type: String 
+    //   type: String
     // },
     phone: {
       type: String,
-      
+
     },
-    commission: {
+    target: {
       type: Number,
       default: 0
-  },  
-    products: {
+    },
+    products: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
-      required: false, // Allow null or undefined
-    },
+      required: false, 
+    }],
     permissions: [{ type: String }],
-    isBlocked: { type: Boolean, default: false }, // New field
+    isBlocked: { type: Boolean, default: false }, 
     verified: { type: Boolean, default: false },
     delstatus: { type: Boolean, default: false },
     resigned: { type: Boolean, default: false },
@@ -48,4 +48,3 @@ const userSchema = new mongoose.Schema(
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;
- 

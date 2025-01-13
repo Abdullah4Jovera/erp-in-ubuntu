@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Col, Row, Container, Alert, Image } from 'react-bootstrap';
+import { Button, Form, Container, Alert, Image, Spinner } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import JoveraLogoweb from '../../Assets/login.png';
 import { loginApi } from '../../Redux/loginSlice';
@@ -12,6 +12,8 @@ import { GrInstagram } from "react-icons/gr";
 import { AiFillTikTok } from "react-icons/ai";
 import jovera from '../../Assets/jovera.png'
 import './Login.css';
+import axios from 'axios';
+import default_image from '../../Assets/default_image.jpg';
 
 const Login = () => {
     const dispatch = useDispatch();
@@ -21,13 +23,43 @@ const Login = () => {
     const userRole = useSelector((state) => state.loginSlice.user?.role);
     const [showError, setShowError] = useState(true);
     const error = useSelector((state) => state.loginSlice.error);
+    const [financeData, setFinanceData] = useState(null);
+    const animations = ['bubble1', 'bubble2', 'bubble3', 'bubble4', 'bubble5'];
+
+    // Fetch highest finance amount and pipeline details
+    useEffect(() => {
+        const fetchFinanceData = async () => {
+            try {
+                const response = await axios.get(`/api/commission/highest-finance-amount-pipeline`);
+                setFinanceData(response.data);
+            } catch (err) {
+                console.log(error)
+            }
+        };
+        fetchFinanceData();
+    }, []);
 
     useEffect(() => {
         if (loginStatus) {
-            if (userRole === 'TS Agent' || userRole === 'Team Leader') {
-                navigate('/phonebook');
-            } else {
-                navigate('/leads');
+            switch (userRole) {
+                case 'CEO':
+                    navigate('/ceodashboard');
+                    break;
+                case 'HOD':
+                case 'Manager':
+                case 'Team Leader':
+                case 'HOM':
+                    navigate('/hoddashboard');
+                    break;
+                case 'TS Agent':
+                case 'TS Team Leader':
+                    navigate('/phonebook');
+                    break;
+                case 'Accountant':
+                    navigate('/accountantdashboard');
+                    break;
+                default:
+                    navigate('/dashboard'); // Fallback route
             }
         }
     }, [loginStatus, userRole, navigate]);
@@ -92,7 +124,7 @@ const Login = () => {
                             className="animated-input"
                         />
                         <Form.Control.Feedback type="invalid">
-                            Please enter a valid email.
+                            Please Enter a Valid Email.
                         </Form.Control.Feedback>
                     </Form.Group>
 
@@ -107,7 +139,7 @@ const Login = () => {
                             className="animated-input"
                         />
                         <Form.Control.Feedback type="invalid">
-                            Please enter your password.
+                            Please Enter your Password.
                         </Form.Control.Feedback>
                     </Form.Group>
 
@@ -129,26 +161,74 @@ const Login = () => {
             </div>
 
             {/* Right Side: Logo */}
+
+            {/* Finance Data */}
             <div className='logo_container' style={{ position: 'relative' }}>
                 {/* Base image */}
                 <Image src={JoveraLogoweb} alt="Jovera Logo" style={{ height: '100%', maxHeight: '850px', width: '100%' }} />
                 {/* Overlay image */}
-                <Image
-                    src={jovera}
-                    alt='jovera'
-                    style={{
-                        position: 'absolute',
-                        bottom: '30%',
-                        left: '25%',
-                        width: '50%',
-                        height: 'auto',
-                        opacity: 0.8,
-                    }}
-                    className='login_image'
-                />
             </div>
-        </Container>
+            <div className="finance_data_image">
+                {financeData ? (
+                    <>
+                        {financeData?.users?.length > 0 ? (
+                            <>
+                                {/* <Image
+                                    src={jovera}
+                                    alt="jovera"
+                                    style={{
+                                        position: 'absolute',
+                                        top: '-100%',
+                                        left: '35%',
+                                        width: '20%',
+                                        height: 'auto',
+                                        opacity: 0.8,
+                                    }}
+                                    className="login_image"
+                                /> */}
+                                <h3>Winning Team</h3>
+                                <h2 className="login_pipeline_name">{financeData?.pipeline?.name}</h2>
+                                <div className="image_control_discussion_container">
+                                    {financeData?.users?.map((user, index) => {
+                                        const imageSrc = user?.image
+                                            ? `/images/${user?.image}`
+                                            : default_image;
 
+                                        // Assign a unique animation class to each image
+                                        const animationClass =
+                                            animations[index % animations.length]; // Cycle through animations
+
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`animated-image ${animationClass}`}
+                                            >
+                                                <Image
+                                                    src={imageSrc}
+                                                    alt="user"
+                                                    className="image_control_discussion_login"
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        ) : (
+                            <></>
+                        )}
+                    </>
+                ) : (
+                    <Image
+                        src={jovera}
+                        alt="jovera"
+                        className="login_image"
+                    />
+                )}
+            </div>
+
+
+
+        </Container >
     );
 };
 

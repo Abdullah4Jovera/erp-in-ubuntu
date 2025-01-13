@@ -92,11 +92,11 @@ const LeadSearch = ({ onSearch, fetchLeadsData, selectedBranchId, selectedProduc
     // Fetch pipelines based on selected branch and product
     useEffect(() => {
         const fetchPipelines = async () => {
-            if (selectedBranchId === '6719fdded3de53c9fb53fb79') {
+            if (selectedBranchId === '673b34924b966621c041caac') {
                 // If the branch is the specific Ajman Branch, set static pipeline data
                 setPipelines([
                     {
-                        _id: '6719fda75035bf8bd708d024', // The specified ID
+                        _id: '673b190186706b218f6f3262', // The specified ID
                         name: 'Ajman Branch' // The specified label
                     }
                 ]);

@@ -1,88 +1,118 @@
+/* Sidebar main container styling */
 .sidebar_main_container {
-    /* width: 250px; */
-    /* background: linear-gradient(45deg, #dfc69c, #ddd2bb); */
-    /* background-color: red; */
-    /* background: #101010; */
-    /* padding: 10px; */
-    border-right: 1px solid #000;
+    display: flex;
+    flex-direction: column;
     height: 100vh;
-}
-
-.sidebar_links {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.sidebar_section {
-    display: flex;
-    flex-direction: column;
-}
-
-.user_name_class {
-    font-family: Poppins;
-    font-style: normal;
-    font-weight: 500;
-    text-align:center ;
-    font-size: 14px;
-}
-
-.user_email_class {
-    font-family: Poppins;
-    text-align:center ;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 400;
-}
-
-.sidebar_link {
-    text-decoration: none;
-    color: black;
-    padding: 10px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    transition: background 0.2s;
-    font-size: 12px;
-}
-
-.sidebar_link:hover {
-    background-color: #ffa000;
+    background-color: #1e2125;
     color: white;
+    /* width: 250px; */
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
 }
 
-.dropdown {
-    cursor: pointer;
+/* Sidebar links container */
+.sidebar_links {
+    flex: 1;
+    padding: 20px 15px;
 }
 
+/* Sidebar sections */
+.sidebar_section {
+    margin-bottom: 20px;
+}
+
+/* Dropdown title */
 .dropdown_title {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 10px;
-    /* background: #e9ecef; */
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffa000;
+    cursor: pointer;
+    padding: 10px 15px;
     border-radius: 4px;
-    margin-top: 5px;
-    background-color: #b9406b;
-    color: white;
-    border-radius: 8px;
-    font-size: 12px;
+    transition: background 0.3s;
 }
 
 .dropdown_title:hover {
-    transform: scale(1.05);
-    background-color: #9b355a;
-    /* Slightly darker color for hover */
+    background-color: rgba(255, 160, 0, 0.2);
 }
 
+/* Dropdown content */
 .dropdown_content {
-    background: #f1f1f1;
-    padding: 10px;
-    border-radius: 4px;
+    margin-top: 10px;
+    padding-left: 15px;
+    display: flex;
+    flex-direction: column;
 }
 
-.dropdown_content .sidebar_link {
-    padding: 5px 10px;
-    margin: 0;
-    /* Reset margin */
+.dropdown_content .link {
+    text-decoration: none;
+    color: #bdbdbd;
+    margin: 8px 0;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    transition: color 0.3s;
+}
+
+.dropdown_content .link:hover {
+    color: white;
+}
+
+/* User info styling */
+.user_name_class {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.user_email_class {
+    font-size: 14px;
+    color: #a3a3a3;
+}
+
+/* Notifications */
+.notification_section {
+    padding: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    color: white;
+}
+
+/* Logout button */
+.logout_section {
+    padding: 15px;
+    text-align: center;
+}
+
+.logout_section button {
+    width: 100%;
+    padding: 10px;
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.logout_section button:hover {
+    background-color: #b71c1c;
+}
+
+/* Scrollbar styling */
+.sidebar_main_container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar_main_container::-webkit-scrollbar-thumb {
+    background: #505050;
+    border-radius: 10px;
+}
+
+.sidebar_main_container::-webkit-scrollbar-thumb:hover {
+    background: #666666;
 }

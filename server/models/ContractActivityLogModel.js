@@ -21,7 +21,7 @@ const contractActivityLogSchema = new Schema({
         type: String,
         default: ''
     },
-    created_at: {
+    created_at: { 
         type: Date,
         default: Date.now
     },

@@ -10,8 +10,6 @@ const ProductStage = require('../models/productStageModel');
 const ActivityLog = require('../models/activityLogModel');
 const Product = require('../models/productModel');
 const mongoose = require('mongoose');
-
-
 // Soft delete a lead request
 router.put('/soft-delete/:id', isAuth, async (req, res) => {
     const requestId = req.params.id;
@@ -41,8 +39,6 @@ router.put('/soft-delete/:id', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Error soft deleting lead request.', error: error.message });
     }
 });
-
-
 // New route to update the 'read' status of a LeadRequest
 router.put('/mark-read/:id', isAuth, async (req, res) => {
     const requestId = req.params.id;
@@ -73,8 +69,6 @@ router.put('/mark-read/:id', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Error marking lead request as read.', error: error.message });
     }
 });
-
-
 // Create a new Lead Request
 router.post('/create-request', isAuth, async (req, res) => {
     const { lead_id, message, branch, products, product_stage, pipeline_id, type, currentBranch, currentProduct, currentProductStage,currentPipeline } = req.body;
@@ -148,7 +142,6 @@ router.post('/create-request', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Error creating Lead Request.', error: error.message });
     }
 });
-
 // Get all lead requests for the authenticated user, excluding soft-deleted requests
 router.get('/my-requests', isAuth, async (req, res) => {
     const userId = req.user._id;
@@ -196,8 +189,6 @@ router.get('/my-requests', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Error fetching lead requests.', error: error.message });
     }
 });
-
-
 // Change Action of Lead Request and Track User
 router.put('/change-action/:id', isAuth, async (req, res) => {
     const { action } = req.body;
@@ -256,7 +247,7 @@ router.put('/change-action/:id', isAuth, async (req, res) => {
             const branchId = new mongoose.Types.ObjectId(String(branch));
             const productStageId = new mongoose.Types.ObjectId(String(product_stage));
             const pipelineId = new mongoose.Types.ObjectId(String(pipeline_id));
-
+            const productId = new mongoose.Types.ObjectId(String(products));
             // Check if the lead exists
             const lead = await Lead.findById(leadId);
             if (!lead) {
@@ -295,14 +286,17 @@ router.put('/change-action/:id', isAuth, async (req, res) => {
             }
 
             // Fetch additional users based on the new pipeline and branch
-            const ceoUsers = await User.find({ role: 'CEO' }).select('_id name');
+            const ceoUsers = await User.find({ role: 'CEO' }).select('_id name'); 
             const superadminUsers = await User.find({ role: 'superadmin' }).select('_id name');
             const mdUsers = await User.find({ role: 'MD' }).select('_id name');
-            const hodUsers = await User.find({ role: 'HOD' }).select('_id name'); // HOD with no branch filter
+            const hodUsers = await User.find({ role: 'HOD', products: productId }).select('_id name');
             const managerUsers = await User.find({ 
                 role: 'Manager',
+                pipeline: pipelineId,
                 branch: branchId, // Filter managers by the new branch
             }).select('_id name');
+            const homUsers = await User.find({ role: 'HOM', products: productId }).select('_id name');
+
 
             // Include created_by user from the lead
             const createdByUser = lead.created_by ? await User.findById(lead.created_by).select('_id name') : null;
@@ -314,6 +308,7 @@ router.put('/change-action/:id', isAuth, async (req, res) => {
                 ...ceoUsers.map(user => user._id.toString()),
                 ...superadminUsers.map(user => user._id.toString()),
                 ...mdUsers.map(user => user._id.toString()),
+                ...homUsers.map(user => user._id.toString()),
                 ...hodUsers.map(user => user._id.toString()), // Include HOD without branch restriction
                 ...managerUsers.map(user => user._id.toString()), // Manager filtered by branch
                 ...updatedSelectedUsers.map(user => user.toString()), // Keep previous selected users
@@ -355,8 +350,6 @@ router.put('/change-action/:id', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Error changing action.', error: error.message });
     }
 });
-
-
 const getUniqueUserIds = (userIds) => {
     const uniqueUserMap = {};
     userIds.forEach(id => {
@@ -366,7 +359,6 @@ const getUniqueUserIds = (userIds) => {
     });
     return Object.keys(uniqueUserMap);
 };
-
 const transferLead = async (user, { branch, products, product_stage, pipeline_id, lead_id }) => {
     try {
         if (!branch || !products || !product_stage || !pipeline_id || !lead_id) {
@@ -431,11 +423,16 @@ const transferLead = async (user, { branch, products, product_stage, pipeline_id
         lead.is_transfer = true;  // Mark lead as transferred
 
         // Find users to notify (CEO, MD, Superadmin, HOD, etc.)
-        const ceoUsers = await User.find({ role: 'CEO' }).select('_id name');
-        const superadminUsers = await User.find({ role: 'superadmin' }).select('_id name');
-        const mdUsers = await User.find({ role: 'MD' }).select('_id name');
-        const hodUsers = await User.find({ role: 'HOD' }).select('_id name');
-        const managerUsers = await User.find({ role: 'Manager', branch: branchId }).select('_id name');
+        const ceoUsers = await User.find({ role: 'CEO' }).select('_id name'); 
+            const superadminUsers = await User.find({ role: 'superadmin' }).select('_id name');
+            const mdUsers = await User.find({ role: 'MD' }).select('_id name');
+            const hodUsers = await User.find({ role: 'HOD', products: productId }).select('_id name');
+            const managerUsers = await User.find({ 
+                role: 'Manager',
+                pipeline: pipelineId,
+                branch: branchId, // Filter managers by the new branch
+            }).select('_id name');
+            const homUsers = await User.find({ role: 'HOM', products: productId }).select('_id name');
 
         const previousPipelineHodUser = await User.findOne({
             role: 'HOD',
@@ -453,7 +450,8 @@ const transferLead = async (user, { branch, products, product_stage, pipeline_id
             ...superadminUsers.map(user => user._id.toString()),
             ...mdUsers.map(user => user._id.toString()),
             ...hodUsers.map(user => user._id.toString()),
-            ...managerUsers.map(user => user._id.toString())
+            ...managerUsers.map(user => user._id.toString()),
+            ...homUsers.map(user => user._id.toString())
         ];
 
         // Assign the first (and only) previous pipeline HOD as ref_user if available

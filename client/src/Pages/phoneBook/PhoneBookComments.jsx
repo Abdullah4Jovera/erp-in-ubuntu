@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Modal } from 'react-bootstrap';
+import { Button, Image, Modal } from 'react-bootstrap';
 import axios from 'axios';
 
 const PhoneBookComments = ({ leadId, setPhoneBookModal, phoneBookModal, singleLead }) => {
@@ -14,14 +14,14 @@ const PhoneBookComments = ({ leadId, setPhoneBookModal, phoneBookModal, singleLe
 
     return (
         <Modal show={phoneBookModal} onHide={() => setPhoneBookModal(false)} centered>
-            <Modal.Header closeButton>
-                <Modal.Title>PhoneBook Comments</Modal.Title>
+            <Modal.Header closeButton style={{ border: 'none' }} >
+                <Modal.Title className='mutual_class_color' >PhoneBook Comments</Modal.Title>
             </Modal.Header>
-            <Modal.Body style={{ height:'100%', maxHeight:'500px', overflowY:'scroll' }} >
+            <Modal.Body style={{ height: '100%', maxHeight: '500px', overflowY: 'scroll' }} >
                 {comments.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         {comments.map((comment) => (
-                            <div key={comment._id} className="comment" style={{ display: 'flex', flexDirection: 'column', padding: '15px', borderBottom: '1px solid #eee' }}>
+                            <div key={comment._id} className="comment" style={{ display: 'flex', flexDirection: 'column', padding: '10px', borderBottom: '1px solid #eee' }}>
                                 {/* Comment Header (User Info) */}
                                 <div className="comment-header" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                     <Image
@@ -30,8 +30,8 @@ const PhoneBookComments = ({ leadId, setPhoneBookModal, phoneBookModal, singleLe
                                         style={{ width: 40, height: 40, borderRadius: '50%' }}
                                     />
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{comment?.user?.name}</span>
-                                        <span style={{ fontSize: '12px', color: '#888' }}>
+                                        <span className='mutual_class_color' style={{ fontWeight: 'bold', fontSize: '14px' }}>{comment?.user?.name}</span>
+                                        <span style={{ fontSize: '12px', color: '#fff' }}>
                                             {new Date(comment.createdAt).toLocaleDateString('en-US', {
                                                 year: 'numeric',
                                                 month: 'long',
@@ -55,7 +55,7 @@ const PhoneBookComments = ({ leadId, setPhoneBookModal, phoneBookModal, singleLe
                                             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
                                             wordBreak: 'break-word',
                                             border: '1px solid #ddd',
-                                            marginTop: '10px',
+                                            marginTop: '2px',
                                         }}
                                     >
                                         <p style={{ margin: '0', color: '#333', fontSize: '14px' }}>{comment?.remarks}</p>
@@ -69,6 +69,11 @@ const PhoneBookComments = ({ leadId, setPhoneBookModal, phoneBookModal, singleLe
                 )}
 
             </Modal.Body>
+            <Modal.Footer style={{ border: 'none' }}>
+                <Button style={{ cursor: 'pointer' }} className='all_close_btn_container' onClick={() => setPhoneBookModal(false)}>
+                    Close
+                </Button>
+            </Modal.Footer>
         </Modal>
     );
 };

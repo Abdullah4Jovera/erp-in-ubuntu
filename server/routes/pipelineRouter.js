@@ -17,7 +17,7 @@ router.get('/get-pipelines',  async (req, res) => {
 
 // Route to add a new pipeline
 router.post('/create-pipeline', isAuth,hasPermission(['app_management']),async (req, res) => { 
-  const { name, created_by } = req.body;
+  const { name, created_by ,target} = req.body;
 
   if (!name) {
     return res.status(400).json({ message: 'Pipeline name is required.' });
@@ -26,6 +26,7 @@ router.post('/create-pipeline', isAuth,hasPermission(['app_management']),async (
   try {
     const newPipeline = new Pipeline({
       name,
+      target,
       created_by,
       created_at: new Date(),
       updated_at: new Date(),
@@ -42,7 +43,7 @@ router.post('/create-pipeline', isAuth,hasPermission(['app_management']),async (
 // Route to update a pipeline
 router.put('/update-pipeline/:id', isAuth,hasPermission(['app_management']), async (req, res) => {
   const { id } = req.params;
-  const { name, created_by, delstatus } = req.body;
+  const { name, created_by, delstatus,target } = req.body;
 
   try {
     const pipeline = await Pipeline.findById(id);
@@ -53,6 +54,7 @@ router.put('/update-pipeline/:id', isAuth,hasPermission(['app_management']), asy
 
     // Update the pipeline fields
     if (name) pipeline.name = name;
+    if (target) pipeline.target = target;
     if (created_by) pipeline.created_by = created_by;
     if (typeof delstatus !== 'undefined') pipeline.delstatus = delstatus;
 

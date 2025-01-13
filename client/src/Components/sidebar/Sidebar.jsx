@@ -1,61 +1,85 @@
-import React, { useEffect, useState,useRef } from 'react';
-import '../navbar/Navbar.css';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { ProSidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
+import 'react-pro-sidebar/dist/css/styles.css';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import axios from 'axios';
-import { FaUsers, FaFolder, FaFileAlt, FaChartLine, FaCog } from 'react-icons/fa'; // Importing React Icons
-import { IoIosArrowDown } from 'react-icons/io'; // Arrow down icon for dropdowns
-import './sidebar.css';
-import { logoutUser, fetchUpdatedPermission, refreshToken, logout } from '../../Redux/loginSlice';
 import { Button, Image, Modal } from 'react-bootstrap';
+import { FaUsers, FaFolder, FaFileAlt, FaChartLine, FaCog, FaPhoneAlt, FaSignOutAlt, FaBell } from 'react-icons/fa';
+import { logoutUser, fetchUpdatedPermission, refreshToken, logout } from '../../Redux/loginSlice';
+import { IoIosArrowDown } from 'react-icons/io';
+import './sidebar.css'; // Custom styling
+import defaultImage from '../../Assets/default_image.jpg';
+import axios from 'axios';
 import io from 'socket.io-client';
-import defaultImage from '../../Assets/default_image.jpg'
-const Sidebar = () => {
-    const [requests, setRequests] = useState([]);
-    const token = useSelector(state => state.loginSlice.user?.token);
-    const userImage = useSelector(state => state.loginSlice.user?.image)
-    const userName = useSelector(state => state.loginSlice.user?.name)
-    const userEmail = useSelector(state => state.loginSlice.user?.email)
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const userId = useSelector(state => state.loginSlice.user?._id);
-    const userRole = useSelector(state => state.loginSlice.user?.role);
-    const [pendingCount, setPendingCount] = useState(0);
-    const [actionCount, setActionCount] = useState(0);
-    const [notifications, setNotifications] = useState([]);
+import { RiContractFill } from "react-icons/ri";
+import { FcManager } from "react-icons/fc";
+import { SiNginxproxymanager } from "react-icons/si";
+import { MdManageAccounts } from "react-icons/md";
+import { BiCodeAlt } from "react-icons/bi";
+import { RxDashboard } from "react-icons/rx";
+import Calculator from '../../Pages/Calculator';
+import { FaCalculator } from "react-icons/fa6";
+import { GrView } from "react-icons/gr";
+
+const SidebarComponent = () => {
     const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+    const [collapsed, setCollapsed] = useState(false); // State to manage sidebar collapse
+    const [openSubMenu, setOpenSubMenu] = useState(null);
+    const [rtl, setRtl] = useState(false); // State to toggle RTL mode
+    const userID = useSelector(state => state.loginSlice.user?._id);
+    const userId = useSelector(state => state.loginSlice.user?._id);
+    const token = useSelector(state => state.loginSlice.user?.token);
+    const userImage = useSelector(state => state.loginSlice.user?.image);
+    const userName = useSelector(state => state.loginSlice.user?.name);
+    const userEmail = useSelector(state => state.loginSlice.user?.email);
+    const userRole = useSelector(state => state.loginSlice.user?.role);
     const [socket, setSocket] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [actionCount, setActionCount] = useState(0);
+    const [pendingCount, setPendingCount] = useState(0);
+    const [notifications, setNotifications] = useState([]);
+    const [requests, setRequests] = useState([]);
+    const [currentTime, setCurrentTime] = useState('');
+    const [openCalculator, setOpenCalculator] = useState(false);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const [openDropdown, setOpenDropdown] = useState(''); // Track the currently open dropdown
-    const userID = useSelector(state => state.loginSlice.user?._id);
-    const socketRef = useRef(null);
-    const links = [
-        { to: '/product', label: 'Products', icon: <FaFileAlt style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/branches', label: 'Branches', icon: <FaFolder style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/pipelines', label: 'PipeLines', icon: <FaChartLine style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/productstages', label: 'Product Stages', icon: <FaCog style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/leadtype', label: 'Lead Type', icon: <FaUsers style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/sources', label: 'Sources', icon: <FaCog style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/allusers', label: 'Users', icon: <FaUsers style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/usermanagement', label: 'User Management', icon: <FaCog style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/leadapiconfig', label: 'Lead Api Config', icon: <FaCog style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/session', label: 'Session', icon: <FaCog style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-        { to: '/contractstages', label: 'Contract Stages', icon: <FaCog style={{ color: '#ffa000', marginRight: '8px', fontSize: '20px' }} /> },
-    ];
+    const location = useLocation();
+
+    const permissions = useSelector(state => state.loginSlice.user?.permissions);
+
+    // const notificationSound = new Audio('/goat.mp3');
+    // notificationSound.preload = 'auto'; 
+
+    // Update the clock every second
     useEffect(() => {
-        if (userID && !socketRef.current) { // Only create socket if it doesn't exist
-            const newSocket = io('http://localhost:8080', { 
+        const updateClock = () => {
+            const now = new Date();
+            setCurrentTime(now.toLocaleTimeString());
+        };
+
+        updateClock(); // Set the initial time
+        const clockInterval = setInterval(updateClock, 1000); // Update the time every second
+        return () => clearInterval(clockInterval);
+    }, []);
+
+    useEffect(() => {
+        if (userID) {
+            const newSocket = io(`http://192.168.2.137:8080`, {
                 query: { userId: userID },
                 transports: ['websocket'],
-                upgrade: true, 
             });
-
-            socketRef.current = newSocket;  // Save socket instance in ref
             setSocket(newSocket);
-
             // Handle incoming notifications
             newSocket.on('notification', (data) => {
+                // try {
+                //     notificationSound.currentTime = 0; // Reset playback to the start
+                //     notificationSound.play().catch((error) => {
+                //         console.error('Failed to play notification sound:', error);
+                //     });
+                // } catch (err) {
+                //     console.error('Error managing notification sound:', err);
+                // }
                 setNotifications(prevNotifications => [
                     ...prevNotifications,
                     {
@@ -63,14 +87,15 @@ const Sidebar = () => {
                         leadId: data.referenceId,
                         notificationType: data.notificationType,
                         notificationId: data.notificationId,
+                        referenceId: data.referenceId,
+                        sender: data.sender,
                         createdAt: data.createdAt,
                         read: false
                     }
                 ]);
             });
-
             newSocket.on('permission-update', async (data) => {
-                await dispatch(fetchUpdatedPermission()); // Fetch updated permissions
+                await dispatch(fetchUpdatedPermission()); // Fetch updated permissions 
                 const refreshResponse = await dispatch(refreshToken()); // Refresh token
                 if (refreshResponse.payload) {
                     console.log('Token refreshed:', refreshResponse.payload.token); // Log the new token
@@ -81,23 +106,15 @@ const Sidebar = () => {
                 await dispatch(logoutUser());
                 dispatch(logout());
                 navigate('/');
+
             });
 
-            // Disconnect socket on component unmount or userID change
+            // Disconnect socket on component unmount
             return () => {
                 newSocket.disconnect();
-                socketRef.current = null; // Clear the ref when the component unmounts
             };
         }
-
-        // Optional cleanup if userID changes and socket exists
-        return () => {
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-                socketRef.current = null;
-            }
-        };
-    }, [userID, dispatch, navigate]);
+    }, [userID]);
 
     const fetchRequests = async () => {
         try {
@@ -135,24 +152,10 @@ const Sidebar = () => {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        fetchRequests();
-    }, [token, userId]);
-
-    const toggleDropdown = (dropdownName) => {
-        setOpenDropdown(prev => prev === dropdownName ? '' : dropdownName);
-    };
-
     const logoutHandler = () => {
         dispatch(logoutUser());
         dispatch(logout());
         navigate('/');
-
-    };
-
-    const handleShowNotifications = () => {
-        setShowNotificationsModal(true);
     };
 
     const markAsRead = async (notificationId) => {
@@ -183,164 +186,858 @@ const Sidebar = () => {
     };
 
     const unreadNotifications = notifications.filter(notification => !notification.read);
+    useEffect(() => {
+        fetchRequests();
+    }, [token, userId]);
+
+    const handleShowNotifications = () => setShowNotificationsModal(true);
+
+    // Get rtl state from localStorage on initial load
+    useEffect(() => {
+        const savedRtl = localStorage.getItem('rtl') === 'true';
+        setRtl(savedRtl);
+    }, []);
+
+    useEffect(() => {
+        // Automatically collapse sidebar if route is /leads
+        if (location.pathname === '/leads') {
+            setCollapsed(true);
+        } else {
+            setCollapsed(false);
+        }
+    }, [location.pathname]);
+
+    const handleMouseEnter = () => {
+        if (collapsed) setCollapsed(false); // Expand the sidebar on hover
+    };
+
+    const handleMouseLeave = () => {
+        if (location.pathname === '/leads') setCollapsed(true); // Collapse again if the route is /leads
+    };
+    const toggleRtl = () => {
+        const newRtlState = !rtl; // Toggle RTL state
+        setRtl(newRtlState); // Update state
+        // Save the updated RTL state to localStorage
+        localStorage.setItem('rtl', newRtlState); // Convert to string for storage
+        window.location.reload();
+    };
+
+    const getDashboardRoute = (userRole) => {
+        switch (userRole) {
+            case 'CEO':
+                return '/ceodashboard';
+            case 'HOD':
+            case 'Manager':
+            case 'HOM':
+            case 'Team Leader':
+                return '/hoddashboard';
+            default:
+                return '/dashboard';
+        }
+    };
+
+    const toggleSubMenu = (menuName) => {
+        setOpenSubMenu(openSubMenu === menuName ? null : menuName);
+    };
 
     return (
-        <div className='sidebar_main_container'>
-            <div className='sidebar_links'>
-
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', marginTop: '32px' }}>
-                    <Image src={`/images/${userImage && userImage || defaultImage}`} alt={`${userName && userName} Image`} style={{ width: '120px', height: '120px', borderRadius: '50%', border: '1px solid white' }} />
-                    <p className='user_name_class mb-1 mt-2' style={{ color: 'white' }} > {userName && userName} </p>
-                    <p className='user_email_class mb-1' style={{ color: 'white' }}> {userRole && userRole} </p>
-                    <p className='user_email_class mb-0' style={{ color: 'white' }}> {userEmail && userEmail} </p>
+        <div style={{ display: 'flex', flexDirection: rtl ? 'row-reverse' : 'row' }}>
+            <ProSidebar
+                rtl={rtl}
+                collapsed={collapsed}
+                style={{
+                    height: '100%',
+                    maxHeight: 'auto',
+                    overflowY: 'auto',
+                    backgroundColor: '#333',
+                    color: '#fff',
+                    position: 'fixed',
+                    [rtl ? 'right' : 'left']: 0,
+                    transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+            >
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                    {!collapsed && (
+                        <Image
+                            src={userImage ? `/images/${userImage}` : defaultImage}
+                            alt={`${userName || 'User'} Image`}
+                            style={{
+                                width: '100px',
+                                height: '100px',
+                                borderRadius: '50%',
+                                border: '2px solid #d7aa47',
+                            }}
+                        />
+                    )}
+                    {!collapsed && (
+                        <>
+                            <p style={{ margin: '10px 0', color: '#ffa000', fontWeight: 'bold' }}>
+                                {userName || 'User Name'}
+                            </p>
+                            <p style={{ margin: '5px 0', fontSize: '14px', color: '#bbb' }}>{userRole || 'Role'}</p>
+                            <p className='mb-0' style={{ margin: '5px 0', fontSize: '12px', color: '#bbb' }}>{userEmail || 'Email'}</p>
+                        </>
+                    )}
                 </div>
 
-                {/* Phone Book */}
-                <div className='sidebar_section'>
-                    <div className='dropdown' onClick={() => toggleDropdown('phonebook')}>
-                        <span className='dropdown_title'>PhoneBook<IoIosArrowDown /></span>
-                        {openDropdown === 'phonebook' && (
-                            <div className='dropdown_content'>
-                                {!['Super Admin', 'HOD', 'Manager', 'CEO', 'Team Leader', 'Coordinator'].includes(userRole) && (
-                                    <Link to={'/phonebook'} className='sidebar_link'>PhoneBook</Link>
-                                )}
-                                {userRole === 'CEO' && (
-                                    <>
-                                        <Link to={'/ceophonebook'} className='sidebar_link'>PhoneBook</Link>
-                                        {/* <Link to={'/generatereport'} className='sidebar_link'>Generate Report</Link> */}
-                                    </>
-                                )}
+                <p className='mb-0' style={{ fontSize: '20px', fontWeight: '500', color: '#d7aa47', textAlign: 'center' }}>{currentTime}</p>
+                <Menu>
+                    {permissions?.includes('crm_dashboard') && (
+                        <MenuItem>
+                            <Button
+                                variant="link"
+                                style={{
+                                    color: '#fff',
+                                    padding: '0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    textDecoration: 'none',
+                                    marginLeft: '6px'
+                                }}
+                                onClick={() => navigate(getDashboardRoute(userRole))}
+                            >
+                                <RxDashboard
+                                    style={{
+                                        marginRight: rtl === 'true' ? '0' : '10px',
+                                        marginLeft: rtl === 'true' ? '10px' : '0',
+                                        fontSize: '20px',
+                                        color: '#ffa000'
+                                    }}
+                                />
+                                {rtl === 'true' ? 'الإشعارات' :
+                                    userRole === 'CEO' ? 'Dashboard' :
+                                        userRole === 'HOD' ? 'Dashboard' : 'Dashboard'}
+                            </Button>
+                        </MenuItem>
+                    )}
 
-                                {['HOD', 'Team Leader', 'Manager', 'Coordinator'].includes(userRole) && (
-                                    <>
-                                        <Link to={'/HodPhoneBook'} className='sidebar_link'>PhoneBook</Link>
-                                        {/* <Link to={'/generatereport'} className='sidebar_link'>Generate Report</Link> */}
-                                    </>
-                                )}
+                    {permissions?.includes('show_phonebook') && (
+                        <SubMenu
+                            title={rtl === 'true' ? 'دليل الهاتف' : 'PhoneBook'}
+                            icon={<FaPhoneAlt style={{ color: '#ffa000', fontSize: '20px' }} />}
+                            isOpen={openSubMenu === 'phonebook'}
+                            onTitleClick={() => toggleSubMenu('phonebook')}
 
-                                {userRole === 'Super Admin' && (
-                                    <div className='sidebar_section'>
-                                        <Link to={'/superadminphonebook'} className='sidebar_link'>Phonebook</Link>
-                                        {/* <Link to={'/generatereport'} className='sidebar_link'>Generate Report</Link> */}
-                                    </div>
-                                )}
-
-                                <Link to={'/convertedlead'} className='sidebar_link'>Lead Converted Numbers</Link>
-                                <Link to={'/blocklist'} className='sidebar_link'>BlockList Numbers</Link>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className='sidebar_section'>
-                    <div className='dropdown' onClick={() => toggleDropdown('leads')}>
-                        <span className='dropdown_title'>Lead Management <IoIosArrowDown /></span>
-                        {openDropdown === 'leads' && (
-                            <div className='dropdown_content'>
-                                <Link to={'/leads'} className='sidebar_link'>Leads</Link>
-                                <Link to={'/rejectedlead'} className='sidebar_link'>Rejected Leads</Link>
-                                {userRole === 'CEO' && (
-                                    <>
-                                        <Link to={'/ceounassign'} className='sidebar_link'>UnAssign Lead</Link>
-                                        <Link to={'/request'} className='sidebar_link'>
-                                            Lead Requests {actionCount > 0 && `(${actionCount})`} {pendingCount > 0 && `(${pendingCount})`}
-                                        </Link>
-                                        <Link to={'/createlabels'} className='sidebar_link'>Label Management</Link>
-                                    </>
-                                )}
-                                {(userRole === 'HOD' || userRole === 'Manager' || userRole === 'Team Leader') && (
-                                    <>
-                                        <Link to={'/unsigned'} className='sidebar_link'>UnAssign Lead</Link>
-                                        <Link to={'/request'} className='sidebar_link'>
-                                            Lead Requests {actionCount > 0 && `(${actionCount})`} {pendingCount > 0 && `(${pendingCount})`}
-                                        </Link>
-                                        <Link to={'/createlabels'} className='sidebar_link'>Label Management</Link>
-                                    </>
-                                )}
-
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Contract */}
-                <div className='sidebar_section'>
-                    <div className='dropdown' onClick={() => toggleDropdown('contract')}>
-                        <span className='dropdown_title'>Contract<IoIosArrowDown /></span>
-                        {openDropdown === 'contract' && (
-                            <div className='dropdown_content'>
-                                <Link to={'/contract'} className='sidebar_link'>Contract</Link>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {(userRole === 'Super Admin' || userRole === 'Developer') && (
-                    <div className='sidebar_section'>
-                        <div className='dropdown' onClick={() => toggleDropdown('appManagement')}>
-                            <span className='dropdown_title'>App Management <IoIosArrowDown /></span>
-                            {openDropdown === 'appManagement' && (
-                                <div className='dropdown_content'>
-                                    {links.map(link => (
-                                        <Link key={link.to} to={link.to} className='sidebar_link'>
-                                            {link.icon} {link.label}
-                                        </Link>
-                                    ))}
-                                </div>
+                        >
+                            {!['Super Admin', 'HOD', 'Manager', 'CEO', 'Coordinator'].includes(userRole) && (
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'rtl',
+                                    }}
+                                >
+                                    <Link to="/phonebook" className="sidebar_link">
+                                        {rtl === 'true' ? 'دليل الهاتف' : 'PhoneBook'}
+                                    </Link>
+                                </MenuItem>
                             )}
-                        </div>
-                    </div>
-                )}
 
-                <Link to={'/dashboard'} className='sidebar_link dropdown_title'>Dashboard</Link>
+                            {userRole === 'CEO' && (
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/ceophonebook" className="sidebar_link">
+                                        {rtl === 'true' ? 'دليل الهاتف للرئيس التنفيذي' : 'PhoneBook'}
+                                    </Link>
+                                </MenuItem>
+                            )}
 
-                <Button onClick={handleShowNotifications} className='dropdown_title' style={{ border: 'none' }} >
-                    Notifications ({unreadNotifications.length})
-                </Button>
+                            {['HOD', 'Manager', 'Coordinator'].includes(userRole) && (
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/HodPhoneBook" className="sidebar_link">
+                                        {rtl === 'true' ? 'دليل الهاتف للرؤساء' : 'PhoneBook'}
+                                    </Link>
+                                </MenuItem>
+                            )}
 
-                <Button onClick={logoutHandler} className='dropdown_title' style={{ border: 'none' }}>
-                    Logout
-                </Button>
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to="/blocklist" className="mt-3">
+                                    {rtl === 'true' ? 'قائمة الحظر' : 'BlockList'}
+                                </Link>
+                            </MenuItem>
 
-                <Modal show={showNotificationsModal} onHide={closeNotificationsModal}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>Notifications</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        {notifications.length === 0 ? (
-                            <p>No Notifications Available.</p>
-                        ) : (
-                            notifications.map(notification => (
-                                <div key={notification.notificationId} style={{ marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
-                                    <p>{notification.message}</p>
-                                    {notification.notificationType === "Lead" && notification.leadId && (
-                                        <Link to={`/single-leads/${notification.leadId}`}>
-                                            <p>Lead ID: {notification.leadId}</p>
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to="/convertedlead" className="mt-3">
+                                    {rtl === 'true' ? 'العملاء المحولين' : 'Lead Converted'}
+                                </Link>
+                            </MenuItem>
+                        </SubMenu>
+                    )}
+
+                    {permissions?.includes('view_lead') && (
+                        <SubMenu
+                            title={rtl === 'true' ? 'إدارة القادة' : 'Lead Management'}
+                            icon={<FcManager style={{ fontSize: '24px' }} />}
+                            isOpen={openSubMenu === 'leadManagement'}
+                            onTitleClick={() => toggleSubMenu('leadManagement')}
+                        >
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to={'/leads'} className='sidebar_link'>
+                                    {rtl === 'true' ? 'القادة' : 'Leads'}
+                                </Link>
+                            </MenuItem>
+
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to={'/rejectedlead'} className='sidebar_link'>
+                                    {rtl === 'true' ? 'المرفوضة' : 'Rejected'}
+                                </Link>
+                            </MenuItem>
+
+                            {userRole === 'CEO' && (
+                                <>
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/ceounassign'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'إلغاء التعيين' : 'UnAssign'}
                                         </Link>
-                                    )}
-                                    {!notification.read && (
-                                        <Button
-                                            onClick={() => markAsRead(notification.notificationId)}
-                                            variant="success"
-                                            style={{ marginTop: '10px' }}
-                                        >
-                                            Mark as Read
-                                        </Button>
-                                    )}
-                                </div>
-                            ))
+                                    </MenuItem>
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/request'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'طلبات القادة' : 'Lead Requests'} {actionCount > 0 && `(${actionCount})`} {pendingCount > 0 && `(${pendingCount})`}
+                                        </Link>
+                                    </MenuItem>
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/createlabels'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'إدارة العلامات' : 'Label Management'}
+                                        </Link>
+                                    </MenuItem>
+                                </>
+                            )}
+
+                            {userRole === 'Team Leader' && (
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to={'/teamleaderunassigned'} className='sidebar_link'>
+                                        {rtl === 'true' ? 'إدارة العلامات' : 'Team Leader Unassign'}
+                                    </Link>
+                                </MenuItem>
+                            )}
+
+
+                            {(userRole === 'HOD' || userRole === 'Manager') && (
+                                <>
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/unsigned'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'إلغاء التعيين HOD' : 'UnAssign'}
+                                        </Link>
+                                    </MenuItem>
+
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/request'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'طلبات القادة' : 'Lead Requests'} {actionCount > 0 && `(${actionCount})`} {pendingCount > 0 && `(${pendingCount})`}
+                                        </Link>
+                                    </MenuItem>
+
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/createlabels'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'إدارة العلامات' : 'Label Management'}
+                                        </Link>
+                                    </MenuItem>
+
+                                </>
+                            )}
+
+                            {(userRole === 'Super Admin' || userRole === 'Developer') && (
+                                <>
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/request'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'طلبات القادة' : 'Lead Requests'} {actionCount > 0 && `(${actionCount})`} {pendingCount > 0 && `(${pendingCount})`}
+                                        </Link>
+                                    </MenuItem>
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/createlabels'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'إدارة العلامات' : 'Label Management'}
+                                        </Link>
+                                    </MenuItem>
+
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/ceounassign'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'إلغاء التعيين' : 'UnAssign/CEO'}
+                                        </Link>
+                                    </MenuItem>
+
+                                    <MenuItem
+                                        style={{
+                                            textAlign: rtl === 'true' ? 'right' : 'left',
+                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                        }}
+                                    >
+                                        <Link to={'/unsigned'} className='sidebar_link'>
+                                            {rtl === 'true' ? 'إلغاء التعيين HOD' : 'UnAssign/HOD'}
+                                        </Link>
+                                    </MenuItem>
+                                </>
+                            )}
+                        </SubMenu>
+                    )}
+
+                    {permissions?.includes('view_contract') && (
+                        <SubMenu
+                            title={rtl === 'true' ? 'العقد' : 'Contract'}
+                            icon={<RiContractFill style={{ color: '#ffa000', fontSize: '20px' }} />}
+                        >
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to="/contract">
+                                    {rtl === 'true' ? 'العقد' : 'Contract'}
+                                </Link>
+                            </MenuItem>
+
+                            {/* Show the Rejected Contract link if user has 'view_contract' permission */}
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to="/rejectedcontract">
+                                    {rtl === 'true' ? 'العقد' : 'Rejected Contract'}
+                                </Link>
+                            </MenuItem>
+                        </SubMenu>
+                    )}
+
+                    {permissions?.includes('view_deal') && (
+                        <SubMenu
+                            title={rtl === 'true' ? 'العقد' : 'Deals'}
+                            icon={<BiCodeAlt style={{ color: '#ffa000', fontSize: '20px' }} />}
+                        >
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to="/deal">
+                                    {rtl === 'true' ? 'العقد' : 'Deals'}
+                                </Link>
+                            </MenuItem>
+
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to="/rejecteddeals">
+                                    {rtl === 'true' ? 'العقد' : 'Rejected Deals'}
+                                </Link>
+                            </MenuItem>
+                        </SubMenu>
+                    )}
+
+                    {permissions?.includes('accountant_management') && (
+                        <SubMenu
+                            title={rtl === 'true' ? 'العقد' : 'Accounts'}
+                            icon={<MdManageAccounts style={{ color: '#ffa000', fontSize: '20px' }} />}
+                        >
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to="/accountantdashboard">
+                                    {rtl === 'true' ? 'العقد' : 'Accounts'}
+                                </Link>
+                            </MenuItem>
+
+                            <MenuItem
+                                style={{
+                                    textAlign: rtl === 'true' ? 'right' : 'left',
+                                    direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                }}
+                            >
+                                <Link to="/commissionslist">
+                                    {rtl === 'true' ? 'العقد' : 'Commissions List'}
+                                </Link>
+                            </MenuItem>
+                        </SubMenu>
+                    )}
+
+                    {permissions?.includes('app_management') &&
+                        (userRole === 'Super Admin' || userRole === 'Developer') && (
+                            <SubMenu
+                                title={rtl === 'true' ? 'إدارة التطبيق' : 'App Management'}
+                                icon={<SiNginxproxymanager style={{ color: '#ffa000', fontSize: '20px' }} />}
+                            >
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/product">
+                                        {rtl === 'true' ? 'العقد' : 'Products'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/branches">
+                                        {rtl === 'true' ? 'العقد' : 'Branches'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/pipelines">
+                                        {rtl === 'true' ? 'العقد' : 'Pipelines'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/productstages">
+                                        {rtl === 'true' ? 'العقد' : 'Product Stages'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/leadtype">
+                                        {rtl === 'true' ? 'العقد' : 'Lead Type'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/sources">
+                                        {rtl === 'true' ? 'العقد' : 'Sources'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/allusers">
+                                        {rtl === 'true' ? 'العقد' : 'Users'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/usermanagement">
+                                        {rtl === 'true' ? 'العقد' : 'User Management'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/leadapiconfig">
+                                        {rtl === 'true' ? 'العقد' : 'Lead Api Config'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/session">
+                                        {rtl === 'true' ? 'العقد' : 'Session'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/contractstages">
+                                        {rtl === 'true' ? 'العقد' : 'Contract Stages'}
+                                    </Link>
+                                </MenuItem>
+
+                                <MenuItem
+                                    style={{
+                                        textAlign: rtl === 'true' ? 'right' : 'left',
+                                        direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                    }}
+                                >
+                                    <Link to="/dealstages">
+                                        {rtl === 'true' ? 'العقد' : 'Deal Stages'}
+                                    </Link>
+                                </MenuItem>
+                            </SubMenu>
+                        )
+                    }
+
+                    <MenuItem>
+                        <Button
+                            variant="link"
+                            style={{
+                                color: '#fff',
+                                padding: '0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                textDecoration: 'none',
+                                marginLeft: '6px'
+                            }}
+                            // onClick={() => navigate('/calculator')}
+                            onClick={() => setOpenCalculator(true)}
+                        >
+                            <FaCalculator
+                                style={{
+                                    marginRight: rtl === 'true' ? '0' : '10px',
+                                    marginLeft: rtl === 'true' ? '10px' : '0',
+                                    fontSize: '20px',
+                                    color: '#ffa000'
+                                }}
+                            />
+                            Calculator
+                        </Button>
+                    </MenuItem>
+
+                    <MenuItem>
+                        <Button
+                            variant="link"
+                            style={{
+                                color: '#fff',
+                                padding: '0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                textDecoration: 'none',
+                                marginLeft: '6px'
+                            }}
+                            onClick={handleShowNotifications}
+                        >
+                            <FaBell
+                                style={{
+                                    marginRight: rtl === 'true' ? '0' : '10px',
+                                    marginLeft: rtl === 'true' ? '10px' : '0',
+                                    fontSize: '20px',
+                                    color: '#ffa000'
+                                }}
+                            />
+                            {rtl === 'true' ? 'الإشعارات' : `Notifications (${unreadNotifications.length})`}
+                        </Button>
+                    </MenuItem>
+
+                    <MenuItem>
+                        <Button
+                            to="#"
+                            style={{
+                                color: '#fff',
+                                padding: '0',
+                                textDecoration: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: rtl === 'true' ? 'flex-end' : 'flex-start',
+                                marginLeft: rtl === 'true' ? '0' : '10px',
+                                backgroundColor: 'transparent',
+                                border: 'none'
+                            }}
+                            onClick={logoutHandler}
+                        >
+                            <FaSignOutAlt
+                                style={{
+                                    marginRight: rtl === 'true' ? '0' : '10px',
+                                    marginLeft: rtl === 'true' ? '10px' : '0',
+                                    fontSize: '20px',
+                                    color: '#ffa000'
+                                }}
+                            />
+                            {rtl === 'true' ? 'تسجيل الخروج' : 'Logout'}
+                        </Button>
+                    </MenuItem>
+                </Menu>
+
+                {/* Move the RTL toggle button to the footer */}
+                <div
+                    style={{
+                        width: '100%',
+                        padding: '10px',
+                        textAlign: 'center',
+                    }}
+                >
+                    <Button
+                        variant="primary"
+                        onClick={toggleRtl}
+                        style={{
+                            width: '100%',
+                            backgroundColor: '#d7aa47',
+                            border: 'none',
+                            color: '#fff',
+                            transition: 'all 0.3s ease-in-out', // Smooth transition for hover effect
+                            transform: 'scale(1)', // Initial scale for hover effect
+                        }}
+                    >
+                        {rtl ? 'English' : 'عربي'}
+                    </Button>
+                </div>
+
+                <Modal show={showNotificationsModal} onHide={closeNotificationsModal} size="lg">
+                    <Modal.Header
+                        closeButton
+                        style={{
+                            border: 'none',
+                            textAlign: rtl === 'true' ? 'right' : 'left',
+                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                        }}
+                    >
+                        <Modal.Title className="mutual_class_color">
+                            {rtl === 'true' ? 'الإشعارات' : 'Notifications'}
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body
+                        style={{
+                            height: '100%',
+                            maxHeight: '750px',
+                            overflowY: 'auto',
+                            textAlign: rtl === 'true' ? 'right' : 'left',
+                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                        }}
+                    >
+                        {notifications.length === 0 ? (
+                            <p className="mutual_class_color">
+                                {rtl === 'true' ? 'لا توجد إشعارات متاحة.' : 'No Notifications Available.'}
+                            </p>
+                        ) : (
+                            notifications.map((notification) => {
+                                let linkPath = '';
+                                switch (notification.notificationType) {
+                                    case 'Lead':
+                                        linkPath = `/single-leads/${notification.referenceId}`;
+                                        break;
+                                    case 'Contract':
+                                        linkPath = `/contracts/${notification.referenceId}`;
+                                        break;
+                                    case 'Deal':
+                                        linkPath = `/singledeal/${notification.referenceId}`;
+                                        break;
+                                    default:
+                                        linkPath = '/'; // Default fallback route if type is unrecognized
+                                        break;
+
+                                }
+
+                                return (
+                                    <div
+                                        key={notification.notificationId}
+                                        style={{
+                                            marginBottom: '10px',
+                                            borderBottom: '1px solid #d7aa47',
+                                            paddingBottom: '10px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexDirection: 'column',
+                                            gap: '10px',
+                                        }}
+                                    >
+                                        {/* Sender Image */}
+                                        <div className='w-100' style={{ display: 'flex', alignItems: 'center', gap: '8px' }} >
+                                            <Image
+                                                src={`http://192.168.2.137:8080/images/${notification.sender?.image || 'default.png'}`}
+                                                alt="Sender"
+                                                style={{
+                                                    width: '50px',
+                                                    height: '50px',
+                                                    borderRadius: '50%',
+                                                    objectFit: 'cover',
+                                                    border: '1px solid #d7aa47',
+                                                }}
+                                            />
+                                            <p className="mutual_heading_class mb-0">
+                                                {rtl === 'true' ? notification.messageArabic : notification.message}
+                                            </p>
+                                        </div>
+
+                                        <div className='w-100' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} >
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} >
+                                                <Link
+                                                    to={linkPath}
+                                                    style={{
+                                                        textDecoration: 'none',
+                                                        color: '#fff',
+                                                        cursor: 'pointer',
+                                                        backgroundColor: '#d7aa47',
+                                                        padding: '7px 7px',
+                                                        borderRadius: '5px',
+                                                        fontSize: '12px'
+                                                    }}
+                                                    onClick={() => setShowNotificationsModal(false)}
+                                                >
+                                                    {rtl === 'true' ? 'عرض التفاصيل' : 'View Details'}
+                                                </Link>
+
+
+                                                {/* Mark as Read Button */}
+                                                {!notification.read && (
+                                                    <Button
+                                                        onClick={() => markAsRead(notification.notificationId)}
+                                                        style={{
+                                                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                                                            textDecoration: 'none',
+                                                            color: '#fff',
+                                                            cursor: 'pointer',
+                                                            backgroundColor: '#d7aa47',
+                                                            padding: '7px 7px',
+                                                            borderRadius: '5px',
+                                                            border: 'none',
+                                                            fontSize: '12px'
+                                                        }}
+                                                    >
+                                                        {rtl === 'true' ? 'وضع علامة كمقروء' : 'Mark as Read'}
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            {/* View Details Link */}
+                                            <p
+                                                className="mutual_class_color mb-0"
+                                                style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}
+                                            >
+                                                {new Intl.DateTimeFormat('en-GB', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                }).format(new Date(notification.createdAt))}
+                                            </p>
+                                        </div>
+
+
+                                    </div>
+                                );
+                            })
                         )}
                     </Modal.Body>
-                    <Modal.Footer>
+                    <Modal.Footer
+                        style={{
+                            border: 'none',
+                            textAlign: rtl === 'true' ? 'right' : 'left',
+                            direction: rtl === 'true' ? 'rtl' : 'ltr',
+                        }}
+                    >
                         <Button variant="secondary" onClick={closeNotificationsModal}>
-                            Close
+                            {rtl === 'true' ? 'إغلاق' : 'Close'}
                         </Button>
                     </Modal.Footer>
                 </Modal>
 
-            </div>
+
+
+
+                <Calculator openCalculator={openCalculator} setOpenCalculator={setOpenCalculator} />
+            </ProSidebar>
         </div>
     );
 };
 
-export default Sidebar;
+export default SidebarComponent;

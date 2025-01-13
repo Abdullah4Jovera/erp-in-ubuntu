@@ -10,7 +10,7 @@ const dealStagesFilePath = path.join(__dirname, '../data/deal_stages.json');
 const insertDealStages = async () => {
     try {
         // Connect to MongoDB
-        await mongoose.connect('mongodb://localhost:27017/transfer', {
+        await mongoose.connect('mongodb://localhost:27017/crm', {
           
         });
 

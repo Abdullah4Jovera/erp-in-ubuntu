@@ -1,20 +1,17 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-const User = require('./userModel');
-const DealActivityLog = require('./dealActivityLogModel');
-const Pipeline = require('./pipelineModel');
-const DealStage = require('../models/dealStageModel');
-const LeadType = require('../models/leadTypeModel');
-const ServiceCommission = require ('../models/serviceCommissionModel.js')
 const dealSchema = new Schema({
+    is_converted: {
+        type: Boolean,
+        default: false
+    }, 
     is_reject: {
         type: Boolean,
         default: false
     }, 
-    is_reason: {
-        type: Boolean,
-        default: false
-    }, 
+    reject_reason: {
+        type: String
+    },  
     client_id: {
         type: Schema.Types.ObjectId,
         ref: 'Client',
@@ -41,14 +38,11 @@ const dealSchema = new Schema({
         ref: 'Product', 
         required: true
     },
-    contract_stage: {
-        type: String,
-        required: false
-    },
+
     deal_stage: {
         type: Schema.Types.ObjectId,
         ref: 'DealStage',
-        required: true
+        // required: true
     },
     labels: [{
         type: String, // Changed to String
@@ -65,7 +59,7 @@ const dealSchema = new Schema({
         required: true
     },
     lead_id: {
-        type: Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId, 
         ref: 'Lead',
 
     },
@@ -87,23 +81,25 @@ const dealSchema = new Schema({
         type: Boolean,
         default: false
     },
-    service_commission_id: {
+    service_commission_id: { 
         type: Schema.Types.ObjectId,
         ref: 'ServiceCommission',
 
     },
-    activity_logs: [{
+    deal_activity_logs: [{
         type: Schema.Types.ObjectId,
         ref: 'DealActivityLog'
     }],
-    date: {
-        type: Date,
-        required: true
-    },
+   
     collection_status: {
         type: String,
-        enum: ['0%','10%', '50%','100%'], 
+        enum: ['0%','10%', '50%','100%'],  
         default: '0%'
+    },
+    branch: {
+        type: Schema.Types.ObjectId,
+        ref: 'Branch',
+        required: true
     },
     created_at: {
         type: Date,
@@ -113,6 +109,7 @@ const dealSchema = new Schema({
         type: Date,
         default: Date.now
     },
+
     delstatus: { type: Boolean, default: false },
 
 });

@@ -20,27 +20,25 @@ h1 {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 10px;
+  width: 3px;
+  height: 6px;
 }
 
 /* Track */
 ::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 5px rgb(238, 211, 153);
+  box-shadow: inset 0 0 5px #6c757da2;
   border-radius: 2px;
 }
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
-  /* background: linear-gradient(45deg, #eebb5c, #38342e); */
-  background: rgb(238, 211, 153);
+  background: #6c757da2;
   border-radius: 4px;
 }
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
-  /* background: linear-gradient(45deg, #eebb5c, #38342e); */
-  background: rgb(238, 211, 153);
+  background: #6c757da2;
   border-radius: 4px;
 }
 
@@ -93,9 +91,42 @@ h1 {
 }
 
 .leads_main_cards {
-  margin: 5px 10px 20px 10px;
+  margin: 5px 10px 8px 10px;
   padding: 20px 15px 15px 15px;
   border-radius: 30px;
+  background-color: black;
+  border: 1px solid #d7aa47;
+  min-height: 880px;
+  height: 92%;
+  max-height: 1200px;
+}
+
+.move_trasnfer_request {
+  background-color: rgb(215, 170, 71);
+  border: none;
+  border-radius: 12px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  height: 35px;
+  padding: 0 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+
+}
+
+.move_trasnfer_request:hover {
+  background: linear-gradient(90deg, black, #d7aa47);
+}
+
+.lead_discussion_main_card_main_lead_discussion {
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  height: 100vh;
+  max-height: 400px;
+  border-radius: 20px;
 }
 
 .lead_request_main_card {
@@ -103,7 +134,7 @@ h1 {
   height: 560px;
   flex-shrink: 0;
   border-radius: 14px;
-  background: #EFEFEF;
+  background: #6c757da2;
   box-shadow: 0px 0px 7.6px 0px rgba(0, 0, 0, 0.25);
   padding: 10px 25px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -143,7 +174,7 @@ h1 {
 }
 
 .unassign_stage-card {
-  background-color: #fefefe;
+  background-color: #2d3134 !important;
   border-radius: 8px;
   padding: 0px 0px !important;
   height: 100%;
@@ -154,14 +185,11 @@ h1 {
 
 .image_control_discussion_main_lead {
   border-radius: 5px;
-  /* Optional: to make images rounded */
   transition: transform 0.2s;
-  /* Optional: smooth scaling effect */
 }
 
 .image_control_discussion_main_lead:hover {
   transform: scale(1.05);
-  /* Optional: slight zoom on hover */
 }
 
 .custom-pagination .page-link {
@@ -180,8 +208,281 @@ h1 {
 
 .mutual_background_class {
   background-color: black !important;
+  border: 1px solid #6c757da2;
+  border-radius: 20px !important;
 }
 
 .mutual_heading_class {
   color: white !important;
+}
+
+.outside_lead_class {
+  /* border: 1px solid rgb(215, 170, 71) !important; */
+  background-color: rgb(215, 170, 71);
+}
+
+.value_currency{
+  display: flex;
+  gap: 5px;
+}
+
+.modal-content {
+  background-color: black !important;
+  border: 1px solid rgb(215, 170, 71) !important;
+}
+
+.modal_body_bg_color {
+  background-color: #6c757da2 !important;
+}
+
+.modal-header .btn-close {
+  background-color: rgb(215, 170, 71) !important;
+  display: none !important;
+}
+
+.input_field_input_field {
+  background-color: #6c757da2 !important;
+  color: white !important;
+  border: 1px solid rgb(215, 170, 71) !important;
+}
+
+.input_field_input_field::placeholder {
+  color: white !important;
+}
+
+/* Custom styles for the react-select dropdown */
+.input_field_input_field .react-select__control {
+  background-color: #6c757da2 !important;
+  color: white !important;
+  border: 1px solid rgb(215, 170, 71) !important;
+}
+
+.input_field_input_field .react-select__placeholder {
+  color: white !important;
+}
+
+.input_field_input_field .react-select__single-value {
+  color: white !important;
+}
+
+.input_field_input_field .react-select__menu {
+  background-color: #000 !important;
+}
+
+.input_field_input_field .react-select__option {
+  color: white !important;
+  background-color: #6c757da2 !important;
+}
+
+.input_field_input_field .react-select__option--is-focused {
+  background-color: #5a6268 !important;
+}
+
+.disabled-select {
+  background-color: #d7aa47 !important;
+  color: #fff !important;
+  cursor: not-allowed;
+}
+
+.input_field_input_field:disabled {
+  background-color: #aeaeae !important;
+  color: #fff !important;
+  cursor: not-allowed;
+}
+
+.css-tj5bde-Svg {
+  color: #d7aa47 !important;
+}
+
+.name-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip {
+  visibility: hidden;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  /* Position above the name */
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.name-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.whatsapp_attcahment_icon {
+  position: absolute;
+  font-size: 24px;
+  color: #000;
+  right: 46px;
+  top: -2px;
+  cursor: pointer;
+}
+
+.log-remark-container {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip {
+  visibility: hidden;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+  padding: 5px;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.log-remark-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Container for input group */
+.ios-input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  /* Space between form groups */
+}
+
+/* Label style */
+.ios-label {
+  font-weight: 500;
+  font-size: 14px;
+  color: #fff;
+  /* White text for better contrast against the black background */
+  margin-bottom: 8px;
+  /* Adjusted space between label and input */
+  text-align: center;
+}
+
+/* Input field style */
+.ios-input {
+  border: none;
+  background-color: #333;
+  /* Dark background for the input */
+  border-radius: 12px;
+  /* Rounded corners for a softer look */
+  padding: 12px 16px;
+  /* Increased padding for a more spacious feel */
+  font-size: 16px;
+  color: #fff;
+  /* White text for better visibility on black background */
+  width: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  /* Slight shadow for depth */
+  text-align: center;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Disabled input field style */
+.ios-input:disabled {
+  background-color: #555;
+  /* Slightly lighter gray when disabled */
+  color: #bbb;
+  /* Lighter text color for disabled state */
+  cursor: not-allowed;
+}
+
+.ios-input::placeholder {
+  color: black
+}
+
+/* Invalid input field style (when there's an error) */
+.ios-input:invalid {
+  border-color: #e74c3c;
+  /* Red border for invalid input */
+}
+
+/* Error message style */
+.text-danger p {
+  font-size: 12px;
+  margin-top: 5px;
+  color: #e74c3c;
+  /* Red color for error messages */
+  text-align: center;
+}
+
+.label_table {
+  height: '100%';
+  max-height: 400px;
+  background-color: red;
+}
+
+.custom-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.custom-table th,
+.custom-table td {
+  text-align: center;
+  padding: 10px;
+  word-wrap: break-word;
+}
+
+.custom-table td {
+  height: 40px;
+}
+
+.custom-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+/* Add hover effect for rows */
+.custom-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Hover effect for input field */
+@media (hover: hover) and (pointer: fine) {
+  .ios-input:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+    /* More prominent shadow on hover */
+  }
+}
+
+/* Adjusting responsiveness for small screens */
+@media (max-width: 768px) {
+  .ios-input-group {
+    margin-bottom: 15px;
+    /* Reducing bottom margin for smaller screens */
+  }
+
+  .ios-label {
+    font-size: 13px;
+    /* Smaller font size for labels on mobile */
+  }
+
+  .ios-input {
+    padding: 10px 14px;
+    /* Reduced padding on mobile */
+    font-size: 14px;
+    /* Slightly smaller text size */
+  }
 }

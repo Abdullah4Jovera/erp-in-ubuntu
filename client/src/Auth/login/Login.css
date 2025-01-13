@@ -56,4 +56,215 @@
     animation: rotate 3s linear infinite;
     width: 300px;
     height: 300px;
+    position: absolute;
+    left: 22%;
+    bottom: -120px;
 }
+
+.finance_data_image {
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 62%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    max-width: 550px;
+}
+
+.top_rated_department {
+    position: absolute;
+    top: -38%;
+    left: 12%;
+    color: white;
+    font-size: 2rem; /* Adjust size as needed */
+    background: linear-gradient(90deg, #f7f4f3, #feb47b); /* Add gradient colors */
+    -webkit-background-clip: text; /* Clip background to the text */
+    -webkit-text-fill-color: transparent; /* Make text transparent to show background */
+    text-align: center; /* Center align the text if needed */
+}
+
+.login_pipeline_name {
+    position: absolute;
+    top: -25%;
+    left: 24%;
+    color: #d7aa47;
+}
+
+.image_control_discussion_container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 5%;
+}
+
+.image_control_discussion_login {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+/* General animation setup */
+.animated-image {
+    position: relative;
+    animation-duration: 8s;
+    /* Slower animation */
+    animation-timing-function: cubic-bezier(0.25, 0.25, 0.25, 0.25);
+    animation-iteration-count: infinite;
+}
+
+/* Unique bubbling animations */
+/* @keyframes bubble1 {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-15px, -20px);
+    }
+
+    50% {
+        transform: translate(10px, 10px);
+    }
+
+    75% {
+        transform: translate(-20px, -20px);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
+}
+
+@keyframes bubble2 {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-20px, -25px);
+    }
+
+    50% {
+        transform: translate(10px, 10px);
+    }
+
+    75% {
+        transform: translate(-25px, -30px);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
+}
+
+@keyframes bubble3 {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-25px, -30px);
+    }
+
+    50% {
+        transform: translate(10px, 10px);
+    }
+
+    75% {
+        transform: translate(-30px, -35px);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
+}
+
+@keyframes bubble4 {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-35px, -40px);
+    }
+
+    50% {
+        transform: translate(10px, 10px);
+    }
+
+    75% {
+        transform: translate(-20px, -20px);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
+}
+
+@keyframes bubble5 {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-15px, -20px);
+    }
+
+    50% {
+        transform: translate(10px, 10px);
+    }
+
+    75% {
+        transform: translate(-20px, -20px);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
+} */
+
+.bubble1 {
+    animation-name: bubble1;
+}
+
+.bubble2 {
+    animation-name: bubble2;
+}
+
+.bubble3 {
+    animation-name: bubble3;
+}
+
+.bubble4 {
+    animation-name: bubble4;
+}
+
+.bubble5 {
+    animation-name: bubble5;
+}
+
+
+/* .image_control_discussion_container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image_control_discussion_login {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 1px solid rgb(215, 170, 71) !important;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+}
+
+
+.image_control_discussion_login:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+} */

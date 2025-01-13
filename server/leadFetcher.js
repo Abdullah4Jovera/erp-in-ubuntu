@@ -63,7 +63,7 @@ async function fetchAndStoreLeads() {
                             case 'full_name': fullName = field.values[0]; break;
                             case 'email': email = field.values[0]; break;
                             case 'whatsapp_number': whatsappNumber = field.values[0]; break;
-                            default: description += `• ${field.name}: ${field.values[0]}\n`; break;
+                            default: description += `• ${field.values[0]}\n`; break;
                         }
                     }
                 });
